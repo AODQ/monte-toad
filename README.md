@@ -10,7 +10,7 @@
 
 # Installation (Linux)
 
-There is nothing non-trivial here, but for redundancy purposes, here is how to install it locally:
+Installation is trivial if you have used CMake before. For redundancy, here is how to install it locally:
 
 ```
 mkdir cpu-raytracer
