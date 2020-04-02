@@ -37,6 +37,7 @@ project(${NAME} CXX)
 
 ## Add dependents
 find_package(glm REQUIRED FATAL_ERROR)
+find_package(assimp REQUIRED FATAL_ERROR)
 find_package(OpenMP)
 
 ## source list for application (src/include)
