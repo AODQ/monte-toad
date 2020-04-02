@@ -38,7 +38,6 @@ project(${NAME} CXX)
 ## Add dependents
 find_package(glm REQUIRED FATAL_ERROR)
 find_package(OpenMP)
-find_package(assimp)
 
 ## source list for application (src/include)
 set(SOURCE_LIST
@@ -71,7 +70,3 @@ install(
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   COMPONENT core
 )
-
-## TODO build shader files
-
-## TODO install shader files
