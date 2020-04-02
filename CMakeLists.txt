@@ -43,8 +43,10 @@ find_package(assimp)
 ## source list for application (src/include)
 set(SOURCE_LIST
   "src/source.cpp"
+  "src/scene.cpp"
 )
 set(HEADER_LIST
+  "src/scene.hpp"
   "src/ext/cxxopts.hpp"
 )
 
