@@ -22,6 +22,7 @@ set(CMAKE_CXX_FLAGS "-Wall -fno-exceptions")
 add_compile_definitions(
   SPDLOG_NO_EXCEPTIONS
   SPDLOG_FMT_EXTERNAL
+  CXXOPTS_NO_EXCEPTIONS
 )
 
 ## requires out of source builds
@@ -36,12 +37,15 @@ project(${NAME} CXX)
 
 ## Add dependents
 find_package(glm REQUIRED FATAL_ERROR)
+find_package(OpenMP)
+find_package(assimp)
 
 ## source list for application (src/include)
 set(SOURCE_LIST
   "src/source.cpp"
 )
 set(HEADER_LIST
+  "src/ext/cxxopts.hpp"
 )
 
 ## add exceutable w/ source list and set compile options
@@ -49,7 +53,7 @@ add_executable(cpuraytracer ${SOURCE_LIST})
 target_compile_features(cpuraytracer PRIVATE cxx_std_20)
 
 ## link dependents
-target_link_libraries(cpuraytracer glm spdlog fmt)
+target_link_libraries(cpuraytracer glm spdlog fmt OpenMP::OpenMP_CXX assimp)
 
 ## add include/source directories , sources support necessary for (lamer) IDE
 ## users
