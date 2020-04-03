@@ -34,12 +34,23 @@ Scene Scene::Construct(std::string const & filename) {
       , v2 = mesh.mVertices[mesh.mFaces[face].mIndices[idx*3 + 2]]
       ;
 
+      aiVector3t<float> n0, n1, n2;
+
+      if (mesh.mNormals) {
+        n0 = mesh.mNormals[mesh.mFaces[face].mIndices[idx*3 + 0]];
+        n1 = mesh.mNormals[mesh.mFaces[face].mIndices[idx*3 + 1]];
+        n2 = mesh.mNormals[mesh.mFaces[face].mIndices[idx*3 + 2]];
+      }
+
       // add to scene
       model.scene.push_back(
         Triangle (
           glm::vec3{v0.x, v0.y, v0.z}
         , glm::vec3{v1.x, v1.y, v1.z}
         , glm::vec3{v2.x, v2.y, v2.z}
+        , glm::vec3{n0.x, n0.y, n0.z}
+        , glm::vec3{n1.x, n1.y, n1.z}
+        , glm::vec3{n2.x, n2.y, n2.z}
         )
       );
 

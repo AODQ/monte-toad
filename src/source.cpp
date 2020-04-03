@@ -112,11 +112,11 @@ glm::vec3 Render(
   eyeDir = LookAt(glm::normalize(camera.lookat - camera.ori), uv);
 
   float triDistance; glm::vec2 triUv;
-  bool intersects = Raycast(scene, eyeOri, eyeDir, triDistance, triUv);
+  Triangle const * triangle = Raycast(scene, eyeOri, eyeDir, triDistance, triUv);
 
-  if (!intersects) { return glm::vec3(0.0f, 0.0f, 0.0f); }
+  if (!triangle) { return glm::vec3(0.0f, 0.0f, 0.0f); }
 
-  return glm::vec3(triUv, 0.5f);
+  return glm::vec3(1.0f) * glm::dot(glm::vec3(triangle->n0), glm::vec3(-0.5f, 0.5f, 0.5f));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
