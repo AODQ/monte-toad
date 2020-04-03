@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 cmake_policy(VERSION 3.5)
 
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    ccache)
+endif()
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   message("[debug enabled]")
 else()
