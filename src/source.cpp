@@ -26,7 +26,7 @@ public:
   }
 
   float AspectRatio() const {
-    return this->width/static_cast<float>(this->height);
+    return this->height/static_cast<float>(this->width);
   }
 
   size_t Width() const { return this->width; }
@@ -158,6 +158,9 @@ int main(int argc, char** argv) {
       "H,camera-height", "Camera (scaled) height"
     , cxxopts::value<float>()->default_value("0.5f")
     ) (
+      "r,resolution", "window resolution \"Width,Height\"",
+      cxxopts::value<std::vector<uint32_t>>()->default_value("640,480")
+    ) (
       "D,camera-distance", "Camera (scaled) distance"
     , cxxopts::value<float>()->default_value("1.0f")
     ) (
@@ -172,12 +175,13 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  std::string inputFile;
-  std::string outputFile;
-  bool        view;
-  float       cameraTheta;
-  float       cameraDist;
-  float       cameraHeight;
+  std::string  inputFile;
+  std::string  outputFile;
+  bool         view;
+  float        cameraTheta;
+  float        cameraDist;
+  float        cameraHeight;
+  glm::i32vec2 resolution;
 
   { // -- collect values
     if (!result["file"].count()) {
@@ -190,6 +194,14 @@ int main(int argc, char** argv) {
     cameraTheta  = result["camera-theta"]   .as<float>();
     cameraDist   = result["camera-distance"].as<float>();
     cameraHeight = result["camera-height"]  .as<float>();
+    {
+      auto resolutionV = result["resolution"].as<std::vector<uint32_t>>();
+      if (resolutionV.size() != 2) {
+        spdlog::error("Resolution must be in format Width,Height");
+        return 1;
+      }
+      resolution = glm::i32vec2(resolutionV[0], resolutionV[1]);
+    }
   }
 
   spdlog::info("Loading model {}", inputFile);
@@ -211,7 +223,7 @@ int main(int argc, char** argv) {
   }
 
   { // -- render scene
-    auto buffer = Buffer::Construct(640, 480);
+    auto buffer = Buffer::Construct(resolution.x, resolution.y);
     spdlog::info(
       "Rendering at resolution ({}, {})",
       buffer.Width(), buffer.Height()
