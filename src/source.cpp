@@ -102,6 +102,14 @@ struct Camera {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+glm::vec3 BarycentricInterpolation(
+  glm::vec3 const & v0, glm::vec3 const & v1, glm::vec3 const & v2
+, glm::vec2 const & uv
+) {
+  return uv.x * v0 + uv.y * v1 + (1.0f - uv.x - uv.y) * v2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 glm::vec3 Render(
   glm::vec2 const uv
 , Scene const & scene
@@ -116,7 +124,10 @@ glm::vec3 Render(
 
   if (!triangle) { return glm::vec3(0.0f, 0.0f, 0.0f); }
 
-  return glm::vec3(1.0f) * glm::dot(glm::vec3(triangle->n0), glm::vec3(-0.5f, 0.5f, 0.5f));
+  glm::vec3 normal =
+    BarycentricInterpolation(triangle->n0, triangle->n1, triangle->n2, triUv);
+
+  return glm::vec3(1.0f) * glm::dot(normal, glm::vec3(-0.5f, 0.5f, 0.5f));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

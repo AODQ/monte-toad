@@ -84,7 +84,7 @@ bool RayTriangleIntersection(
 , glm::vec3 dir
 , Triangle const & triangle
 , float & distance
-, glm::vec2 & uvCoords
+, glm::vec2 & uv
 , CullFace cullFace = CullFace::None
 , float epsilon = 0.0000001f
 ) {
@@ -103,12 +103,12 @@ bool RayTriangleIntersection(
   float determinantInv = 1.0f / determinant;
 
   glm::vec3 tvec = ori - triangle.v0;
-  uvCoords.x = determinantInv * glm::dot(tvec, pvec);
-  if (uvCoords.x < 0.0f || uvCoords.x > 1.0f) { return false; }
+  uv.x = determinantInv * glm::dot(tvec, pvec);
+  if (uv.x < 0.0f || uv.x > 1.0f) { return false; }
 
   glm::vec3 qvec = glm::cross(tvec, ab);
-  uvCoords.y = determinantInv * glm::dot(dir, qvec);
-  if (uvCoords.y < 0.0f || uvCoords.x + uvCoords.y > 1.0f) { return false; }
+  uv.y = determinantInv * glm::dot(dir, qvec);
+  if (uv.y < 0.0f || uv.x + uv.y > 1.0f) { return false; }
 
   distance = determinantInv * glm::dot(ac, qvec);
   return distance > 0.0f;
