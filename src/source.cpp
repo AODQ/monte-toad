@@ -266,12 +266,12 @@ int main(int argc, char** argv) {
 
   Camera camera;
   { // -- camera setup
-    camera.lookat = glm::vec3(0.0f);
+    camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
     camera.ori =
-      (scene.bboxMax - scene.bboxMin)
-    * glm::vec3(glm::cos(cameraTheta), 0.0f, glm::sin(cameraTheta))
+      (scene.bboxMax + scene.bboxMin) * 0.5f
+    + (scene.bboxMax - scene.bboxMin)
+    * glm::vec3(glm::cos(cameraTheta), cameraHeight, glm::sin(cameraTheta))
     * cameraDist
-    + cameraHeight
     ;
   }
 
@@ -289,9 +289,10 @@ int main(int argc, char** argv) {
     for (size_t i = 0u; i < buffer.Width()*buffer.Height(); ++ i) {
       // -- render out at pixel X, Y
       size_t x = i%buffer.Width(), y = i/buffer.Width();
-      glm::vec2 uv = glm::vec2(x, y * buffer.AspectRatio()) / buffer.Dim();
+      glm::vec2 uv = glm::vec2(x, y) / buffer.Dim();
       uv = (uv - 0.5f) * 2.0f;
-      buffer.At(i) = Render(uv, scene , camera);
+      uv.y *= buffer.AspectRatio();
+      buffer.At(i) = Render(uv, scene, camera);
 
       // record & emit progress
       progress += 1;
