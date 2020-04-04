@@ -94,12 +94,12 @@ void SaveImage(
 glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv) {
   glm::vec3
     ww = glm::normalize(dir),
-    uu = glm::normalize(glm::cross(ww, glm::vec3(0.0, 1.0, 0.0))),
+    uu = glm::normalize(glm::cross(ww, glm::vec3(0.0, -1.0, 0.0))),
     vv = glm::normalize(glm::cross(uu, ww));
   return
     glm::normalize(
       glm::mat3(uu, vv, ww)
-    * glm::vec3(uv.x, uv.y, glm::radians(120.0f))
+    * glm::vec3(uv.x, uv.y, glm::radians(90.0f))
     );
 }
 
@@ -142,7 +142,7 @@ glm::vec3 Render(
   Triangle const * triangle =
     Raycast(scene, eyeOri, eyeDir, triDistance, triUv);
 
-  if (!triangle) { return glm::vec3(0.0f, 0.0f, 0.0f); }
+  if (!triangle) { return glm::vec3(0.2f, 0.2f, 0.2f); }
 
   glm::vec3 normal =
     glm::normalize(
