@@ -92,7 +92,7 @@ void SaveImage(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up) {
+glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up, float fovRadians) {
   glm::vec3
     ww = glm::normalize(dir),
     uu = glm::normalize(glm::cross(ww, up)),
@@ -100,7 +100,7 @@ glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up) {
   return
     glm::normalize(
       glm::mat3(uu, vv, ww)
-    * glm::vec3(uv.x, uv.y, glm::radians(90.0f))
+    * glm::vec3(uv.x, uv.y, fovRadians)
     );
 }
 
@@ -109,6 +109,7 @@ struct Camera {
   glm::vec3 ori;
   glm::vec3 lookat;
   glm::vec3 up;
+  float fov;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +138,13 @@ glm::vec3 Render(
 ) {
   glm::vec3 eyeOri, eyeDir;
   eyeOri = camera.ori;
-  eyeDir = LookAt(glm::normalize(camera.lookat - camera.ori), uv, camera.up);
+  eyeDir =
+    LookAt(
+      glm::normalize(camera.lookat - camera.ori)
+    , uv
+    , camera.up
+    , glm::radians(camera.fov)
+    );
 
   float triDistance; glm::vec2 triUv;
   Triangle const * triangle =
@@ -206,6 +213,9 @@ int main(int argc, char** argv) {
       "U,up-axis", "model up-axis set to Z (Y when not set)"
     , cxxopts::value<bool>()->default_value("false")
     ) (
+      "F,fov", "camera field-of-view (degrees)"
+    , cxxopts::value<float>()->default_value("90.0f")
+    ) (
       "p,noprogress", "does not display progress"
     , cxxopts::value<bool>()->default_value("false")
     ) (
@@ -226,6 +236,7 @@ int main(int argc, char** argv) {
   float        cameraTheta;
   float        cameraDist;
   float        cameraHeight;
+  float        cameraFov;
   glm::i32vec2 resolution;
   bool         upAxisZ;
   bool         displayProgress;
@@ -241,6 +252,7 @@ int main(int argc, char** argv) {
     cameraTheta     = result["camera-theta"]   .as<float>();
     cameraDist      = result["camera-distance"].as<float>();
     cameraHeight    = result["camera-height"]  .as<float>();
+    cameraFov       = result["fov"]            .as<float>();
     displayProgress = result["noprogress"]     .as<bool>();
     upAxisZ         = result["up-axis"]        .as<bool>();
 
@@ -255,6 +267,7 @@ int main(int argc, char** argv) {
 
     // convert command-line units to application units
     cameraTheta = glm::radians(cameraTheta);
+    cameraFov = 180.0f - cameraFov;
     displayProgress = !displayProgress;
   }
 
@@ -275,6 +288,7 @@ int main(int argc, char** argv) {
   Camera camera;
   { // -- camera setup
     camera.up = glm::vec3(0.0f, !upAxisZ, upAxisZ);
+    camera.fov = cameraFov;
     camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
     camera.ori =
       (scene.bboxMax + scene.bboxMin) * 0.5f
