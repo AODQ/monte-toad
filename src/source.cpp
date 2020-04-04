@@ -70,7 +70,8 @@ void SaveImage(
   spdlog::info("Saving image {}", filename);
   file << "P6\n" << data.Width() << " " << data.Height() << "\n255\n";
   for (size_t i = 0u; i < data.Height()*data.Width(); ++ i) {
-    glm::vec3 pixel = data.At(i);
+    // flip Y
+    glm::vec3 pixel = data.At(i%data.Width(), data.Height()-i/data.Width()-1);
     pixel = 255.0f * glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
     file
       << static_cast<uint8_t>(pixel.x)
@@ -91,10 +92,10 @@ void SaveImage(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv) {
+glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up) {
   glm::vec3
     ww = glm::normalize(dir),
-    uu = glm::normalize(glm::cross(ww, glm::vec3(0.0, -1.0, 0.0))),
+    uu = glm::normalize(glm::cross(ww, up)),
     vv = glm::normalize(glm::cross(uu, ww));
   return
     glm::normalize(
@@ -107,6 +108,7 @@ glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv) {
 struct Camera {
   glm::vec3 ori;
   glm::vec3 lookat;
+  glm::vec3 up;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +138,7 @@ glm::vec3 Render(
 ) {
   glm::vec3 eyeOri, eyeDir;
   eyeOri = camera.ori;
-  eyeDir = LookAt(glm::normalize(camera.lookat - camera.ori), uv);
+  eyeDir = LookAt(glm::normalize(camera.lookat - camera.ori), uv, camera.up);
 
   float triDistance; glm::vec2 triUv;
   Triangle const * triangle =
@@ -201,6 +203,9 @@ int main(int argc, char** argv) {
       "D,camera-distance", "camera (scaled) distance"
     , cxxopts::value<float>()->default_value("1.0f")
     ) (
+      "U,up-axis", "model up-axis"
+    , cxxopts::value<std::vector<float>>()->default_value("0,1,0")
+    ) (
       "p,noprogress", "does not display progress"
     , cxxopts::value<bool>()->default_value("false")
     ) (
@@ -222,6 +227,7 @@ int main(int argc, char** argv) {
   float        cameraDist;
   float        cameraHeight;
   glm::i32vec2 resolution;
+  glm::vec3    upAxis;
   bool         displayProgress;
 
   { // -- collect values
@@ -236,13 +242,23 @@ int main(int argc, char** argv) {
     cameraDist      = result["camera-distance"].as<float>();
     cameraHeight    = result["camera-height"]  .as<float>();
     displayProgress = result["noprogress"]     .as<bool>();
-    {
+
+    { // resolution
       auto resolutionV = result["resolution"].as<std::vector<uint32_t>>();
       if (resolutionV.size() != 2) {
         spdlog::error("Resolution must be in format Width,Height");
         return 1;
       }
       resolution = glm::i32vec2(resolutionV[0], resolutionV[1]);
+    }
+
+    { // up axis
+      auto upAxisv = result["up-axis"].as<std::vector<float>>();
+      if (upAxisv.size() != 3) {
+        spdlog::error("up-axis must be in format X,Y,Z");
+        return 1;
+      }
+      upAxis = glm::vec3(upAxisv[0], upAxisv[1], upAxisv[2]);
     }
 
     // convert command-line units to application units
@@ -266,6 +282,7 @@ int main(int argc, char** argv) {
 
   Camera camera;
   { // -- camera setup
+    camera.up = upAxis;
     camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
     camera.ori =
       (scene.bboxMax + scene.bboxMin) * 0.5f
