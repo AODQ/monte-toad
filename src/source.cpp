@@ -203,8 +203,8 @@ int main(int argc, char** argv) {
       "D,camera-distance", "camera (scaled) distance"
     , cxxopts::value<float>()->default_value("1.0f")
     ) (
-      "U,up-axis", "model up-axis"
-    , cxxopts::value<std::vector<float>>()->default_value("0,1,0")
+      "U,up-axis", "model up-axis set to Z (Y when not set)"
+    , cxxopts::value<bool>()->default_value("false")
     ) (
       "p,noprogress", "does not display progress"
     , cxxopts::value<bool>()->default_value("false")
@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
   float        cameraDist;
   float        cameraHeight;
   glm::i32vec2 resolution;
-  glm::vec3    upAxis;
+  bool         upAxisZ;
   bool         displayProgress;
 
   { // -- collect values
@@ -242,6 +242,7 @@ int main(int argc, char** argv) {
     cameraDist      = result["camera-distance"].as<float>();
     cameraHeight    = result["camera-height"]  .as<float>();
     displayProgress = result["noprogress"]     .as<bool>();
+    upAxisZ         = result["up-axis"]        .as<bool>();
 
     { // resolution
       auto resolutionV = result["resolution"].as<std::vector<uint32_t>>();
@@ -250,15 +251,6 @@ int main(int argc, char** argv) {
         return 1;
       }
       resolution = glm::i32vec2(resolutionV[0], resolutionV[1]);
-    }
-
-    { // up axis
-      auto upAxisv = result["up-axis"].as<std::vector<float>>();
-      if (upAxisv.size() != 3) {
-        spdlog::error("up-axis must be in format X,Y,Z");
-        return 1;
-      }
-      upAxis = glm::vec3(upAxisv[0], upAxisv[1], upAxisv[2]);
     }
 
     // convert command-line units to application units
@@ -282,12 +274,16 @@ int main(int argc, char** argv) {
 
   Camera camera;
   { // -- camera setup
-    camera.up = upAxis;
+    camera.up = glm::vec3(0.0f, !upAxisZ, upAxisZ);
     camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
     camera.ori =
       (scene.bboxMax + scene.bboxMin) * 0.5f
     + (scene.bboxMax - scene.bboxMin)
-    * glm::vec3(glm::cos(cameraTheta), cameraHeight, glm::sin(cameraTheta))
+    * glm::vec3(
+        glm::cos(cameraTheta),
+        cameraHeight*(!upAxisZ) + glm::sin(cameraTheta)*upAxisZ,
+        cameraHeight*upAxisZ    + glm::sin(cameraTheta)*(!upAxisZ)
+      )
     * cameraDist
     ;
   }
