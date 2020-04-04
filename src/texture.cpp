@@ -81,10 +81,15 @@ glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords) {
   uvCoords = glm::mod(uvCoords, glm::vec2(1.0f));
   /* uvCoords = glm::clamp(uvCoords, glm::vec2(0.0f), glm::vec2(1.0f)); */
   uvCoords.y = 1.0f - uvCoords.y;
-  uvCoords.x = 1.0f - uvCoords.x;
   uint64_t
-    x = glm::clamp(static_cast<uint64_t>(uvCoords.x*texture.width), 0ul, texture.width-1),
-    y = glm::clamp(static_cast<uint64_t>(uvCoords.y*texture.height), 0ul, texture.height-1)
+    x =
+      glm::clamp(
+        static_cast<uint64_t>(uvCoords.x*texture.width), 0ul, texture.width-1
+      )
+  , y =
+      glm::clamp(
+        static_cast<uint64_t>(uvCoords.y*texture.height), 0ul, texture.height-1
+      )
   ;
 
   uint64_t idx = y + x*texture.height;
