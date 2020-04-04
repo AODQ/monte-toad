@@ -61,7 +61,11 @@ void PrintProgress(float progress) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void SaveImage(std::string const & filename, Buffer const & data) {
+void SaveImage(
+  std::string const & filename
+, Buffer const & data
+, bool displayProgress
+) {
   auto file = std::ofstream{filename, std::ios::binary};
   spdlog::info("Saving image {}", filename);
   file << "P6\n" << data.Width() << " " << data.Height() << "\n255\n";
@@ -74,11 +78,15 @@ void SaveImage(std::string const & filename, Buffer const & data) {
       << static_cast<uint8_t>(pixel.z)
     ;
 
-    if (i%data.Width() == 0)
+    if (displayProgress && i%data.Width() == 0)
       PrintProgress(i/static_cast<float>(data.Height()*data.Width()));
   }
-  PrintProgress(1.0f);
-  printf("\n"); // new line for progress bar
+
+  if (displayProgress) {
+    PrintProgress(1.0f);
+    printf("\n"); // new line for progress bar
+  }
+
   spdlog::info("Finished saving image {}", filename);
 }
 
@@ -110,6 +118,15 @@ U BarycentricInterpolation(
   return v0*uv.x + v1*uv.y + (1.0f - uv.x-uv.y)*v2;
   /* return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0); */
 }
+
+////////////////////////////////////////////////////////////////////////////////
+template<> struct fmt::formatter<glm::vec2> {
+  constexpr auto parse(format_parse_context & ctx) { return ctx.begin(); }
+
+  template <typename FmtCtx> auto format(glm::vec2 const & vec, FmtCtx & ctx) {
+    return format_to(ctx.out(), "({}, {})", vec.x, vec.y);
+  }
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 glm::vec3 Render(
@@ -164,34 +181,37 @@ int main(int argc, char** argv) {
   auto options = cxxopts::Options("cpuraytracer", "Raytraces models to image");
   options.add_options()
     (
-      "f,file", "Input model file (required)", cxxopts::value<std::string>()
+      "f,file", "input model file (required)", cxxopts::value<std::string>()
     ) (
-      "o,output", "Image output file"
+      "o,output", "image output file"
     , cxxopts::value<std::string>()->default_value("out.ppm")
     ) (
-      "v,view", "View image on completion"
+      "v,view", "view image on completion"
     , cxxopts::value<bool>()->default_value("false")
     ) (
-      "T,camera-theta", "Camera origin around origin as theta angle"
+      "T,camera-theta", "camera origin as theta angle (degrees)"
     , cxxopts::value<float>()->default_value("0.0f")
     ) (
-      "H,camera-height", "Camera (scaled) height"
+      "H,camera-height", "camera (scaled) height"
     , cxxopts::value<float>()->default_value("0.5f")
     ) (
       "r,resolution", "window resolution \"Width,Height\"",
       cxxopts::value<std::vector<uint32_t>>()->default_value("640,480")
     ) (
-      "D,camera-distance", "Camera (scaled) distance"
+      "D,camera-distance", "camera (scaled) distance"
     , cxxopts::value<float>()->default_value("1.0f")
     ) (
-      "h,help", "Print usage"
+      "p,noprogress", "does not display progress"
+    , cxxopts::value<bool>()->default_value("false")
+    ) (
+      "h,help", "print usage"
     )
   ;
 
   auto result = options.parse(argc, argv);
 
   if (result.count("help")) {
-    spdlog::info("{}", options.help());
+    printf("%s\n", options.help().c_str());
     return 0;
   }
 
@@ -202,18 +222,20 @@ int main(int argc, char** argv) {
   float        cameraDist;
   float        cameraHeight;
   glm::i32vec2 resolution;
+  bool         displayProgress;
 
   { // -- collect values
     if (!result["file"].count()) {
       spdlog::error("Must provide an input file");
       return 1;
     }
-    inputFile    = result["file"]           .as<std::string>();
-    outputFile   = result["output"]         .as<std::string>();
-    view         = result["view"]           .as<bool>();
-    cameraTheta  = result["camera-theta"]   .as<float>();
-    cameraDist   = result["camera-distance"].as<float>();
-    cameraHeight = result["camera-height"]  .as<float>();
+    inputFile       = result["file"]           .as<std::string>();
+    outputFile      = result["output"]         .as<std::string>();
+    view            = result["view"]           .as<bool>();
+    cameraTheta     = result["camera-theta"]   .as<float>();
+    cameraDist      = result["camera-distance"].as<float>();
+    cameraHeight    = result["camera-height"]  .as<float>();
+    displayProgress = result["noprogress"]     .as<bool>();
     {
       auto resolutionV = result["resolution"].as<std::vector<uint32_t>>();
       if (resolutionV.size() != 2) {
@@ -222,23 +244,34 @@ int main(int argc, char** argv) {
       }
       resolution = glm::i32vec2(resolutionV[0], resolutionV[1]);
     }
+
+    // convert command-line units to application units
+    cameraTheta = glm::radians(cameraTheta);
+    displayProgress = !displayProgress;
   }
 
   spdlog::info("Loading model {}", inputFile);
   auto scene = Scene::Construct(inputFile);
+  if (scene.meshes.size() == 0) {
+    spdlog::error("Model loading failed, exitting");
+    return 1;
+  }
+
   spdlog::info("Model triangles: {}", scene.scene.size());
+  spdlog::info("Model meshes: {}", scene.meshes.size());
+  spdlog::info("Model textures: {}", scene.textures.size());
   spdlog::info("Model bounds: {} -> {}", scene.bboxMin, scene.bboxMax);
   spdlog::info("Model center: {}", (scene.bboxMax + scene.bboxMin) * 0.5f);
   spdlog::info("Model size: {}", (scene.bboxMax - scene.bboxMin));
 
   Camera camera;
-  { // -- camera setp
-    camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
+  { // -- camera setup
+    camera.lookat = glm::vec3(0.0f);
     camera.ori =
-      camera.lookat
-    + (scene.bboxMax - scene.bboxMin)
-    * glm::vec3(glm::cos(cameraTheta), cameraHeight, glm::sin(cameraTheta))
+      (scene.bboxMax - scene.bboxMin)
+    * glm::vec3(glm::cos(cameraTheta), 0.0f, glm::sin(cameraTheta))
     * cameraDist
+    + cameraHeight
     ;
   }
 
@@ -251,6 +284,7 @@ int main(int argc, char** argv) {
 
     std::atomic<size_t> progress = 0u;
     int const masterTid = omp_get_thread_num();
+    size_t mainThreadUpdateIt = 0;
     #pragma omp parallel for
     for (size_t i = 0u; i < buffer.Width()*buffer.Height(); ++ i) {
       // -- render out at pixel X, Y
@@ -261,21 +295,34 @@ int main(int argc, char** argv) {
 
       // record & emit progress
       progress += 1;
-      if (omp_get_thread_num() == masterTid) {
+      if (displayProgress
+       && omp_get_thread_num() == masterTid
+       && (++mainThreadUpdateIt)%5 == 0
+      ) {
         PrintProgress(
           progress/static_cast<float>(buffer.Width()*buffer.Height())
         );
       }
     }
-    PrintProgress(1.0f);
-    printf("\n"); // new line for progress bar
 
-    SaveImage(outputFile, buffer);
+    if (displayProgress)
+    {
+      PrintProgress(1.0f);
+      printf("\n"); // new line for progress bar
+    }
+
+    SaveImage(outputFile, buffer, displayProgress);
   }
 
   #ifdef __unix__
-    if (view) { system((std::string{"feh "} + outputFile).c_str()); }
+    if (view) {
+      system(
+        (std::string{"feh --full-screen --force-aliasing "}
+      + outputFile).c_str()
+      );
+    }
   #endif
+  // TODO windows, mac, etc
 
   return 0;
 }
