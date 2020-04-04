@@ -117,8 +117,7 @@ U BarycentricInterpolation(
   U const & v0, U const & v1, U const & v2
 , glm::vec2 const & uv
 ) {
-  return v0*uv.x + v1*uv.y + (1.0f - uv.x-uv.y)*v2;
-  /* return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0); */
+  return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -150,7 +149,6 @@ glm::vec3 Render(
     glm::normalize(
       BarycentricInterpolation(triangle->n0, triangle->n1, triangle->n2, triUv)
     );
-    (void)normal;
   glm::vec2 uvcoord =
     BarycentricInterpolation(
       triangle->uv0, triangle->uv1, triangle->uv2
@@ -165,8 +163,10 @@ glm::vec3 Render(
     , uvcoord
     );
 
-  return diffuseTex;
-  /* return diffuseTex * (0.5f + glm::abs(glm::dot(normal, glm::vec3(-0.5f, 0.5f, 0.5f)))); */
+  return
+    diffuseTex
+  * (0.5f + glm::abs(glm::dot(normal, glm::vec3(-0.5f, 0.5f, 0.5f))))
+  ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
