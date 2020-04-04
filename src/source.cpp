@@ -102,11 +102,13 @@ struct Camera {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 BarycentricInterpolation(
-  glm::vec3 const & v0, glm::vec3 const & v1, glm::vec3 const & v2
+template <typename U>
+U BarycentricInterpolation(
+  U const & v0, U const & v1, U const & v2
 , glm::vec2 const & uv
 ) {
-  return uv.x * v0 + uv.y * v1 + (1.0f - uv.x - uv.y) * v2;
+  return v0*uv.x + v1*uv.y + (1.0f - uv.x-uv.y)*v2;
+  /* return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0); */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -120,14 +122,32 @@ glm::vec3 Render(
   eyeDir = LookAt(glm::normalize(camera.lookat - camera.ori), uv);
 
   float triDistance; glm::vec2 triUv;
-  Triangle const * triangle = Raycast(scene, eyeOri, eyeDir, triDistance, triUv);
+  Triangle const * triangle =
+    Raycast(scene, eyeOri, eyeDir, triDistance, triUv);
 
   if (!triangle) { return glm::vec3(0.0f, 0.0f, 0.0f); }
 
   glm::vec3 normal =
-    BarycentricInterpolation(triangle->n0, triangle->n1, triangle->n2, triUv);
+    glm::normalize(
+      BarycentricInterpolation(triangle->n0, triangle->n1, triangle->n2, triUv)
+    );
+    (void)normal;
+  glm::vec2 uvcoord =
+    BarycentricInterpolation(
+      triangle->uv0, triangle->uv1, triangle->uv2
+    , triUv
+    );
+  glm::vec3 ori = eyeOri + eyeDir*triDistance;
+    (void)ori;
 
-  return glm::vec3(1.0f) * glm::dot(normal, glm::vec3(-0.5f, 0.5f, 0.5f));
+  glm::vec3 diffuseTex =
+    Sample(
+      scene.textures[scene.meshes[triangle->meshIdx].diffuseTextureIdx]
+    , uvcoord
+    );
+
+  return diffuseTex;
+  /* return diffuseTex * (0.5f + glm::abs(glm::dot(normal, glm::vec3(-0.5f, 0.5f, 0.5f)))); */
 }
 
 ////////////////////////////////////////////////////////////////////////////////

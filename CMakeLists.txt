@@ -48,12 +48,15 @@ find_package(OpenMP)
 
 ## source list for application (src/include)
 set(SOURCE_LIST
-  "src/source.cpp"
   "src/scene.cpp"
+  "src/source.cpp"
+  "src/texture.cpp"
 )
 set(HEADER_LIST
   "src/scene.hpp"
+  "src/texture.hpp"
   "src/ext/cxxopts.hpp"
+  "src/ext/stb_image.hpp"
 )
 
 ## add exceutable w/ source list and set compile options
