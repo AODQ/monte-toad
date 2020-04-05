@@ -53,6 +53,7 @@ set(SOURCE_LIST
   "src/texture.cpp"
 )
 set(HEADER_LIST
+  "ext/bvh.hpp"
   "ext/cxxopts.hpp"
   "ext/stb_image.hpp"
   "src/scene.hpp"
