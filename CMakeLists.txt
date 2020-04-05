@@ -54,6 +54,7 @@ set(SOURCE_LIST
 )
 set(HEADER_LIST
   "src/scene.hpp"
+  "src/span.hpp"
   "src/texture.hpp"
   "src/ext/cxxopts.hpp"
   "src/ext/stb_image.hpp"
