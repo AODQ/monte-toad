@@ -26,6 +26,7 @@ namespace {
       /* | aiProcess_ImproveCacheLocality */ // might want to test this one
       /* | aiProcess_OptimizeMeshes */ // probably not useful right now
       /* | aiProcess_OptimizeGraph  */ // this is probably not useful either
+      | aiProcess_PreTransformVertices
       );
 
     auto basePath = std::filesystem::path{filename}.remove_filename();
