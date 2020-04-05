@@ -36,7 +36,7 @@ std::optional<Intersection> RayTriangleIntersection(
 , glm::vec3 dir
 , Triangle const & triangle
 , CullFace cullFace = CullFace::None
-, float epsilon = 0.0000001f
+, float epsilon = 0.00000001f
 );
 
 struct AccelerationStructure {
