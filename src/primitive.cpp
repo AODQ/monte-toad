@@ -75,24 +75,19 @@ AccelerationStructure AccelerationStructure::Construct(
 
   auto boundingBoxes = std::vector<bvh::BBox>();
   boundingBoxes.resize(accel.triangles.size());
-  auto centers = std::vector<bvh::Vec3>();
+  auto centers = std::vector<glm::vec3>();
   centers.resize(accel.triangles.size());
 
   /* #pragma omp parallel for */
   for (size_t i = 0; i < accel.triangles.size(); ++ i) {
     auto & triangle = accel.triangles[i];
-    auto
-      bvhV0 = bvh::Vec3(triangle.v0.x, triangle.v0.y, triangle.v0.z)
-    , bvhV1 = bvh::Vec3(triangle.v1.x, triangle.v1.y, triangle.v1.z)
-    , bvhV2 = bvh::Vec3(triangle.v2.x, triangle.v2.y, triangle.v2.z)
-    ;
 
-    auto bbox = bvh::BBox { bvhV0 };
-    bbox.extend(bvhV1);
-    bbox.extend(bvhV2);
+    auto bbox = bvh::BBox { triangle.v0 };
+    bbox.extend(triangle.v1);
+    bbox.extend(triangle.v2);
 
     boundingBoxes[i] = bbox;
-    centers[i]       = (bvhV0 + bvhV1 + bvhV2) * (1.0f/3.0f);
+    centers[i]       = (triangle.v0 + triangle.v1 + triangle.v2) * (1.0f/3.0f);
   }
 
   accel.boundingVolume.build(
@@ -127,7 +122,6 @@ IntersectClosest(
     ClosestIntersector() = default;
 
     span<Triangle const> triangles;
-    size_t it = 0;
 
     using Result = Intersection;
 
@@ -142,12 +136,7 @@ IntersectClosest(
     std::optional<Intersection> operator()(size_t idx, bvh::Ray const & ray)
       const
     {
-      return
-        RayTriangleIntersection(
-          glm::vec3(ray.origin.x, ray.origin.y, ray.origin.z)
-        , glm::vec3(ray.direction.x, ray.direction.y, ray.direction.z)
-        , triangles[idx]
-        );
+      return RayTriangleIntersection(ray.origin, ray.direction, triangles[idx]);
     }
   };
 
@@ -155,10 +144,7 @@ IntersectClosest(
     accel
       .boundingVolume
       .intersect<false, ClosestIntersector>(
-        bvh::Ray(
-          bvh::Vec3(ori.x, ori.y, ori.z)
-        , bvh::Vec3(dir.x, dir.y, dir.z)
-        )
+        bvh::Ray(ori, dir)
       , ClosestIntersector::Construct(accel)
       );
 }

@@ -23,6 +23,8 @@
 #ifndef BVH_HPP
 #define BVH_HPP
 
+#include <glm/glm.hpp>
+
 #include <cstdint>
 #include <cstddef>
 #include <cassert>
@@ -54,100 +56,26 @@ To as(From from) {
     return to;
 }
 
-inline float prodsign(float x, float y) {
-    return as<float>(as<uint32_t>(x) ^ (as<uint32_t>(y) & UINT32_C(0x80000000)));
-}
-
-inline double prodsign(double x, double y) {
-    return as<double>(as<uint64_t>(x) ^ (as<uint64_t>(y) & UINT64_C(0x8000000000000000)));
-}
-
-/// A simple 3D vector class.
-struct Vec3 {
-    Scalar x, y, z;
-
-    Vec3() = default;
-    Vec3(Scalar s) : x(s), y(s), z(s) {}
-    Vec3(Scalar x, Scalar y, Scalar z) : x(x), y(y), z(z) {}
-
-    Vec3 operator - () const {
-        return Vec3(-x, -y, -z);
-    }
-
-    Vec3 inverse() const {
-        return Vec3(Scalar(1.0) / x, Scalar(1.0) / y, Scalar(1.0) / z);
-    }
-
-    Scalar& operator [] (size_t i) {
-        return (&x)[i];
-    }
-
-    Scalar operator [] (size_t i) const {
-        return (&x)[i];
-    }
-};
-
-inline Vec3 operator + (const Vec3& a, const Vec3& b) {
-    return Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
-}
-
-inline Vec3 operator - (const Vec3& a, const Vec3& b) {
-    return Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
-inline Vec3 operator * (const Vec3& a, const Vec3& b) {
-    return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
-}
-
-inline Vec3 operator * (const Vec3& a, Scalar s) {
-    return Vec3(a.x * s, a.y * s, a.z * s);
-}
-
-inline Vec3 operator * (Scalar s, const Vec3& b) {
-    return b * s;
-}
-
-inline Scalar dot(const Vec3& a, const Vec3& b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-inline Vec3 cross(const Vec3& a, const Vec3& b) {
-    return Vec3(
-        a.y * b.z - a.z * b.y,
-        a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x
-    );
-}
-
-inline Scalar length(const Vec3& v) {
-    return std::sqrt(dot(v, v));
-}
-
-inline Vec3 normalize(const Vec3& v) {
-    auto inv = Scalar(1) / length(v);
-    return v * inv;
-}
-
 /// A ray, defined by an origin and a direction, with minimum and maximum distances along the direction from the origin.
 struct Ray {
-    Vec3 origin;
-    Vec3 direction;
+    glm::vec3 origin;
+    glm::vec3 direction;
     Scalar tmin;
     Scalar tmax;
 
     Ray() = default;
-    Ray(const Vec3& origin, const Vec3& direction, Scalar tmin = Scalar(0), Scalar tmax = std::numeric_limits<Scalar>::max())
+    Ray(const glm::vec3& origin, const glm::vec3& direction, Scalar tmin = Scalar(0), Scalar tmax = std::numeric_limits<Scalar>::max())
         : origin(origin), direction(direction), tmin(tmin), tmax(tmax)
     {}
 };
 
 /// A bounding box, represented with two extreme points.
 struct BBox {
-    Vec3 min, max;
+    glm::vec3 min, max;
 
     BBox() = default;
-    BBox(const Vec3& v) : min(v), max(v) {}
-    BBox(const Vec3& min, const Vec3& max) : min(min), max(max) {}
+    BBox(const glm::vec3& v) : min(v), max(v) {}
+    BBox(const glm::vec3& min, const glm::vec3& max) : min(min), max(max) {}
 
     BBox& extend(const BBox& bbox) {
         min.x = std::min(min.x, bbox.min.x);
@@ -159,25 +87,25 @@ struct BBox {
         return *this;
     }
 
-    BBox& extend(const Vec3& v) {
+    BBox& extend(const glm::vec3& v) {
         return extend(BBox(v));
     }
 
-    Vec3 diagonal() const {
+    glm::vec3 diagonal() const {
         return max - min;
     }
 
     float half_area() const {
-        Vec3 d = diagonal();
+        glm::vec3 d = diagonal();
         return (d.x + d.y) * d.z + d.x * d.y;
     }
 
     static BBox full() {
-        return BBox(Vec3(-std::numeric_limits<Scalar>::max()), Vec3(std::numeric_limits<Scalar>::max()));
+        return BBox(glm::vec3(-std::numeric_limits<Scalar>::max()), glm::vec3(std::numeric_limits<Scalar>::max()));
     }
 
     static BBox empty() {
-        return BBox(Vec3(std::numeric_limits<Scalar>::max()), Vec3(-std::numeric_limits<Scalar>::max()));
+        return BBox(glm::vec3(std::numeric_limits<Scalar>::max()), glm::vec3(-std::numeric_limits<Scalar>::max()));
     }
 };
 
@@ -201,8 +129,8 @@ inline double multiply_add(double x, double y, double z) {
 #endif
 }
 
-inline Vec3 multiply_add(Vec3 x, Vec3 y, Vec3 z) {
-    return Vec3(
+inline glm::vec3 multiply_add(glm::vec3 x, glm::vec3 y, glm::vec3 z) {
+    return glm::vec3(
         multiply_add(x.x, y.x, z.x),
         multiply_add(x.y, y.y, z.y),
         multiply_add(x.z, y.z, z.z)
@@ -233,7 +161,7 @@ struct BVH {
         Index primitive_count : sizeof(Index) * CHAR_BIT - 1;
         Index first_child_or_primitive;
 
-        std::pair<Scalar, Scalar> intersect(const Vec3& inverse_origin, const Vec3& inverse_direction, Scalar tmin, Scalar tmax, int ix, int iy, int iz) const {
+        std::pair<Scalar, Scalar> intersect(const glm::vec3& inverse_origin, const glm::vec3& inverse_direction, Scalar tmin, Scalar tmax, int ix, int iy, int iz) const {
             auto values = reinterpret_cast<const float*>(this);
             Scalar entry_x = multiply_add(values[    ix], inverse_direction.x, inverse_origin.x);
             Scalar entry_y = multiply_add(values[    iy], inverse_direction.y, inverse_origin.y);
@@ -277,9 +205,9 @@ struct BVH {
         BVH* bvh;
 
         const BBox* bboxes;
-        const Vec3* centers;
+        const glm::vec3* centers;
 
-        BuildTask(BVH* bvh, const BBox* bboxes, const Vec3* centers)
+        BuildTask(BVH* bvh, const BBox* bboxes, const glm::vec3* centers)
             : bvh(bvh), bboxes(bboxes), centers(centers)
         {}
 
@@ -311,9 +239,9 @@ struct BVH {
             };
             std::array<Bin, bin_count> bins_per_axis[3];
 
-            auto inverse = Vec3(bin_count) * center_bbox.diagonal().inverse();
+            auto inverse = glm::vec3(bin_count) * (glm::vec3(1.0f)/center_bbox.diagonal());
             auto base    = -center_bbox.min * inverse;
-            auto bin_index = [=] (const Vec3& center, int axis) {
+            auto bin_index = [=] (const glm::vec3& center, int axis) {
                 return std::min(size_t(center[axis] * inverse[axis] + base[axis]), size_t(bin_count - 1));
             };
 
@@ -433,7 +361,7 @@ struct BVH {
         }
     };
 
-    void build(const BBox* bboxes, const Vec3* centers, size_t primitive_count) {
+    void build(const BBox* bboxes, const glm::vec3* centers, size_t primitive_count) {
         // Allocate buffers
         nodes.reset(new Node[2 * primitive_count + 1]);
         primitive_indices.reset(new size_t[primitive_count]);
@@ -718,7 +646,7 @@ struct BVH {
 
         // Precompute the inverse direction to avoid divisions and refactor
         // the computation to allow the use of FMA instructions (when available).
-        auto inverse_direction = ray.direction.inverse();
+        auto inverse_direction = (glm::vec3(1.0f)/ray.direction);
         auto inverse_origin    = -ray.origin * inverse_direction;
 
         static constexpr size_t stack_size = max_depth + 3;
@@ -775,156 +703,6 @@ struct BVH {
     std::unique_ptr<size_t[]> primitive_indices;
     size_t                    node_count = 0;
     float                     traversal_cost = 1.5f;
-};
-
-/// Triangle primitive, compatible with the Accel structure.
-struct Triangle {
-    Vec3 p0, e1, e2, n;
-
-    Triangle() = default;
-    Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2)
-        : p0(p0), e1(p0 - p1), e2(p2 - p0)
-    {
-        n = cross(e1, e2);
-    }
-
-    Vec3 p1() const { return p0 - e1; }
-    Vec3 p2() const { return p0 + e2; }
-
-    BBox bounding_box() const {
-        BBox bbox(p0);
-        bbox.extend(p1());
-        bbox.extend(p2());
-        return bbox;
-    }
-
-    Vec3 center() const {
-        return (p0 + p1() + p2()) * (Scalar(1.0) / Scalar(3.0));
-    }
-
-    struct Intersection {
-        Scalar distance; ///< Distance along the ray.
-        Scalar u;        ///< First barycentric coordinate.
-        Scalar v;        ///< Second barycentric coordinate.
-
-        Intersection() = default;
-        Intersection(Scalar distance, Scalar u, Scalar v)
-            : distance(distance), u(u), v(v)
-        {}
-    };
-
-    std::optional<Intersection> intersect(const Ray& ray) const {
-        static constexpr Scalar tolerance = Scalar(1e-9);
-
-        auto c = p0 - ray.origin;
-        auto r = cross(ray.direction, c);
-        auto det = dot(n, ray.direction);
-        auto abs_det = std::fabs(det);
-
-        auto u = prodsign(dot(r, e2), det);
-        auto v = prodsign(dot(r, e1), det);
-        auto w = abs_det - u - v;
-
-        if (u >= -tolerance && v >= -tolerance && w >= -tolerance) {
-            auto t = prodsign(dot(n, c), det);
-            if (t >= abs_det * ray.tmin && abs_det * ray.tmax > t) {
-                auto inv_det = Scalar(1.0) / abs_det;
-                return std::make_optional(Intersection(t * inv_det, u * inv_det, v * inv_det));
-            }
-        }
-
-        return std::nullopt;
-    }
-};
-
-/// High-level API entry point to create BVHs from primitive arrays.
-/// This API is simpler but it may be wasteful of memory in certain cases.
-/// For those cases, use the lower-level BVH structure.
-template <typename Primitive>
-struct Accel {
-    Accel() = default;
-    Accel(Primitive* primitives, size_t primitive_count)
-        : primitives(primitives), primitive_count(primitive_count)
-    {}
-
-    /// Builds the acceleration structure. 
-    void build(bool fast = false) {
-        assert(primitive_count > 0);
-        std::unique_ptr<BBox[]> bboxes(new BBox[primitive_count]);
-        std::unique_ptr<Vec3[]> centers(new Vec3[primitive_count]);
-        #pragma omp parallel for
-        for (size_t i = 0; i < primitive_count; ++i) {
-            bboxes[i]  = primitives[i].bounding_box();
-            centers[i] = primitives[i].center();
-        }
-
-        bvh.build(bboxes.get(), centers.get(), primitive_count);
-        if (!fast) bvh.optimize();
-
-        // Remap primitives to avoid indirect access through primitive indices
-        std::unique_ptr<Primitive[]> primitives_copy(new Primitive[primitive_count]);
-        std::move(primitives, primitives + primitive_count, primitives_copy.get());
-        for (size_t i = 0; i < primitive_count; ++i)
-            primitives[i] = std::move(primitives_copy[bvh.primitive_indices[i]]);
-    }
-
-    using Intersection = typename Primitive::Intersection;
-
-    struct ClosestIntersector {
-        using Result = Intersection;
-
-        ClosestIntersector() = default;
-        ClosestIntersector(const Accel* accel)
-            : primitives(accel->primitives)
-        {}
-
-        std::optional<Intersection> operator () (size_t index, const Ray& ray) const {
-            return primitives[index].intersect(ray);
-        }
-
-        const Primitive* primitives = nullptr;
-    };
-
-    /// Returns the closest intersection with a given ray.
-    /// The intersection type is a pair made of the primitive index and the intersection
-    /// value returned by the primitive, which contains at least a distance.
-    std::optional<std::pair<size_t, Intersection>> intersect_closest(const Ray& ray) const {
-        return bvh.intersect<false>(ray, ClosestIntersector(this));
-    }
-
-    struct AnyIntersector {
-        struct Result {
-            Scalar distance;
-
-            Result() = default;
-            Result(Scalar distance)
-                : distance(distance)
-            {}
-        };
-
-        AnyIntersector() = default;
-        AnyIntersector(const Accel* accel)
-            : primitives(accel->primitives)
-        {}
-
-        std::optional<Result> operator () (size_t index, const Ray& ray) const {
-            auto hit = primitives[index].intersect(ray);
-            if (hit)
-                return std::make_optional(Result(hit->distance));
-            return std::nullopt;
-        }
-
-        const Primitive* primitives = nullptr;
-    };
-
-    /// Returns true if there is any intersection with the given ray, otherwise false.
-    bool intersect_any(const Ray& ray) const {
-        return bvh.intersect<true>(ray, AnyIntersector(this)).has_value();
-    }
-
-    Primitive* primitives = nullptr;
-    size_t primitive_count = 0;
-    BVH<> bvh;
 };
 
 }
