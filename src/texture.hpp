@@ -17,3 +17,4 @@ struct Texture {
 };
 
 glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords);
+glm::vec4 SampleBilinear(Texture const & texture, glm::vec2 uvCoords);

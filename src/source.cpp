@@ -173,7 +173,7 @@ glm::vec3 Render(
    != static_cast<size_t>(-1)
   ) {
     diffuseTex =
-      Sample(
+      SampleBilinear(
         scene.textures[scene.meshes[triangle->meshIdx].diffuseTextureIdx]
       , uvcoord
       );

@@ -95,3 +95,26 @@ glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords) {
   uint64_t idx = y + x*texture.height;
   return texture.data[idx];
 }
+
+glm::vec4 SampleBilinear(Texture const & texture, glm::vec2 uvCoords) {
+  glm::vec2 res = glm::vec2(texture.width, texture.height);
+
+  glm::vec2 st = uvCoords*res - glm::vec2(0.5f);
+
+  glm::vec2 iuv = glm::floor(st);
+  glm::vec2 fuv = glm::fract(st);
+
+  glm::vec4
+    a = Sample(texture, (iuv + glm::vec2(0.5f,0.5f))/res)
+  , b = Sample(texture, (iuv + glm::vec2(1.5f,0.5f))/res)
+  , c = Sample(texture, (iuv + glm::vec2(0.5f,1.5f))/res)
+  , d = Sample(texture, (iuv + glm::vec2(1.5f,1.5f))/res)
+  ;
+
+  return
+    mix(
+      mix(a, b, fuv.x)
+    , mix( c, d, fuv.x)
+    , fuv.y
+    );
+}
