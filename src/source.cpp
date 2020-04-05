@@ -222,6 +222,9 @@ int main(int argc, char** argv) {
       "D,camera-distance", "camera (scaled) distance"
     , cxxopts::value<float>()->default_value("1.0f")
     ) (
+      "j,num-threads", "number of worker threads, 0 is automatic"
+    , cxxopts::value<uint16_t>()->default_value("0")
+    ) (
       "U,up-axis", "model up-axis set to Z (Y when not set)"
     , cxxopts::value<bool>()->default_value("false")
     ) (
@@ -253,6 +256,7 @@ int main(int argc, char** argv) {
   bool         upAxisZ;
   bool         displayProgress;
   bool         useBvh;
+  uint16_t     numThreads;
 
   { // -- collect values
     if (!result["file"].count()) {
@@ -268,6 +272,7 @@ int main(int argc, char** argv) {
     cameraFov       = result["fov"]            .as<float>();
     displayProgress = result["noprogress"]     .as<bool>();
     upAxisZ         = result["up-axis"]        .as<bool>();
+    numThreads      = result["num-threads"]    .as<uint16_t>();
     useBvh          = result["bvh"]            .as<bool>();
 
     { // resolution
@@ -285,6 +290,8 @@ int main(int argc, char** argv) {
     displayProgress = !displayProgress;
     useBvh          = !useBvh;
   }
+
+  omp_set_num_threads(numThreads == 0 ? omp_get_max_threads()-1 : numThreads);
 
   spdlog::info("Loading model {}", inputFile);
   auto scene = Scene::Construct(inputFile);
@@ -335,6 +342,7 @@ int main(int argc, char** argv) {
     std::atomic<size_t> progress = 0u;
     int const masterTid = omp_get_thread_num();
     size_t mainThreadUpdateIt = 0;
+
     #pragma omp parallel for
     for (size_t i = 0u; i < buffer.Width()*buffer.Height(); ++ i) {
       // -- render out at pixel X, Y
