@@ -18,10 +18,17 @@ struct Mesh {
 struct Scene {
   Scene() = default;
 
-  static Scene Construct(std::string const & filename);
+  static Scene Construct(
+    std::string const & filename
+  , std::string const & environmentMapFilename = ""
+  , bool upAxisZ = false
+  , bool optimizeBvh = false
+  );
 
   std::vector<Texture> textures;
   std::vector<Mesh> meshes;
+
+  Texture environmentTexture;
 
   AccelerationStructure accelStructure;
 

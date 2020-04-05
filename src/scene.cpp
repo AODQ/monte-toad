@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include "../ext/bvh.hpp"
+#include <glm/ext.hpp>
 #include <spdlog/spdlog.h>
 
 #include <filesystem>
@@ -13,6 +14,7 @@ namespace {
   std::vector<Triangle> LoadAssetIntoScene(
     Scene & model
   , std::string const & filename
+  , bool upAxisZ
   ) {
     Assimp::Importer importer;
     aiScene const * asset =
@@ -41,7 +43,7 @@ namespace {
     for (size_t meshIt = 0; meshIt < asset->mNumMeshes; ++ meshIt) {
       auto const & mesh = *asset->mMeshes[meshIt];
 
-      {
+      { // -- process mesh
         Mesh modelMesh;
 
         aiMaterial * material = asset->mMaterials[mesh.mMaterialIndex];
@@ -127,6 +129,12 @@ namespace {
             )
           );
 
+        // fix orientation of vertices if upAxisZ is set
+        if (upAxisZ) {
+          std::swap(triangles.back().v1, triangles.back().v2);
+          triangles.back().v2 *= -1.0f;
+        }
+
         // assign bbox
         for (auto vert : {v0, v1, v2}) {
           model.bboxMin =
@@ -150,7 +158,12 @@ namespace {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Scene Scene::Construct(std::string const & filename) {
+Scene Scene::Construct(
+  std::string const & filename
+, std::string const & environmentMapFilename
+, bool upAxisZ
+, bool optimizeBvh
+) {
   Scene scene;
   scene.bboxMin = glm::vec3(std::numeric_limits<float>::max());
   scene.bboxMax = glm::vec3(std::numeric_limits<float>::min());
@@ -158,9 +171,13 @@ Scene Scene::Construct(std::string const & filename) {
   // load models & parse into BVH tree
   scene.accelStructure =
     AccelerationStructure::Construct(
-      std::move(LoadAssetIntoScene(scene, filename)),
-      true
+      std::move(LoadAssetIntoScene(scene, filename, upAxisZ))
+    , optimizeBvh
     );
+
+  if(environmentMapFilename != "") {
+    scene.environmentTexture = Texture::Construct(environmentMapFilename);
+  }
 
   return scene;
 }

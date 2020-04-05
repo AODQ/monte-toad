@@ -46,8 +46,8 @@ struct AccelerationStructure {
   bvh::BVH<> boundingVolume;
 
   static AccelerationStructure Construct(
-    std::vector<Triangle> && triangles,
-    bool optimize = false
+    std::vector<Triangle> && triangles
+  , bool optimize = false
   );
 };
 

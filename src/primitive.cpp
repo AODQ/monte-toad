@@ -67,8 +67,8 @@ std::optional<Intersection> RayTriangleIntersection(
 
 ////////////////////////////////////////////////////////////////////////////////
 AccelerationStructure AccelerationStructure::Construct(
-  std::vector<Triangle> && trianglesMv,
-  bool optimize
+  std::vector<Triangle> && trianglesMv
+, bool optimize
 ) {
   AccelerationStructure accel;
   accel.triangles = std::move(trianglesMv);

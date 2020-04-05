@@ -5,6 +5,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../ext/stb_image.hpp"
 
+#include <filesystem>
+
 ////////////////////////////////////////////////////////////////////////////////
 Texture Texture::Construct(std::string const & filename) {
   stbi_set_flip_vertically_on_load(false);
@@ -38,8 +40,7 @@ Texture Texture::Construct(std::string const & filename) {
 
       // Since we ask sbti to load in STBI_rgb_alpha format, the channel is set
       // as 4 even if the image itself does not support 4
-      uint8_t const * byte =
-        rawByteData + y*4 + x*texture.height*4;
+      uint8_t const * byte = rawByteData + texture.Idx(x, y)*4;
 
       // Load all channels for the color, note that in cases of textures that
       // only support red channel, rgb channel, etc. we want special behavior
@@ -77,6 +78,25 @@ Texture Texture::Construct(int width, int height, void * data) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+CubemapTexture CubemapTexture::Construct(std::string const & baseFilename) {
+  auto basePath = std::filesystem::path{baseFilename};
+  auto baseExtension = basePath.extension();
+
+  CubemapTexture texture;
+
+  // remove extension to load files with -0.ext, ..., -5.ext
+  basePath.replace_extension(""); //
+  for (size_t i = 0; i < 6; ++ i) {
+    texture.textures[i] =
+      Texture::Construct(
+        (basePath / "-" / std::to_string(i) / baseExtension).string()
+      );
+  }
+
+  return texture;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords) {
   uvCoords = glm::mod(uvCoords, glm::vec2(1.0f));
   /* uvCoords = glm::clamp(uvCoords, glm::vec2(0.0f), glm::vec2(1.0f)); */
@@ -92,10 +112,10 @@ glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords) {
       )
   ;
 
-  uint64_t idx = y + x*texture.height;
-  return texture.data[idx];
+  return texture.data[texture.Idx(x, y)];
 }
 
+////////////////////////////////////////////////////////////////////////////////
 glm::vec4 SampleBilinear(Texture const & texture, glm::vec2 uvCoords) {
   glm::vec2 res = glm::vec2(texture.width, texture.height);
 
@@ -116,5 +136,23 @@ glm::vec4 SampleBilinear(Texture const & texture, glm::vec2 uvCoords) {
       mix(a, b, fuv.x)
     , mix( c, d, fuv.x)
     , fuv.y
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+glm::vec4 Sample(CubemapTexture const & texture, glm::vec3 dir) {
+  // TODO
+  return glm::vec4(1.0f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+glm::vec4 Sample(Texture const & texture, glm::vec3 dir) {
+  return
+    Sample(
+      texture,
+      glm::vec2(
+          0.5f + (glm::atan(dir.x, dir.z) / 6.283185307f)
+        , 0.5f - (glm::asin(-dir.y)/3.14159f)
+      )
     );
 }

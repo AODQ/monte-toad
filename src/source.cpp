@@ -151,7 +151,13 @@ glm::vec3 Render(
   Triangle const * triangle =
     Raycast(scene, eyeOri, eyeDir, intersection, useBvh);
 
-  if (!triangle) { return glm::vec3(0.2f, 0.2f, 0.2f); }
+  if (!triangle) {
+    return
+      scene.environmentTexture.Valid()
+    ? Sample(scene.environmentTexture, eyeDir)
+    : glm::vec3(0.2f, 0.2f, 0.2f)
+    ;
+  }
 
   glm::vec3 normal =
     glm::normalize(
@@ -179,9 +185,21 @@ glm::vec3 Render(
       );
   }
 
+  glm::vec3 reflColor = glm::vec3(1.0f);
+
+  if (scene.environmentTexture.Valid()) {
+    reflColor =
+      Sample(scene.environmentTexture, glm::reflect(-eyeDir, normal));
+  }
+
   return
+    /* normal */
     diffuseTex
-  * (glm::vec3(0.5f) + glm::abs(glm::dot(normal, glm::vec3(-0.5f, 0.5f, -0.5f))))
+  * reflColor
+  /* * ( */
+    /* glm::vec3(0.1f) */
+  /* + glm::dot(normal, glm::normalize(glm::vec3(0.5f, 0.5f, -0.5f)))*0.9f */
+  /* ) */
   ;
 }
 
@@ -216,7 +234,15 @@ int main(int argc, char** argv) {
       "r,resolution", "window resolution \"Width,Height\"",
       cxxopts::value<std::vector<uint32_t>>()->default_value("640,480")
     ) (
-      "B,bvh", "Disallows use of BVH acceleration structure"
+      "e,environment-map"
+    , "environment map texture location (must be in spherical format, for now."
+    , cxxopts::value<std::string>()->default_value("")
+    ) (
+      "no-bvh", "disallows use of BVH acceleration structure"
+    , cxxopts::value<bool>()->default_value("false")
+    ) (
+      "no-optimize-bvh"
+    , "disables bvh tree optimization (slower construction, faster traversal"
     , cxxopts::value<bool>()->default_value("false")
     ) (
       "D,camera-distance", "camera (scaled) distance"
@@ -253,9 +279,11 @@ int main(int argc, char** argv) {
   float        cameraHeight;
   float        cameraFov;
   glm::i32vec2 resolution;
+  std::string  environmentMapFilename;
   bool         upAxisZ;
   bool         displayProgress;
   bool         useBvh;
+  bool         optimizeBvh;
   uint16_t     numThreads;
 
   { // -- collect values
@@ -273,7 +301,9 @@ int main(int argc, char** argv) {
     displayProgress = result["noprogress"]     .as<bool>();
     upAxisZ         = result["up-axis"]        .as<bool>();
     numThreads      = result["num-threads"]    .as<uint16_t>();
-    useBvh          = result["bvh"]            .as<bool>();
+    useBvh          = result["no-bvh"]         .as<bool>();
+    optimizeBvh     = result["no-optimize-bvh"].as<bool>();
+    environmentMapFilename = result["environment-map"].as<std::string>();
 
     { // resolution
       auto resolutionV = result["resolution"].as<std::vector<uint32_t>>();
@@ -289,12 +319,14 @@ int main(int argc, char** argv) {
     cameraFov       = 180.0f - cameraFov;
     displayProgress = !displayProgress;
     useBvh          = !useBvh;
+    optimizeBvh     = !optimizeBvh;
   }
 
   omp_set_num_threads(numThreads == 0 ? omp_get_max_threads()-1 : numThreads);
 
   spdlog::info("Loading model {}", inputFile);
-  auto scene = Scene::Construct(inputFile);
+  auto scene =
+    Scene::Construct(inputFile, environmentMapFilename, upAxisZ, optimizeBvh);
   if (scene.meshes.size() == 0) {
     spdlog::error("Model loading failed, exitting");
     return 1;
@@ -317,17 +349,13 @@ int main(int argc, char** argv) {
 
   Camera camera;
   { // -- camera setup
-    camera.up = glm::vec3(0.0f, !upAxisZ, upAxisZ);
+    camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
     camera.fov = cameraFov;
     camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
     camera.ori =
       (scene.bboxMax + scene.bboxMin) * 0.5f
     + (scene.bboxMax - scene.bboxMin)
-    * glm::vec3(
-        glm::cos(cameraTheta),
-        cameraHeight*(!upAxisZ) + glm::sin(cameraTheta)*upAxisZ,
-        cameraHeight*upAxisZ    + glm::sin(cameraTheta)*(!upAxisZ)
-      )
+    * glm::vec3(glm::cos(cameraTheta), cameraHeight, glm::sin(cameraTheta))
     * cameraDist
     ;
   }
