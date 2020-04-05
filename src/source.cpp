@@ -135,6 +135,7 @@ glm::vec3 Render(
   glm::vec2 const uv
 , Scene const & scene
 , Camera const & camera
+, bool useBvh
 ) {
   glm::vec3 eyeOri, eyeDir;
   eyeOri = camera.ori;
@@ -146,33 +147,41 @@ glm::vec3 Render(
     , glm::radians(camera.fov)
     );
 
-  float triDistance; glm::vec2 triUv;
+  Intersection intersection;
   Triangle const * triangle =
-    Raycast(scene, eyeOri, eyeDir, triDistance, triUv);
+    Raycast(scene, eyeOri, eyeDir, intersection, useBvh);
 
   if (!triangle) { return glm::vec3(0.2f, 0.2f, 0.2f); }
 
   glm::vec3 normal =
     glm::normalize(
-      BarycentricInterpolation(triangle->n0, triangle->n1, triangle->n2, triUv)
+      BarycentricInterpolation(
+        triangle->n0, triangle->n1, triangle->n2
+      , intersection.barycentricUv
+      )
     );
   glm::vec2 uvcoord =
     BarycentricInterpolation(
       triangle->uv0, triangle->uv1, triangle->uv2
-    , triUv
+    , intersection.barycentricUv
     );
-  glm::vec3 ori = eyeOri + eyeDir*triDistance;
+  glm::vec3 ori = eyeOri + eyeDir*intersection.distance;
     (void)ori;
 
-  glm::vec3 diffuseTex =
-    Sample(
-      scene.textures[scene.meshes[triangle->meshIdx].diffuseTextureIdx]
-    , uvcoord
-    );
+  glm::vec3 diffuseTex = glm::vec3(0.2f);
+  if (scene.meshes[triangle->meshIdx].diffuseTextureIdx
+   != static_cast<size_t>(-1)
+  ) {
+    diffuseTex =
+      Sample(
+        scene.textures[scene.meshes[triangle->meshIdx].diffuseTextureIdx]
+      , uvcoord
+      );
+  }
 
   return
     diffuseTex
-  * (0.5f + glm::abs(glm::dot(normal, glm::vec3(-0.5f, 0.5f, 0.5f))))
+  * (glm::vec3(0.5f) + glm::abs(glm::dot(normal, glm::vec3(-0.5f, 0.5f, -0.5f))))
   ;
 }
 
@@ -207,6 +216,9 @@ int main(int argc, char** argv) {
       "r,resolution", "window resolution \"Width,Height\"",
       cxxopts::value<std::vector<uint32_t>>()->default_value("640,480")
     ) (
+      "B,bvh", "Disallows use of BVH acceleration structure"
+    , cxxopts::value<bool>()->default_value("false")
+    ) (
       "D,camera-distance", "camera (scaled) distance"
     , cxxopts::value<float>()->default_value("1.0f")
     ) (
@@ -240,6 +252,7 @@ int main(int argc, char** argv) {
   glm::i32vec2 resolution;
   bool         upAxisZ;
   bool         displayProgress;
+  bool         useBvh;
 
   { // -- collect values
     if (!result["file"].count()) {
@@ -255,6 +268,7 @@ int main(int argc, char** argv) {
     cameraFov       = result["fov"]            .as<float>();
     displayProgress = result["noprogress"]     .as<bool>();
     upAxisZ         = result["up-axis"]        .as<bool>();
+    useBvh          = result["bvh"]            .as<bool>();
 
     { // resolution
       auto resolutionV = result["resolution"].as<std::vector<uint32_t>>();
@@ -266,9 +280,10 @@ int main(int argc, char** argv) {
     }
 
     // convert command-line units to application units
-    cameraTheta = glm::radians(cameraTheta);
-    cameraFov = 180.0f - cameraFov;
+    cameraTheta     = glm::radians(cameraTheta);
+    cameraFov       = 180.0f - cameraFov;
     displayProgress = !displayProgress;
+    useBvh          = !useBvh;
   }
 
   spdlog::info("Loading model {}", inputFile);
@@ -278,12 +293,20 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  spdlog::info("Model triangles: {}", scene.scene.size());
+  spdlog::info("Model triangles: {}", scene.accelStructure.triangles.size());
   spdlog::info("Model meshes: {}", scene.meshes.size());
   spdlog::info("Model textures: {}", scene.textures.size());
   spdlog::info("Model bounds: {} -> {}", scene.bboxMin, scene.bboxMax);
   spdlog::info("Model center: {}", (scene.bboxMax + scene.bboxMin) * 0.5f);
   spdlog::info("Model size: {}", (scene.bboxMax - scene.bboxMin));
+  spdlog::info(
+    "BVH nodes: {}"
+  , scene.accelStructure.boundingVolume.node_count
+  );
+  spdlog::info(
+    "BVH traversal cost: {}"
+  , scene.accelStructure.boundingVolume.traversal_cost
+  );
 
   Camera camera;
   { // -- camera setup
@@ -319,7 +342,7 @@ int main(int argc, char** argv) {
       glm::vec2 uv = glm::vec2(x, y) / buffer.Dim();
       uv = (uv - 0.5f) * 2.0f;
       uv.y *= buffer.AspectRatio();
-      buffer.At(i) = Render(uv, scene, camera);
+      buffer.At(i) = Render(uv, scene, camera, useBvh);
 
       // record & emit progress
       progress += 1;
