@@ -53,11 +53,11 @@ set(SOURCE_LIST
   "src/texture.cpp"
 )
 set(HEADER_LIST
+  "ext/cxxopts.hpp"
+  "ext/stb_image.hpp"
   "src/scene.hpp"
   "src/span.hpp"
   "src/texture.hpp"
-  "src/ext/cxxopts.hpp"
-  "src/ext/stb_image.hpp"
 )
 
 ## add exceutable w/ source list and set compile options

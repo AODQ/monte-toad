@@ -1,6 +1,6 @@
 #include "scene.hpp"
-#include "ext/cxxopts.hpp"
 
+#include "../ext/cxxopts.hpp"
 #include <glm/glm.hpp>
 #include <omp.h>
 #include <spdlog/spdlog.h>

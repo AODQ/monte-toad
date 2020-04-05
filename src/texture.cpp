@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "ext/stb_image.hpp"
+#include "../ext/stb_image.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 Texture Texture::Construct(std::string const & filename) {
