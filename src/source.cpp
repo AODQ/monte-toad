@@ -1,3 +1,7 @@
+/*
+*/
+
+#include "render.hpp"
 #include "scene.hpp"
 
 #include "../ext/cxxopts.hpp"
@@ -99,79 +103,6 @@ template<> struct fmt::formatter<glm::vec2> {
     return format_to(ctx.out(), "({}, {})", vec.x, vec.y);
   }
 };
-
-////////////////////////////////////////////////////////////////////////////////
-glm::vec3 Render(
-  glm::vec2 const uv
-, Scene const & scene
-, Camera const & camera
-, bool useBvh
-) {
-  glm::vec3 eyeOri, eyeDir;
-  eyeOri = camera.ori;
-  eyeDir =
-    LookAt(
-      glm::normalize(camera.lookat - camera.ori)
-    , uv
-    , camera.up
-    , glm::radians(camera.fov)
-    );
-
-  Intersection intersection;
-  Triangle const * triangle =
-    Raycast(scene, eyeOri, eyeDir, intersection, useBvh);
-
-  if (!triangle) {
-    return
-      scene.environmentTexture.Valid()
-    ? Sample(scene.environmentTexture, eyeDir)
-    : glm::vec3(0.2f, 0.2f, 0.2f)
-    ;
-  }
-
-  glm::vec3 normal =
-    glm::normalize(
-      BarycentricInterpolation(
-        triangle->n0, triangle->n1, triangle->n2
-      , intersection.barycentricUv
-      )
-    );
-  glm::vec2 uvcoord =
-    BarycentricInterpolation(
-      triangle->uv0, triangle->uv1, triangle->uv2
-    , intersection.barycentricUv
-    );
-  glm::vec3 ori = eyeOri + eyeDir*intersection.distance;
-    (void)ori;
-
-  glm::vec3 diffuseTex = glm::vec3(0.2f);
-  if (scene.meshes[triangle->meshIdx].diffuseTextureIdx
-   != static_cast<size_t>(-1)
-  ) {
-    diffuseTex =
-      SampleBilinear(
-        scene.textures[scene.meshes[triangle->meshIdx].diffuseTextureIdx]
-      , uvcoord
-      );
-  }
-
-  glm::vec3 reflColor = glm::vec3(1.0f);
-
-  if (scene.environmentTexture.Valid()) {
-    reflColor =
-      Sample(scene.environmentTexture, glm::reflect(-eyeDir, normal));
-  }
-
-  return
-    /* normal */
-    diffuseTex
-  * reflColor
-  /* * ( */
-    /* glm::vec3(0.1f) */
-  /* + glm::dot(normal, glm::normalize(glm::vec3(0.5f, 0.5f, -0.5f)))*0.9f */
-  /* ) */
-  ;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 template<> struct fmt::formatter<glm::vec3> {

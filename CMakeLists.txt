@@ -49,6 +49,7 @@ find_package(OpenMP)
 ## source list for application (src/include)
 set(SOURCE_LIST
   "src/primitive.cpp"
+  "src/render.cpp"
   "src/scene.cpp"
   "src/source.cpp"
   "src/texture.cpp"
@@ -58,6 +59,7 @@ set(HEADER_LIST
   "ext/cxxopts.hpp"
   "ext/stb_image.hpp"
   "src/primitive.hpp"
+  "src/render.hpp"
   "src/scene.hpp"
   "src/span.hpp"
   "src/texture.hpp"
