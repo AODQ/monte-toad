@@ -92,36 +92,6 @@ void SaveImage(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up, float fovRadians) {
-  glm::vec3
-    ww = glm::normalize(dir),
-    uu = glm::normalize(glm::cross(ww, up)),
-    vv = glm::normalize(glm::cross(uu, ww));
-  return
-    glm::normalize(
-      glm::mat3(uu, vv, ww)
-    * glm::vec3(uv.x, uv.y, fovRadians)
-    );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-struct Camera {
-  glm::vec3 ori;
-  glm::vec3 lookat;
-  glm::vec3 up;
-  float fov;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-template <typename U>
-U BarycentricInterpolation(
-  U const & v0, U const & v1, U const & v2
-, glm::vec2 const & uv
-) {
-  return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0);
-}
-
-////////////////////////////////////////////////////////////////////////////////
 template<> struct fmt::formatter<glm::vec2> {
   constexpr auto parse(format_parse_context & ctx) { return ctx.begin(); }
 
