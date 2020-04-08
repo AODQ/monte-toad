@@ -1,7 +1,10 @@
 #include "render.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include "primitive.hpp"
 #include "scene.hpp"
+#include "texture.hpp"
 
 #include <random>
 
@@ -34,36 +37,74 @@ struct PixelInfo {
 
   std::random_device device;
   std::mt19937 generator { device() };
-  std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+  std::uniform_real_distribution<float> distribution{0.0f, 1.0f};
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 struct RaycastInfo {
+  RaycastInfo() = default;
   Triangle const * triangle;
   Intersection intersection;
   glm::vec3 normal;
+  glm::vec2 uv;
+
+  static RaycastInfo Construct(
+    Triangle const * triangle
+  , Intersection intersection
+  ) {
+    RaycastInfo self;
+    self.triangle = triangle;
+    self.intersection = intersection;
+
+    // -- unpack triangle data if valid
+    if (self.triangle) {
+      self.normal =
+        glm::normalize(
+          BarycentricInterpolation(
+            self.triangle->n0 , self.triangle->n1 , self.triangle->n2
+          , self.intersection.barycentricUv
+          )
+        );
+
+      self.uv =
+        glm::normalize(
+          BarycentricInterpolation(
+            self.triangle->uv0 , self.triangle->uv1 , self.triangle->uv2
+          , self.intersection.barycentricUv
+          )
+        );
+
+      if (self.normal == glm::vec3(0.0f)) {
+        // calculate them
+        spdlog::info("Good to calculate");
+      }
+    }
+
+    return self;
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-float SampleUniform(PixelInfo const & pi) {
-  return pi.distribution(pi.generator);
+float SampleUniform(PixelInfo & pi) {
+  return pi.distribution.operator()(pi.generator);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec2 SampleUniform2(PixelInfo const & pi) {
+glm::vec2 SampleUniform2(PixelInfo & pi) {
   return glm::vec2(SampleUniform(pi), SampleUniform(pi));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 SampleUniform3(PixelInfo const & pi) {
+glm::vec3 SampleUniform3(PixelInfo & pi) {
+  (void)SampleUniform3;
   return glm::vec3(SampleUniform(pi), SampleUniform(pi), SampleUniform(pi));
 }
 
 ///////////////////////////////////////////////////////////////////////////////u/
 std::pair<glm::vec3, glm::vec3> CalculateXY(glm::vec3 const & normal) {
   glm::vec3 binormal = glm::vec3(1.0f, 0.0f, 0.0f); // TODO swap if eq to normal
-  binormal = glm::normalize(glm::cros(normal, binormal));
-  bitangent = glm::cross(binormal, normal);
+  binormal = glm::normalize(glm::cross(normal, binormal));
+  glm::vec3 bitangent = glm::cross(binormal, normal);
   return std::make_pair(binormal, bitangent);
 }
 
@@ -80,57 +121,99 @@ glm::vec3 ToCartesian(float cosTheta, float phi) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-float BsdfPdf(RaycastInfo const & raycastInfo , glm::vec3 wi , glm::vec3 wo) {
+float BsdfPdf(RaycastInfo const & results, glm::vec3 wi, glm::vec3 wo) {
   return 1.0f/3.14159f;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 std::pair<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
-  PixelInfo const & pixelInfo
-, RaycastInfo const & raycastInfo
-, glm::vec3 wi
+  PixelInfo & pixelInfo
+, RaycastInfo const & results
+, glm::vec3 const & wi
 ) {
   glm::vec2 u = SampleUniform2(pixelInfo);
   glm::vec3 wo =
     ReorientHemisphere(
       glm::normalize(ToCartesian(glm::sqrt(u.y), Tau*u.x))
+    , results.normal
     );
-  return std::make_pair(wo, BsdfPdf(raycastInfo, wi, wo));
+  return std::make_pair(wo, BsdfPdf(results, wi, wo));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 BsdfFs(RaycastInfo const & raycastInfo, glm::vec3 wi, glm::vec3 wo) {
-  return glm::dot(raycastInfo.normal, wo) * glm::vec3(0.2f);
+glm::vec3 BsdfFs(
+  Scene const & scene
+, RaycastInfo const & results
+, glm::vec3 wi, glm::vec3 wo
+) {
+  glm::vec3 diffuse = glm::vec3(1.0f);
+  auto const & mesh = scene.meshes[results.triangle->meshIdx];
+  if (mesh.diffuseTextureIdx != static_cast<size_t>(-1)) {
+    diffuse =
+      SampleBilinear(scene.textures[mesh.diffuseTextureIdx], results.uv);
+  }
+  return diffuse;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 enum class PropagationStatus {
-  Continue
-, End
-, IndirectAccumulation
-, DirectAccumulation
+  Continue // normal behaviour, continue propagation
+, End // no propagation could occur (apply only indirect accumulation)
+, IndirectAccumulation // emitter has been indirectly hit (such as for MIS)
+, DirectAccumulation // emitter has been directlly hit, end propagation loop
 };
 
 PropagationStatus Propagate(
-  PixelInfo const & pixelInfo
-, RaycastInfo raycastResults
+  PixelInfo & pixelInfo
+, Scene const & scene
+, RaycastInfo & results
 , glm::vec3 & radiance
 , glm::vec3 & accumulatedIrradiance
 , glm::vec3 & ro
 , glm::vec3 & rd
 , uint16_t step
+, bool useBvh
 ) {
-  if (raycastResults.first == nullptr) { return PropagationStatus::End; }
+  if (results.triangle == nullptr) {
+    // if no collision is made, either all direct accumulation must be
+    // discarded, or if there's an environment map, that can be used as an
+    // emission source
+    if (!scene.environmentTexture.Valid()) {
+      return PropagationStatus::End;
+    }
+    glm::vec3 environmentColor = Sample(scene.environmentTexture, rd);
+    accumulatedIrradiance = radiance * environmentColor;
+    /* accumulatedIrradiance = radiance; */
+    return PropagationStatus::DirectAccumulation;
+  }
 
-  glm::vec3 rayWo = BsdfSample(pixelInfo, raycastInfo, rd);
-  // TODO
+  auto [bsdfRayWo, bsdfPdf] = BsdfSample(pixelInfo, results, rd);
+  radiance *= BsdfFs(scene, results, rd, bsdfRayWo)/* * bsdfPdf*/;
 
+  { // apply next raycast
+    rd = bsdfRayWo;
+    ro += rd*results.intersection.distance;
+    auto [triangle, intersection] = Raycast(scene, ro, rd, useBvh);
+    results = RaycastInfo::Construct(triangle, intersection);
+  }
+  return PropagationStatus::Continue;
 }
 
 } // -- end anon namespace
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 Render(
+/*
+  General order for how to apply light transport:
+    * get camera/pixel info
+    * apply initial raycast (that way we can apply special behaviour, like bg)
+    * enter loop
+      - call Progagate
+        - get next ray direction sample
+        - apply bsdf, shading, etc
+        - perform raycast for next propagation
+      - determine if loop should end or continue
+*/
+RenderResults Render(
   glm::vec2 const uv
 , Scene const & scene
 , Camera const & camera
@@ -146,60 +229,55 @@ glm::vec3 Render(
     , glm::radians(camera.fov)
     );
 
-  glm::vec3 absorbedColor = glm::vec3(1.0f);
+  // get pixel info
+  auto pixelInfo = PixelInfo{};
 
-  Intersection intersection;
-  Triangle const * triangle =
-    Raycast(scene, eyeOri, eyeDir, intersection, useBvh);
-
-  if (!triangle) {
-    return
-      scene.environmentTexture.Valid()
-    ? Sample(scene.environmentTexture, eyeDir)
-    : glm::vec3(0.2f, 0.2f, 0.2f)
-    ;
+  // apply initial raycast
+  RaycastInfo raycastResult;
+  {
+    auto [triangle, intersection] = Raycast(scene, eyeOri, eyeDir, useBvh);
+    raycastResult = RaycastInfo::Construct(triangle, intersection);
   }
 
-  glm::vec3 normal =
-    glm::normalize(
-      BarycentricInterpolation(
-        triangle->n0, triangle->n1, triangle->n2
-      , intersection.barycentricUv
-      )
-    );
-  glm::vec2 uvcoord =
-    BarycentricInterpolation(
-      triangle->uv0, triangle->uv1, triangle->uv2
-    , intersection.barycentricUv
-    );
-  glm::vec3 ori = eyeOri + eyeDir*intersection.distance;
-    (void)ori;
+  if (!raycastResult.triangle) {
+    RenderResults renderResults;
+    renderResults.color = glm::vec3(uv, 0.5f);
+    renderResults.valid = true;
+    return renderResults;
+  }
 
-  glm::vec3 diffuseTex = glm::vec3(0.2f);
-  if (scene.meshes[triangle->meshIdx].diffuseTextureIdx
-   != static_cast<size_t>(-1)
-  ) {
-    diffuseTex =
-      SampleBilinear(
-        scene.textures[scene.meshes[triangle->meshIdx].diffuseTextureIdx]
-      , uvcoord
+  // iterate light transport
+  bool hit = false;
+  glm::vec3
+    radiance = glm::vec3(1.0f)
+  , accumulatedIrradiance = glm::vec3(1.0f);
+
+  for (size_t it = 0; it < 4; ++ it) {
+    PropagationStatus status =
+      Propagate(
+        pixelInfo
+      , scene
+      , raycastResult
+      , radiance
+      , accumulatedIrradiance
+      , eyeOri
+      , eyeDir
+      , it
+      , useBvh
       );
+
+    if (status == PropagationStatus::End) { break; }
+    if (status == PropagationStatus::IndirectAccumulation) {
+      hit = 1;
+    }
+    if (status == PropagationStatus::DirectAccumulation) {
+      hit = 1;
+      break;
+    }
   }
 
-  glm::vec3 reflColor = glm::vec3(1.0f);
-
-  if (scene.environmentTexture.Valid()) {
-    reflColor =
-      Sample(scene.environmentTexture, glm::reflect(-eyeDir, normal));
-  }
-
-  return
-    /* normal */
-    diffuseTex
-  * reflColor
-  /* * ( */
-    /* glm::vec3(0.1f) */
-  /* + glm::dot(normal, glm::normalize(glm::vec3(0.5f, 0.5f, -0.5f)))*0.9f */
-  /* ) */
-  ;
+  RenderResults renderResults;
+  renderResults.color = accumulatedIrradiance;
+  renderResults.valid = hit;
+  return renderResults;
 }

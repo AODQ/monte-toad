@@ -184,15 +184,15 @@ Scene Scene::Construct(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Triangle const * Raycast(
+std::pair<Triangle const *, Intersection> Raycast(
   Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
-, Intersection & intersection
 , bool useBvh
 ) {
   if (!useBvh) {
     float dist = std::numeric_limits<float>::max();
     Triangle const * closestTri = nullptr;
+    Intersection intersection;
 
     for (auto const & tri : scene.accelStructure.triangles) {
       auto i = RayTriangleIntersection(ori, dir, tri);
@@ -202,11 +202,10 @@ Triangle const * Raycast(
         closestTri = &tri;
       }
     }
-    return closestTri;
+    return { closestTri, intersection };
   }
 
   auto hit = IntersectClosest(scene.accelStructure, ori, dir);
-  if (!hit.has_value()) { return nullptr; }
-  intersection = hit->second;
-  return scene.accelStructure.triangles.data() + hit->first;
+  if (!hit.has_value()) { return { nullptr, {} }; }
+  return { scene.accelStructure.triangles.data() + hit->first, hit->second };
 }

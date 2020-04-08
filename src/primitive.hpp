@@ -3,10 +3,10 @@
 #include "../ext/bvh.hpp"
 #include <glm/glm.hpp>
 
-constexpr static float Pi   3.141592653589793f;
-constexpr static float InvPi  0.318309886183791f;
-constexpr static float Tau  6.283185307179586f;
-constexpr static float InvTau 0.159154943091895f;
+constexpr static float Pi     = 3.141592653589793f;
+constexpr static float InvPi  = 0.318309886183791f;
+constexpr static float Tau    = 6.283185307179586f;
+constexpr static float InvTau = 0.159154943091895f;
 
 struct Camera {
   glm::vec3 ori;

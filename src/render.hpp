@@ -5,7 +5,14 @@
 struct Scene;
 struct Camera;
 
-glm::vec3 Render(
+struct RenderResults {
+  RenderResults() = default;
+
+  glm::vec3 color;
+  bool valid;
+};
+
+RenderResults Render(
   glm::vec2 const uv
 , Scene const & scene
 , Camera const & camera

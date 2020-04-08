@@ -152,6 +152,9 @@ int main(int argc, char** argv) {
       "j,num-threads", "number of worker threads, 0 is automatic"
     , cxxopts::value<uint16_t>()->default_value("0")
     ) (
+      "spp", "number of iterations/samples per pixel (spp)"
+    , cxxopts::value<uint32_t>()->default_value("8")
+    ) (
       "U,up-axis", "model up-axis set to Z (Y when not set)"
     , cxxopts::value<bool>()->default_value("false")
     ) (
@@ -186,6 +189,7 @@ int main(int argc, char** argv) {
   bool         useBvh;
   bool         optimizeBvh;
   uint16_t     numThreads;
+  uint32_t     samplesPerPixel;
 
   { // -- collect values
     if (!result["file"].count()) {
@@ -204,6 +208,7 @@ int main(int argc, char** argv) {
     numThreads      = result["num-threads"]    .as<uint16_t>();
     useBvh          = result["no-bvh"]         .as<bool>();
     optimizeBvh     = result["no-optimize-bvh"].as<bool>();
+    samplesPerPixel = result["spp"]            .as<uint32_t>();
     environmentMapFilename = result["environment-map"].as<std::string>();
 
     { // resolution
@@ -279,7 +284,25 @@ int main(int argc, char** argv) {
       glm::vec2 uv = glm::vec2(x, y) / buffer.Dim();
       uv = (uv - 0.5f) * 2.0f;
       uv.y *= buffer.AspectRatio();
-      buffer.At(i) = Render(uv, scene, camera, useBvh);
+
+      glm::vec3 accumulatedColor = glm::vec3(0.0f);
+      size_t collectedIt = 0;
+
+      for (uint32_t it = 0; it < samplesPerPixel; ++ it) {
+        auto renderResults = Render(uv, scene, camera, useBvh);
+        if (!renderResults.valid) { continue; }
+        // apply averaging to accumulated color corresponding to current
+        // collected it
+        accumulatedColor =
+          glm::mix(
+            accumulatedColor
+          , renderResults.color
+          , collectedIt/static_cast<float>(collectedIt+1)
+          );
+        ++ collectedIt;
+      }
+
+      buffer.At(i) = accumulatedColor;
 
       // record & emit progress
       progress += 1;
