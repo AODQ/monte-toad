@@ -1,6 +1,8 @@
 /*
 */
 
+#include "io.hpp"
+#include "log.hpp"
 #include "render.hpp"
 #include "scene.hpp"
 
@@ -10,108 +12,9 @@
 #include <spdlog/spdlog.h>
 
 #include <atomic>
-#include <fstream>
 #include <string>
 #include <vector>
 
-////////////////////////////////////////////////////////////////////////////////
-struct Buffer {
-  Buffer() = default;
-private:
-  std::vector<glm::vec3> data;
-  size_t width, height;
-
-public:
-  static Buffer Construct(size_t width, size_t height) {
-    Buffer self;
-    self.width = width; self.height = height;
-    self.data.resize(width*height);
-    return self;
-  }
-
-  float AspectRatio() const {
-    return this->height/static_cast<float>(this->width);
-  }
-
-  size_t Width() const { return this->width; }
-  size_t Height() const { return this->height; }
-  glm::vec2 Dim() const { return glm::vec2(this->width, this->height); }
-
-  glm::vec3 & At(size_t x, size_t y) {
-    return this->data[y*this->width + x];
-  }
-
-  glm::vec3 const & At(size_t x, size_t y) const {
-    return this->data[y*this->width + x];
-  }
-
-  glm::vec3 & At(size_t it) { return this->At(it%this->width, it/this->width); }
-  glm::vec3 const & At(size_t it) const {
-    return this->At(it%this->width, it/this->width);
-  }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-void PrintProgress(float progress) {
-  printf("[");
-  for (int i = 0; i < 40; ++ i) {
-    if (i <  static_cast<int>(40.0f*progress)) printf("=");
-    if (i == static_cast<int>(40.0f*progress)) printf(">");
-    if (i >  static_cast<int>(40.0f*progress)) printf(" ");
-  }
-  // leading spaces in case of terminal/text corruption
-  printf("] %0.1f%%   \r", progress*100.0f);
-  fflush(stdout);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void SaveImage(
-  std::string const & filename
-, Buffer const & data
-, bool displayProgress
-) {
-  auto file = std::ofstream{filename, std::ios::binary};
-  spdlog::info("Saving image {}", filename);
-  file << "P6\n" << data.Width() << " " << data.Height() << "\n255\n";
-  for (size_t i = 0u; i < data.Height()*data.Width(); ++ i) {
-    // flip Y
-    glm::vec3 pixel = data.At(i%data.Width(), data.Height()-i/data.Width()-1);
-    pixel = 255.0f * glm::clamp(pixel, glm::vec3(0.0f), glm::vec3(1.0f));
-    file
-      << static_cast<uint8_t>(pixel.x)
-      << static_cast<uint8_t>(pixel.y)
-      << static_cast<uint8_t>(pixel.z)
-    ;
-
-    if (displayProgress && i%data.Width() == 0)
-      PrintProgress(i/static_cast<float>(data.Height()*data.Width()));
-  }
-
-  if (displayProgress) {
-    PrintProgress(1.0f);
-    printf("\n"); // new line for progress bar
-  }
-
-  spdlog::info("Finished saving image {}", filename);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-template<> struct fmt::formatter<glm::vec2> {
-  constexpr auto parse(format_parse_context & ctx) { return ctx.begin(); }
-
-  template <typename FmtCtx> auto format(glm::vec2 const & vec, FmtCtx & ctx) {
-    return format_to(ctx.out(), "({}, {})", vec.x, vec.y);
-  }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-template<> struct fmt::formatter<glm::vec3> {
-  constexpr auto parse(format_parse_context & ctx) { return ctx.begin(); }
-
-  template <typename FmtCtx> auto format(glm::vec3 const & vec, FmtCtx & ctx) {
-    return format_to(ctx.out(), "({}, {}, {})", vec.x, vec.y, vec.z);
-  }
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv) {
@@ -266,6 +169,10 @@ int main(int argc, char** argv) {
     ;
   }
 
+  /* { // -- precompute noise */
+  /*   GenerateBlueNoiseTexture(); */
+  /* } */
+
   { // -- render scene
     auto buffer = Buffer::Construct(resolution.x, resolution.y);
     spdlog::info(
@@ -277,6 +184,7 @@ int main(int argc, char** argv) {
     int const masterTid = omp_get_thread_num();
     size_t mainThreadUpdateIt = 0;
 
+    // TODO maybe subdivide into tiles instead of pixels
     #pragma omp parallel for
     for (size_t i = 0u; i < buffer.Width()*buffer.Height(); ++ i) {
       // -- render out at pixel X, Y
@@ -285,24 +193,7 @@ int main(int argc, char** argv) {
       uv = (uv - 0.5f) * 2.0f;
       uv.y *= buffer.AspectRatio();
 
-      glm::vec3 accumulatedColor = glm::vec3(0.0f);
-      size_t collectedIt = 0;
-
-      for (uint32_t it = 0; it < samplesPerPixel; ++ it) {
-        auto renderResults = Render(uv, scene, camera, useBvh);
-        if (!renderResults.valid) { continue; }
-        // apply averaging to accumulated color corresponding to current
-        // collected it
-        accumulatedColor =
-          glm::mix(
-            accumulatedColor
-          , renderResults.color
-          , collectedIt/static_cast<float>(collectedIt+1)
-          );
-        ++ collectedIt;
-      }
-
-      buffer.At(i) = accumulatedColor;
+      buffer.At(i) = Render(uv, scene, camera, samplesPerPixel, useBvh);
 
       // record & emit progress
       progress += 1;
@@ -322,7 +213,7 @@ int main(int argc, char** argv) {
       printf("\n"); // new line for progress bar
     }
 
-    SaveImage(outputFile, buffer, displayProgress);
+    SaveImage(buffer, outputFile, displayProgress);
   }
 
   #ifdef __unix__

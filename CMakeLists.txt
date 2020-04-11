@@ -48,6 +48,8 @@ find_package(OpenMP)
 
 ## source list for application (src/include)
 set(SOURCE_LIST
+  "src/io.cpp"
+  "src/noise.cpp"
   "src/primitive.cpp"
   "src/render.cpp"
   "src/scene.cpp"
@@ -58,6 +60,9 @@ set(HEADER_LIST
   "ext/bvh.hpp"
   "ext/cxxopts.hpp"
   "ext/stb_image.hpp"
+  "src/io.hpp"
+  "src/log.hpp"
+  "src/noise.hpp"
   "src/primitive.hpp"
   "src/render.hpp"
   "src/scene.hpp"

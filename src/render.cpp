@@ -1,7 +1,7 @@
 #include "render.hpp"
 
-#include <spdlog/spdlog.h>
-
+#include "log.hpp"
+#include "noise.hpp"
 #include "primitive.hpp"
 #include "scene.hpp"
 #include "texture.hpp"
@@ -35,9 +35,8 @@ glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up, float fovRadians) {
 struct PixelInfo {
   PixelInfo() = default;
 
-  std::random_device device;
-  std::mt19937 generator { device() };
-  std::uniform_real_distribution<float> distribution{0.0f, 1.0f};
+  glm::vec2 uv = glm::vec2(0.0f);
+  Noise<NoiseType::Blue> noise = Noise<NoiseType::Blue>::Construct();
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,22 +83,6 @@ struct RaycastInfo {
   }
 };
 
-////////////////////////////////////////////////////////////////////////////////
-float SampleUniform(PixelInfo & pi) {
-  return pi.distribution.operator()(pi.generator);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-glm::vec2 SampleUniform2(PixelInfo & pi) {
-  return glm::vec2(SampleUniform(pi), SampleUniform(pi));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-glm::vec3 SampleUniform3(PixelInfo & pi) {
-  (void)SampleUniform3;
-  return glm::vec3(SampleUniform(pi), SampleUniform(pi), SampleUniform(pi));
-}
-
 ///////////////////////////////////////////////////////////////////////////////u/
 std::pair<glm::vec3, glm::vec3> CalculateXY(glm::vec3 const & normal) {
   glm::vec3 binormal = glm::vec3(1.0f, 0.0f, 0.0f); // TODO swap if eq to normal
@@ -131,7 +114,7 @@ std::pair<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
 , RaycastInfo const & results
 , glm::vec3 const & wi
 ) {
-  glm::vec2 u = SampleUniform2(pixelInfo);
+  glm::vec2 u = SampleUniform2(pixelInfo.noise);
   glm::vec3 wo =
     ReorientHemisphere(
       glm::normalize(ToCartesian(glm::sqrt(u.y), Tau*u.x))
@@ -146,13 +129,26 @@ glm::vec3 BsdfFs(
 , RaycastInfo const & results
 , glm::vec3 wi, glm::vec3 wo
 ) {
-  glm::vec3 diffuse = glm::vec3(1.0f);
+  glm::vec3 diffuse = glm::vec3(0.18f);
   auto const & mesh = scene.meshes[results.triangle->meshIdx];
   if (mesh.diffuseTextureIdx != static_cast<size_t>(-1)) {
     diffuse =
       SampleBilinear(scene.textures[mesh.diffuseTextureIdx], results.uv);
   }
-  return diffuse;
+  return diffuse / Pi;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+float SphericalTheta(glm::vec3 const & v) {
+  (void)SphericalTheta; // FIXME TODO
+  return glm::acos(glm::clamp(v.z, -1.0f, +1.0f));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+float SphericalPhi(glm::vec3 const & v) {
+  (void)SphericalPhi; // FIXME TODO
+  float p = glm::atan(v.y, v.x);
+  return (p < 0.0f) ? (p + 2.0f*Pi) : p;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -182,24 +178,35 @@ PropagationStatus Propagate(
       return PropagationStatus::End;
     }
     glm::vec3 environmentColor = Sample(scene.environmentTexture, rd);
+
     accumulatedIrradiance = radiance * environmentColor;
-    /* accumulatedIrradiance = radiance; */
     return PropagationStatus::DirectAccumulation;
   }
 
   auto [bsdfRayWo, bsdfPdf] = BsdfSample(pixelInfo, results, rd);
-  radiance *= BsdfFs(scene, results, rd, bsdfRayWo)/* * bsdfPdf*/;
+  radiance *=
+    glm::dot(results.normal, bsdfRayWo)
+  * BsdfFs(scene, results, rd, bsdfRayWo)
+  / (1.0f / (2.0f * Pi));
 
   { // apply next raycast
     rd = bsdfRayWo;
     ro += rd*results.intersection.distance;
-    auto [triangle, intersection] = Raycast(scene, ro, rd, useBvh);
+    auto [triangle, intersection] = Raycast(scene, ro + rd*0.1f, rd, useBvh);
     results = RaycastInfo::Construct(triangle, intersection);
   }
   return PropagationStatus::Continue;
 }
 
 } // -- end anon namespace
+
+////////////////////////////////////////////////////////////////////////////////
+struct RenderResults {
+  RenderResults() = default;
+
+  glm::vec3 color;
+  bool valid;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 /*
@@ -214,7 +221,7 @@ PropagationStatus Propagate(
       - determine if loop should end or continue
 */
 RenderResults Render(
-  glm::vec2 const uv
+  PixelInfo & pixelInfo
 , Scene const & scene
 , Camera const & camera
 , bool useBvh
@@ -224,13 +231,10 @@ RenderResults Render(
   eyeDir =
     LookAt(
       glm::normalize(camera.lookat - camera.ori)
-    , uv
+    , pixelInfo.uv
     , camera.up
     , glm::radians(camera.fov)
     );
-
-  // get pixel info
-  auto pixelInfo = PixelInfo{};
 
   // apply initial raycast
   RaycastInfo raycastResult;
@@ -241,7 +245,7 @@ RenderResults Render(
 
   if (!raycastResult.triangle) {
     RenderResults renderResults;
-    renderResults.color = glm::vec3(uv, 0.5f);
+    renderResults.color = glm::vec3(pixelInfo.uv, 0.5f);
     renderResults.valid = true;
     return renderResults;
   }
@@ -280,4 +284,31 @@ RenderResults Render(
   renderResults.color = accumulatedIrradiance;
   renderResults.valid = hit;
   return renderResults;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+glm::vec3 Render(
+  glm::vec2 const uv
+, Scene const & scene
+, Camera const & camera
+, uint32_t samplesPerPixel
+, bool useBvh
+) {
+  glm::vec3 accumulatedColor = glm::vec3(0.0f);
+
+  auto pixelInfo = PixelInfo{};
+  pixelInfo.uv = uv;
+
+  for (uint32_t it = 0, maxIt = 0; maxIt < samplesPerPixel; ++ maxIt) {
+    auto renderResults = Render(pixelInfo, scene, camera, useBvh);
+    if (!renderResults.valid) { continue; }
+    // apply averaging to accumulated color corresponding to current
+    // collected it
+    /* accumulatedColor += (Tau)/samplesPerPixel * renderResults.color; */
+    accumulatedColor += 1.0f/samplesPerPixel * renderResults.color;
+
+    if (++ it >= samplesPerPixel) { break; }
+  }
+
+  return accumulatedColor;
 }
