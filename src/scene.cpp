@@ -115,7 +115,7 @@ namespace {
 
         // add to scene
         triangles
-          .push_back(
+          .emplace_back(
             Triangle (
               modelMeshIt
             , glm::vec3{v0.x, v0.y, v0.z}

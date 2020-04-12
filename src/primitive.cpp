@@ -78,7 +78,7 @@ AccelerationStructure AccelerationStructure::Construct(
   auto centers = std::vector<glm::vec3>();
   centers.resize(accel.triangles.size());
 
-  /* #pragma omp parallel for */
+  #pragma omp parallel for
   for (size_t i = 0; i < accel.triangles.size(); ++ i) {
     auto & triangle = accel.triangles[i];
 
@@ -102,10 +102,11 @@ AccelerationStructure AccelerationStructure::Construct(
   // now you can just do
   //   accel.triangles[i]
   decltype(accel.triangles) primitivesCopy;
-  primitivesCopy.reserve(primitivesCopy.size());
+  primitivesCopy.resize(accel.triangles.size());
+  #pragma omp parallel for
   for (size_t i = 0; i < accel.triangles.size(); ++ i) {
-    primitivesCopy
-      .emplace_back(accel.triangles[accel.boundingVolume.primitive_indices[i]]);
+    primitivesCopy[i] =
+      accel.triangles[accel.boundingVolume.primitive_indices[i]];
   }
   std::swap(accel.triangles, primitivesCopy);
 

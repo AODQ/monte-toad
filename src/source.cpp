@@ -195,7 +195,6 @@ int main(int argc, char** argv) {
     std::vector<GenericNoiseGenerator> noiseGenerators;
     noiseGenerators.resize(numThreads);
 
-    /* #pragma omp parallel for */
     { // construct noise
       auto n = Noise<NoiseType::White>::Construct();
       for (size_t i = 0; i < numThreads; ++ i) {
