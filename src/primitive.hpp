@@ -1,7 +1,11 @@
 #pragma once
 
+#include <bvh/binned_sah_builder.hpp>
+#include <bvh/single_ray_traversal.hpp>
 #include <bvh/bvh.hpp>
 #include <glm/glm.hpp>
+
+#include <memory>
 
 constexpr static float Pi     = 3.141592653589793f;
 constexpr static float InvPi  = 0.318309886183791f;
@@ -37,6 +41,7 @@ struct Triangle {
 
 struct Intersection {
   Intersection() = default;
+  size_t triangleIndex;
   float distance;
   glm::vec2 barycentricUv;
 };
@@ -55,15 +60,17 @@ struct AccelerationStructure {
   AccelerationStructure() = default;
 
   std::vector<Triangle> triangles;
-  bvh::BVH<> boundingVolume;
+  bvh::Bvh<64> boundingVolume;
+  bvh::SingleRayTraversal<decltype(boundingVolume)>
+    boundingVolumeTraversal { boundingVolume };
 
-  static AccelerationStructure Construct(
+  static std::unique_ptr<AccelerationStructure> Construct(
     std::vector<Triangle> && triangles
   , bool optimize = false
   );
 };
 
-std::optional<std::pair<size_t, Intersection>> IntersectClosest(
+std::optional<Intersection> IntersectClosest(
   AccelerationStructure const & accel
 , glm::vec3 ori, glm::vec3 dir
 );

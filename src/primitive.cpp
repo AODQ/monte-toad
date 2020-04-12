@@ -66,23 +66,24 @@ std::optional<Intersection> RayTriangleIntersection(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-AccelerationStructure AccelerationStructure::Construct(
+std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
   std::vector<Triangle> && trianglesMv
 , bool optimize
 ) {
-  AccelerationStructure accel;
-  accel.triangles = std::move(trianglesMv);
+  auto self = std::make_unique<AccelerationStructure>();
 
-  auto boundingBoxes = std::vector<bvh::BBox>();
-  boundingBoxes.resize(accel.triangles.size());
+  self->triangles = std::move(trianglesMv);
+
+  auto boundingBoxes = std::vector<bvh::BoundingBox>();
+  boundingBoxes.resize(self->triangles.size());
   auto centers = std::vector<glm::vec3>();
-  centers.resize(accel.triangles.size());
+  centers.resize(self->triangles.size());
 
   #pragma omp parallel for
-  for (size_t i = 0; i < accel.triangles.size(); ++ i) {
-    auto & triangle = accel.triangles[i];
+  for (size_t i = 0; i < self->triangles.size(); ++ i) {
+    auto & triangle = self->triangles[i];
 
-    auto bbox = bvh::BBox { triangle.v0 };
+    auto bbox = bvh::BoundingBox { triangle.v0 };
     bbox.extend(triangle.v1);
     bbox.extend(triangle.v2);
 
@@ -90,31 +91,32 @@ AccelerationStructure AccelerationStructure::Construct(
     centers[i]       = (triangle.v0 + triangle.v1 + triangle.v2) * (1.0f/3.0f);
   }
 
-  accel.boundingVolume.build(
-    boundingBoxes.data(), centers.data(), accel.triangles.size()
-  );
-  if (optimize) { accel.boundingVolume.optimize(); }
+  bvh::BinnedSahBuilder<decltype(self->boundingVolume), 32>
+    boundingVolumeBuilder { self->boundingVolume };
 
+  boundingVolumeBuilder.build(
+    boundingBoxes.data(), centers.data(), self->triangles.size()
+  );
 
   // Reorder primitives to BVH's primitive indices, ei before you would have to
   // access the triangles as
-  //   accel.triangles[accel.boundingVolume.primitive_indices[i]]
+  //   self->triangles[self->boundingVolume.primitive_indices[i]]
   // now you can just do
-  //   accel.triangles[i]
-  decltype(accel.triangles) primitivesCopy;
-  primitivesCopy.resize(accel.triangles.size());
+  //   self->triangles[i]
+  decltype(self->triangles) primitivesCopy;
+  primitivesCopy.resize(self->triangles.size());
   #pragma omp parallel for
-  for (size_t i = 0; i < accel.triangles.size(); ++ i) {
+  for (size_t i = 0; i < self->triangles.size(); ++ i) {
     primitivesCopy[i] =
-      accel.triangles[accel.boundingVolume.primitive_indices[i]];
+      self->triangles[self->boundingVolume.primitive_indices[i]];
   }
-  std::swap(accel.triangles, primitivesCopy);
+  std::swap(self->triangles, primitivesCopy);
 
-  return accel;
+  return self;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::optional<std::pair<size_t, Intersection>>
+std::optional<Intersection>
 IntersectClosest(
   AccelerationStructure const & accel
 , glm::vec3 ori, glm::vec3 dir
@@ -125,6 +127,7 @@ IntersectClosest(
     span<Triangle const> triangles;
 
     using Result = Intersection;
+    bool const any_hit = false;
 
     static ClosestIntersector Construct(
       AccelerationStructure const & accel
@@ -137,15 +140,17 @@ IntersectClosest(
     std::optional<Intersection> operator()(size_t idx, bvh::Ray const & ray)
       const
     {
-      return RayTriangleIntersection(ray.origin, ray.direction, triangles[idx]);
+      auto intersection =
+        RayTriangleIntersection(ray.origin, ray.direction, triangles[idx]);
+      if (intersection.has_value()) {
+        intersection->triangleIndex = idx;
+      }
+      return intersection;
     }
   };
 
+  auto intersector = ClosestIntersector::Construct(accel);
+
   return
-    accel
-      .boundingVolume
-      .intersect<false, ClosestIntersector>(
-        bvh::Ray(ori, dir)
-      , ClosestIntersector::Construct(accel)
-      );
+    accel.boundingVolumeTraversal.intersect(bvh::Ray(ori, dir), intersector);
 }

@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  spdlog::info("Model triangles: {}", scene.accelStructure.triangles.size());
+  spdlog::info("Model triangles: {}", scene.accelStructure->triangles.size());
   spdlog::info("Model meshes: {}", scene.meshes.size());
   spdlog::info("Model textures: {}", scene.textures.size());
   spdlog::info("Model bounds: {} -> {}", scene.bboxMin, scene.bboxMax);
@@ -167,11 +167,11 @@ int main(int argc, char** argv) {
   spdlog::info("Model size: {}", (scene.bboxMax - scene.bboxMin));
   spdlog::info(
     "BVH nodes: {}"
-  , scene.accelStructure.boundingVolume.node_count
+  , scene.accelStructure->boundingVolume.node_count
   );
   spdlog::info(
     "BVH traversal cost: {}"
-  , scene.accelStructure.boundingVolume.traversal_cost
+  , scene.accelStructure->boundingVolume.traversal_cost
   );
 
   Camera camera;

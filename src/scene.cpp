@@ -193,7 +193,7 @@ std::pair<Triangle const *, Intersection> Raycast(
     Triangle const * closestTri = nullptr;
     Intersection intersection;
 
-    for (auto const & tri : scene.accelStructure.triangles) {
+    for (auto const & tri : scene.accelStructure->triangles) {
       auto i = RayTriangleIntersection(ori, dir, tri);
       if (i && i->distance < dist) {
         dist = i->distance;
@@ -204,7 +204,7 @@ std::pair<Triangle const *, Intersection> Raycast(
     return { closestTri, intersection };
   }
 
-  auto hit = IntersectClosest(scene.accelStructure, ori, dir);
+  auto hit = IntersectClosest(*scene.accelStructure, ori, dir);
   if (!hit.has_value()) { return { nullptr, {} }; }
-  return { scene.accelStructure.triangles.data() + hit->first, hit->second };
+  return { scene.accelStructure->triangles.data() + hit->triangleIndex, *hit };
 }

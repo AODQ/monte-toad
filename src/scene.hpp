@@ -29,7 +29,7 @@ struct Scene {
 
   Texture environmentTexture;
 
-  AccelerationStructure accelStructure;
+  std::unique_ptr<AccelerationStructure> accelStructure;
 
   glm::vec3 bboxMin, bboxMax;
 };
