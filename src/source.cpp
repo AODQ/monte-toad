@@ -8,7 +8,7 @@
 #include "scene.hpp"
 #include "unittest.hpp"
 
-#include "../ext/cxxopts.hpp"
+#include <cxxopts.hpp>
 #include <glm/glm.hpp>
 #include <omp.h>
 #include <spdlog/spdlog.h>

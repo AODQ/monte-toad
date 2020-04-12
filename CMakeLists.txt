@@ -37,7 +37,7 @@ if (EXISTS "${LOC_PATH}")
   message(FATAL_ERROR "build must be out of source")
 endif()
 
-## setup proejct
+## setup project
 set(NAME cpuraytracer)
 project(${NAME} CXX)
 
@@ -54,6 +54,16 @@ set(BVH_INCLUDE_DIR
 add_library(bvh INTERFACE)
 target_include_directories(bvh INTERFACE $<BUILD_INTERFACE:${BVH_INCLUDE_DIR}>)
 
+# Adds cxxopts dependency
+set(CXXOPTS_INCLUDE_DIR
+  ${CMAKE_CURRENT_SOURCE_DIR}/third-party/cxxopts/include/
+  CACHE PATH "cxxopts include directory"
+)
+add_library(cxxopts INTERFACE)
+target_include_directories(cxxopts
+  INTERFACE $<BUILD_INTERFACE:${CXXOPTS_INCLUDE_DIR}>
+)
+
 ## source list for application (src/include)
 set(SOURCE_LIST
   "src/io.cpp"
@@ -66,7 +76,6 @@ set(SOURCE_LIST
   "src/unittest.cpp"
 )
 set(HEADER_LIST
-  "ext/cxxopts.hpp"
   "ext/stb_image.hpp"
   "src/io.hpp"
   "src/log.hpp"
@@ -86,7 +95,7 @@ target_compile_features(cpuraytracer PRIVATE cxx_std_20)
 ## link dependents
 target_link_libraries(cpuraytracer
   PRIVATE
-    glm spdlog fmt OpenMP::OpenMP_CXX bvh assimp foo
+    glm spdlog fmt OpenMP::OpenMP_CXX bvh assimp foo cxxopts
 )
 
 ## add include/source directories , sources support necessary for (lamer) IDE
