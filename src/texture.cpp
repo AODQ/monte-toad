@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "../ext/stb_image.hpp"
+#include <stb_image.hpp>
 
 #include <filesystem>
 

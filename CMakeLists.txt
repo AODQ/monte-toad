@@ -54,6 +54,14 @@ set(BVH_INCLUDE_DIR
 add_library(bvh INTERFACE)
 target_include_directories(bvh INTERFACE $<BUILD_INTERFACE:${BVH_INCLUDE_DIR}>)
 
+# Adds STB dependency
+set(STB_INCLUDE_DIR
+  ${CMAKE_CURRENT_SOURCE_DIR}/third-party/stb/include/
+  CACHE PATH "stb include directory"
+)
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE $<BUILD_INTERFACE:${STB_INCLUDE_DIR}>)
+
 # Adds cxxopts dependency
 set(CXXOPTS_INCLUDE_DIR
   ${CMAKE_CURRENT_SOURCE_DIR}/third-party/cxxopts/include/
@@ -76,7 +84,6 @@ set(SOURCE_LIST
   "src/unittest.cpp"
 )
 set(HEADER_LIST
-  "ext/stb_image.hpp"
   "src/io.hpp"
   "src/log.hpp"
   "src/noise.hpp"
@@ -95,7 +102,7 @@ target_compile_features(cpuraytracer PRIVATE cxx_std_20)
 ## link dependents
 target_link_libraries(cpuraytracer
   PRIVATE
-    glm spdlog fmt OpenMP::OpenMP_CXX bvh assimp foo cxxopts
+    glm spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp foo cxxopts
 )
 
 ## add include/source directories , sources support necessary for (lamer) IDE
