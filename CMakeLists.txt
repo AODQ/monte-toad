@@ -102,7 +102,7 @@ target_compile_features(cpuraytracer PRIVATE cxx_std_20)
 ## link dependents
 target_link_libraries(cpuraytracer
   PRIVATE
-    glm spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp foo cxxopts
+    glm spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp cxxopts
 )
 
 ## add include/source directories , sources support necessary for (lamer) IDE
