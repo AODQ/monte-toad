@@ -31,11 +31,11 @@ int main(int argc, char** argv) {
       "v,view", "view image on completion"
     , cxxopts::value<bool>()->default_value("false")
     ) (
-      "T,camera-theta", "camera origin as theta angle (degrees)"
-    , cxxopts::value<float>()->default_value("0.0f")
+      "O,camera-origin", "camera origin"
+    , cxxopts::value<std::vector<float>>()->default_value({1, 1, 1})
     ) (
-      "H,camera-height", "camera (scaled) height"
-    , cxxopts::value<float>()->default_value("0.5f")
+      "T,camera-target", "camera lookat target"
+    , cxxopts::value<std::vector<float>>()->default_value({0, 0, 0})
     ) (
       "r,resolution", "window resolution \"Width,Height\"",
       cxxopts::value<std::vector<uint32_t>>()->default_value("640,480")
@@ -50,9 +50,6 @@ int main(int argc, char** argv) {
       "no-optimize-bvh"
     , "disables bvh tree optimization (slower construction, faster traversal"
     , cxxopts::value<bool>()->default_value("false")
-    ) (
-      "D,camera-distance", "camera (scaled) distance"
-    , cxxopts::value<float>()->default_value("1.0f")
     ) (
       "j,num-threads", "number of worker threads, 0 is automatic"
     , cxxopts::value<uint16_t>()->default_value("0")
@@ -87,9 +84,8 @@ int main(int argc, char** argv) {
   std::string  outputFile;
   bool         unittest;
   bool         view;
-  float        cameraTheta;
-  float        cameraDist;
-  float        cameraHeight;
+  glm::vec3 cameraOrigin;
+  glm::vec3 cameraLookat;
   float        cameraFov;
   glm::i32vec2 resolution;
   std::string  environmentMapFilename;
@@ -109,9 +105,6 @@ int main(int argc, char** argv) {
     outputFile      = result["output"]         .as<std::string>();
     unittest        = result["unit-test"]      .as<bool>();
     view            = result["view"]           .as<bool>();
-    cameraTheta     = result["camera-theta"]   .as<float>();
-    cameraDist      = result["camera-distance"].as<float>();
-    cameraHeight    = result["camera-height"]  .as<float>();
     cameraFov       = result["fov"]            .as<float>();
     displayProgress = result["noprogress"]     .as<bool>();
     upAxisZ         = result["up-axis"]        .as<bool>();
@@ -122,16 +115,33 @@ int main(int argc, char** argv) {
     environmentMapFilename = result["environment-map"].as<std::string>();
 
     { // resolution
-      auto resolutionV = result["resolution"].as<std::vector<uint32_t>>();
-      if (resolutionV.size() != 2) {
+      auto value = result["resolution"].as<std::vector<uint32_t>>();
+      if (value.size() != 2) {
         spdlog::error("Resolution must be in format Width,Height");
         return 1;
       }
-      resolution = glm::i32vec2(resolutionV[0], resolutionV[1]);
+      resolution = glm::i32vec2(value[0], value[1]);
+    }
+
+    { // camera origin
+      auto value = result["camera-origin"].as<std::vector<float>>();
+      if (value.size() != 3) {
+        spdlog::error("Camera origin must be in format X,Y,Z");
+        return 1;
+      }
+      cameraOrigin = glm::vec3(value[0], value[1], value[2]);
+    }
+
+    { // camera origin
+      auto value = result["camera-target"].as<std::vector<float>>();
+      if (value.size() != 3) {
+        spdlog::error("Camera target must be in format X,Y,Z");
+        return 1;
+      }
+      cameraLookat = glm::vec3(value[0], value[1], value[2]);
     }
 
     // convert command-line units to application units
-    cameraTheta     = glm::radians(cameraTheta);
     cameraFov       = 180.0f - cameraFov;
     displayProgress = !displayProgress;
     useBvh          = !useBvh;
@@ -169,12 +179,7 @@ int main(int argc, char** argv) {
     camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
     camera.fov = cameraFov;
     camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
-    camera.ori =
-      (scene.bboxMax + scene.bboxMin) * 0.5f
-    + (scene.bboxMax - scene.bboxMin)
-    * glm::vec3(glm::cos(cameraTheta), cameraHeight, glm::sin(cameraTheta))
-    * cameraDist
-    ;
+    camera.ori = cameraOrigin;
   }
 
   if (unittest) {
