@@ -3,8 +3,10 @@
 
 #include "io.hpp"
 #include "log.hpp"
+#include "noise.hpp"
 #include "render.hpp"
 #include "scene.hpp"
+#include "unittest.hpp"
 
 #include "../ext/cxxopts.hpp"
 #include <glm/glm.hpp>
@@ -55,6 +57,9 @@ int main(int argc, char** argv) {
       "j,num-threads", "number of worker threads, 0 is automatic"
     , cxxopts::value<uint16_t>()->default_value("0")
     ) (
+      "unit-test", "run unit tests"
+    , cxxopts::value<bool>()->default_value("false")
+    ) (
       "spp", "number of iterations/samples per pixel (spp)"
     , cxxopts::value<uint32_t>()->default_value("8")
     ) (
@@ -80,6 +85,7 @@ int main(int argc, char** argv) {
 
   std::string  inputFile;
   std::string  outputFile;
+  bool         unittest;
   bool         view;
   float        cameraTheta;
   float        cameraDist;
@@ -101,6 +107,7 @@ int main(int argc, char** argv) {
     }
     inputFile       = result["file"]           .as<std::string>();
     outputFile      = result["output"]         .as<std::string>();
+    unittest        = result["unit-test"]      .as<bool>();
     view            = result["view"]           .as<bool>();
     cameraTheta     = result["camera-theta"]   .as<float>();
     cameraDist      = result["camera-distance"].as<float>();
@@ -131,7 +138,8 @@ int main(int argc, char** argv) {
     optimizeBvh     = !optimizeBvh;
   }
 
-  omp_set_num_threads(numThreads == 0 ? omp_get_max_threads()-1 : numThreads);
+  numThreads = numThreads == 0 ? omp_get_max_threads()-1 : numThreads;
+  omp_set_num_threads(numThreads);
 
   spdlog::info("Loading model {}", inputFile);
   auto scene =
@@ -169,9 +177,9 @@ int main(int argc, char** argv) {
     ;
   }
 
-  /* { // -- precompute noise */
-  /*   GenerateBlueNoiseTexture(); */
-  /* } */
+  if (unittest) {
+    Test();
+  }
 
   { // -- render scene
     auto buffer = Buffer::Construct(resolution.x, resolution.y);
@@ -184,7 +192,17 @@ int main(int argc, char** argv) {
     int const masterTid = omp_get_thread_num();
     size_t mainThreadUpdateIt = 0;
 
-    // TODO maybe subdivide into tiles instead of pixels
+    std::vector<GenericNoiseGenerator> noiseGenerators;
+    noiseGenerators.resize(numThreads);
+
+    /* #pragma omp parallel for */
+    { // construct noise
+      auto n = Noise<NoiseType::White>::Construct();
+      for (size_t i = 0; i < numThreads; ++ i) {
+        noiseGenerators[i] = n;
+      }
+    }
+
     #pragma omp parallel for
     for (size_t i = 0u; i < buffer.Width()*buffer.Height(); ++ i) {
       // -- render out at pixel X, Y
@@ -193,7 +211,16 @@ int main(int argc, char** argv) {
       uv = (uv - 0.5f) * 2.0f;
       uv.y *= buffer.AspectRatio();
 
-      buffer.At(i) = Render(uv, scene, camera, samplesPerPixel, useBvh);
+      buffer.At(i) =
+        Render(
+          uv
+        , glm::vec2(buffer.Width(), buffer.Height())
+        , noiseGenerators[omp_get_thread_num()]
+        , scene
+        , camera
+        , samplesPerPixel
+        , useBvh
+        );
 
       // record & emit progress
       progress += 1;

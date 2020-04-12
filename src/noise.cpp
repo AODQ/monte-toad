@@ -23,6 +23,36 @@ glm::vec2 SampleUniform2(Noise<NoiseType::White> & self) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+Noise<NoiseType::WhiteCached> Noise<NoiseType::WhiteCached>::Construct(
+  size_t samples
+) {
+  Noise<NoiseType::WhiteCached> self;
+
+  self.rng = std::mt19937(std::random_device()());
+  { // -- generate whitenoise samples
+    auto dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
+    self.samples.reserve(samples);
+    for (size_t i = 0; i < samples; ++ i) {
+      self.samples.emplace_back(glm::vec2(dist(self.rng), dist(self.rng)));
+    }
+  }
+  self.dist =
+    std::uniform_int_distribution<uint32_t>(0u, self.samples.size()-1);
+
+  return self;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+float SampleUniform1(Noise<NoiseType::WhiteCached> & self) {
+  return SampleUniform2(self).x;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+glm::vec2 SampleUniform2(Noise<NoiseType::WhiteCached> & self) {
+  return self.samples[self.dist(self.rng)];
+}
+
+////////////////////////////////////////////////////////////////////////////////
 Noise<NoiseType::Regular> Noise<NoiseType::Regular>::Construct(size_t samples) {
   Noise<NoiseType::Regular> self;
   self.sides = static_cast<size_t>(glm::sqrt(samples));
@@ -56,6 +86,21 @@ float ToroidalDistance(glm::vec2 p0, glm::vec2 p1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+struct PoissonGrid {
+  PoissonGrid() = default;
+
+  uint32_t dimensions;
+  float minDistance;
+  float cellSize;
+
+  // each index refers to a point in points list
+  std::vector<std::vector<size_t>> indices;
+  std::vector<glm::vec2> points;
+
+  static PoissonGrid Construct(float minDistance);
+};
+
+////////////////////////////////////////////////////////////////////////////////
 PoissonGrid PoissonGrid::Construct(float minDistance) {
   PoissonGrid grid;
   grid.minDistance = minDistance;
@@ -75,7 +120,10 @@ PoissonGrid PoissonGrid::Construct(float minDistance) {
 ////////////////////////////////////////////////////////////////////////////////
 // inserts point into grid
 void Insert(PoissonGrid self, glm::vec2 const & p) {
-  auto const gp = glm::uvec2(p.x/self.cellSize, p.y/self.cellSize);
+  auto gp = glm::uvec2(p.x/self.cellSize, p.y/self.cellSize);
+  // TODO I believe below is a bug and should never be checked
+  /* if (gp.x >= self.indices.size()) gp.x = self.dimensions - 1; */
+  /* if (gp.y >= self.indices.size()) gp.y = self.dimensions - 1; */
   // to preserve correct index location, set index then push back point
   self.indices[gp.x][gp.y] = self.points.size();
   self.points.emplace_back(p);
@@ -87,6 +135,8 @@ void Insert(PoissonGrid self, glm::vec2 const & p) {
 // from existing samples
 bool InRange(PoissonGrid self, glm::vec2 const & point) {
   auto const gp = glm::ivec2(point.x/self.cellSize, point.y/self.cellSize);
+  /* int32_t const adjacentDist = self.dimensions / 10; */
+  /* int32_t const adjacentDist = self.dimensions; */
   int32_t const adjacentDist = 5;
 
   for (auto i = gp.x - adjacentDist; i < gp.x + adjacentDist; ++ i)
@@ -97,62 +147,65 @@ bool InRange(PoissonGrid self, glm::vec2 const & point) {
 
     glm::vec2 const testPoint = self.points[idx];
 
-    glm::vec2 toroidalPoint = glm::abs(testPoint - point);
-    if (toroidalPoint.x > 0.5f) { toroidalPoint.x = 0.5f - toroidalPoint.x; }
-    if (toroidalPoint.y > 0.5f) { toroidalPoint.y = 0.5f - toroidalPoint.y; }
-
-    if (ToroidalDistance(testPoint, point) < self.minDistance) { return true; }
+    if (ToroidalDistance(testPoint, point) < self.minDistance)
+      { return true; }
   }
 
   return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Noise<NoiseType::Blue> Noise<NoiseType::Blue>::Construct(size_t samples) {
-  Noise<NoiseType::Blue> self;
+// Fast Poisson Disk Sampling in Arbitrary Dimensions
+// cct.lsu.edu/~fharhad/ganbatte/siggraph2007/CD2/content/sketches/0250.pdf
+std::vector<glm::vec2> PoissonDiskSample(
+  uint32_t const numPoints
+, uint32_t const sampleLimit = 32
+, float minDistance = -1.0f
+) {
+  auto rng = std::mt19937(std::random_device()());
+  auto distUniform = std::uniform_real_distribution<float>(0.0f, 1.0f);
 
-  self.rng = std::mt19937(std::random_device()());
-  self.dist = std::uniform_real_distribution<float>(0.0f, 1.0f);
-  self.numSamples = samples;
-  self.samplesLeft = samples-1;
-  self.minDistance = glm::sqrt(samples)/static_cast<float>(samples);
-  self.grid = PoissonGrid::Construct(self.minDistance);
+  if (minDistance < 0.0f)
+    { minDistance = glm::sqrt(numPoints)/static_cast<float>(numPoints); }
 
-  self.nextSample = glm::vec2(self.dist(self.rng), self.dist(self.rng));
-  self.activeSamples.emplace_back(self.nextSample);
-  Insert(self.grid, self.nextSample);
+  // The final list of all samples
+  std::vector<glm::vec2> samples;
 
-  return self;
-}
+  // all active samples; any new sample is added to this list, and every
+  // iteration, `sampleLimit` number of points are generated based off one of
+  // these active samples, the active sample is then which removed.
+  std::vector<glm::vec2> activeSamples;
 
-////////////////////////////////////////////////////////////////////////////////
-float SampleUniform1(Noise<NoiseType::Blue> & self) {
-  return SampleUniform2(self).x;
-}
+  // grid allows speedup of sample-neighborhood checks, as otherwise would have
+  // to check every single sample
+  auto grid = PoissonGrid::Construct(minDistance);
 
-////////////////////////////////////////////////////////////////////////////////
-glm::vec2 SampleUniform2(Noise<NoiseType::Blue> & self) {
-  while (true) {
-    if (self.activeSamples.empty() || self.samplesLeft == 0)
-      { return glm::vec2(0.0f); }
+  // -- generate first point to base other samples from
+  glm::vec2 firstPoint = glm::vec2(distUniform(rng), distUniform(rng));
 
+  activeSamples.emplace_back(firstPoint);
+  samples.emplace_back(glm::vec2(firstPoint.x, firstPoint.y));
+  Insert(grid, firstPoint);
+
+  // -- while there are active samples left to sample from & target sample goal
+  //    has not been met
+  while (!activeSamples.empty() && samples.size() < numPoints) {
     glm::vec2 activePoint;
     size_t activeSampleIdx;
     { // pop a random point
-      std::uniform_int_distribution<size_t> dist(
-        0u, self.activeSamples.size()-1
-      );
-      activeSampleIdx = dist(self.rng);
-      activePoint = self.activeSamples[activeSampleIdx];
+      std::uniform_int_distribution<size_t> dist(0u, activeSamples.size()-1);
+      activeSampleIdx = dist(rng);
+      activePoint = activeSamples[activeSampleIdx];
     }
 
     // -- generate `sampleLimit` number of points around the chosen activePoint
-    for (size_t i = 0; i < self.samplesLimit; ++ i) {
+    bool found = false;
+    for (size_t i = 0; i < sampleLimit; ++ i) {
       glm::vec2 randomPoint;
       { // generate random point near active point
         float const
-          radius = self.minDistance * (self.dist(self.rng) + 1.0f)
-        , theta  = Tau * self.dist(self.rng);
+          radius = minDistance * (distUniform(rng) + 1.0f)
+        , theta  = Tau * distUniform(rng);
 
         randomPoint =
           glm::vec2(
@@ -165,14 +218,61 @@ glm::vec2 SampleUniform2(Noise<NoiseType::Blue> & self) {
       }
 
       // -- if point is in bounds & in range of grid, it is valid; add to list
-      if (InRange(self.grid, randomPoint)) { continue; }
+      if (InRange(grid, randomPoint)) { continue; }
 
-      self.activeSamples.emplace_back(randomPoint);
-      Insert(self.grid, randomPoint);
-      return randomPoint;
+      found = true;
+      activeSamples.emplace_back(randomPoint);
+      samples.emplace_back(glm::vec2(randomPoint.x, randomPoint.y));
+      Insert(grid, randomPoint);
+      break;
     }
 
-    // failed to find a proper sample
-    self.activeSamples.erase(self.activeSamples.begin() + activeSampleIdx);
+    if (!found) {
+      activeSamples.erase(activeSamples.begin() + activeSampleIdx);
+    }
   }
+
+  return samples;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+Noise<NoiseType::Blue> Noise<NoiseType::Blue>::Construct(size_t samples) {
+  Noise<NoiseType::Blue> self;
+
+  self.samples = PoissonDiskSample(samples, 32, 1.0f);
+  self.it = 0;
+
+  return self;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+float SampleUniform1(Noise<NoiseType::Blue> & self) {
+  return SampleUniform2(self).x;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+glm::vec2 SampleUniform2(Noise<NoiseType::Blue> & self) {
+  auto s = self.samples[self.it];
+  if (++self.it >= self.samples.size()) {
+    self.it = 0;
+    std::shuffle(
+      self.samples.begin(), self.samples.end()
+    , std::mt19937(std::random_device()())
+    );
+  }
+  return s;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+float     SampleUniform1(GenericNoiseGenerator & noise) {
+  return
+    std::visit([](auto && arg) -> float { return SampleUniform1(arg); }, noise);
+}
+
+glm::vec2 SampleUniform2(GenericNoiseGenerator & noise) {
+  return
+    std::visit(
+      [](auto && arg) -> glm::vec2 { return SampleUniform2(arg); }
+    , noise
+    );
 }

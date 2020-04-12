@@ -55,6 +55,7 @@ set(SOURCE_LIST
   "src/scene.cpp"
   "src/source.cpp"
   "src/texture.cpp"
+  "src/unittest.cpp"
 )
 set(HEADER_LIST
   "ext/bvh.hpp"
@@ -68,6 +69,7 @@ set(HEADER_LIST
   "src/scene.hpp"
   "src/span.hpp"
   "src/texture.hpp"
+  "src/unittest.hpp"
 )
 
 ## add exceutable w/ source list and set compile options

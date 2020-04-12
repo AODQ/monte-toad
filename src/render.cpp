@@ -36,7 +36,8 @@ struct PixelInfo {
   PixelInfo() = default;
 
   glm::vec2 uv = glm::vec2(0.0f);
-  Noise<NoiseType::Blue> noise = Noise<NoiseType::Blue>::Construct();
+  glm::vec2 dimensions = glm::vec2(0.0f);
+  GenericNoiseGenerator * noise = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -114,7 +115,7 @@ std::pair<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
 , RaycastInfo const & results
 , glm::vec3 const & wi
 ) {
-  glm::vec2 u = SampleUniform2(pixelInfo.noise);
+  glm::vec2 u = SampleUniform2(*pixelInfo.noise);
   glm::vec3 wo =
     ReorientHemisphere(
       glm::normalize(ToCartesian(glm::sqrt(u.y), Tau*u.x))
@@ -228,10 +229,16 @@ RenderResults Render(
 ) {
   glm::vec3 eyeOri, eyeDir;
   eyeOri = camera.ori;
+
+  glm::vec2 ditherUv = pixelInfo.uv;
+  ditherUv *= pixelInfo.dimensions;
+  ditherUv += glm::vec2(-0.5f) + SampleUniform2(*pixelInfo.noise);
+  ditherUv /= pixelInfo.dimensions;
+
   eyeDir =
     LookAt(
       glm::normalize(camera.lookat - camera.ori)
-    , pixelInfo.uv
+    , ditherUv
     , camera.up
     , glm::radians(camera.fov)
     );
@@ -245,7 +252,10 @@ RenderResults Render(
 
   if (!raycastResult.triangle) {
     RenderResults renderResults;
-    renderResults.color = glm::vec3(pixelInfo.uv, 0.5f);
+    renderResults.color = glm::vec3(ditherUv, 0.5f);
+    if (scene.environmentTexture.Valid()) {
+      renderResults.color = Sample(scene.environmentTexture, eyeDir);
+    }
     renderResults.valid = true;
     return renderResults;
   }
@@ -289,6 +299,8 @@ RenderResults Render(
 ////////////////////////////////////////////////////////////////////////////////
 glm::vec3 Render(
   glm::vec2 const uv
+, glm::vec2 const dimensions
+, GenericNoiseGenerator & noiseGenerator
 , Scene const & scene
 , Camera const & camera
 , uint32_t samplesPerPixel
@@ -298,6 +310,8 @@ glm::vec3 Render(
 
   auto pixelInfo = PixelInfo{};
   pixelInfo.uv = uv;
+  pixelInfo.dimensions = dimensions;
+  pixelInfo.noise = &noiseGenerator;
 
   for (uint32_t it = 0, maxIt = 0; maxIt < samplesPerPixel; ++ maxIt) {
     auto renderResults = Render(pixelInfo, scene, camera, useBvh);

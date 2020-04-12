@@ -23,7 +23,6 @@ public:
   glm::vec2 Dim() const { return glm::vec2(this->width, this->height); }
 
   glm::vec3 & At(size_t x, size_t y) { return this->data[y*this->width + x]; }
-
   glm::vec3 const & At(size_t x, size_t y) const
     { return this->data[y*this->width + x]; }
 
