@@ -3,7 +3,6 @@
 #include "primitive.hpp"
 #include "texture.hpp"
 
-#include "../ext/bvh.hpp"
 #include <glm/glm.hpp>
 
 #include "span.hpp"

@@ -46,6 +46,14 @@ find_package(glm REQUIRED FATAL_ERROR)
 find_package(assimp REQUIRED FATAL_ERROR)
 find_package(OpenMP)
 
+# Adds BVH dependency
+set(BVH_INCLUDE_DIR
+  ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bvh/include/
+  CACHE PATH "bvh include directory"
+)
+add_library(bvh INTERFACE)
+target_include_directories(bvh INTERFACE $<BUILD_INTERFACE:${BVH_INCLUDE_DIR}>)
+
 ## source list for application (src/include)
 set(SOURCE_LIST
   "src/io.cpp"
@@ -58,7 +66,6 @@ set(SOURCE_LIST
   "src/unittest.cpp"
 )
 set(HEADER_LIST
-  "ext/bvh.hpp"
   "ext/cxxopts.hpp"
   "ext/stb_image.hpp"
   "src/io.hpp"
@@ -77,13 +84,18 @@ add_executable(cpuraytracer ${SOURCE_LIST})
 target_compile_features(cpuraytracer PRIVATE cxx_std_20)
 
 ## link dependents
-target_link_libraries(cpuraytracer glm spdlog fmt OpenMP::OpenMP_CXX assimp)
+target_link_libraries(cpuraytracer
+  PRIVATE
+    glm spdlog fmt OpenMP::OpenMP_CXX bvh assimp foo
+)
 
 ## add include/source directories , sources support necessary for (lamer) IDE
 ## users
 target_include_directories(
   cpuraytracer
-  PUBLIC ${GLM_INCLUDE_DIRS}
+  PUBLIC
+    ${GLM_INCLUDE_DIRS}
+    ${BVH_INCLUDE_DIR}
 )
 target_sources(cpuraytracer PRIVATE ${SOURCE_LIST} ${HEADER_LIST})
 

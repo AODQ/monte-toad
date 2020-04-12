@@ -130,7 +130,7 @@ glm::vec3 BsdfFs(
 , RaycastInfo const & results
 , glm::vec3 wi, glm::vec3 wo
 ) {
-  glm::vec3 diffuse = glm::vec3(0.18f);
+  glm::vec3 diffuse = glm::vec3(0.88f);
   auto const & mesh = scene.meshes[results.triangle->meshIdx];
   if (mesh.diffuseTextureIdx != static_cast<size_t>(-1)) {
     diffuse =

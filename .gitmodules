@@ -1,0 +1,3 @@
+[submodule "third-party/bvh"]
+	path = third-party/bvh
+	url = https://github.com/aodq/bvh

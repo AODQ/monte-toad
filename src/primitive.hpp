@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ext/bvh.hpp"
+#include <bvh/bvh.hpp>
 #include <glm/glm.hpp>
 
 constexpr static float Pi     = 3.141592653589793f;
