@@ -32,10 +32,10 @@ int main(int argc, char** argv) {
     , cxxopts::value<bool>()->default_value("false")
     ) (
       "O,camera-origin", "camera origin"
-    , cxxopts::value<std::vector<float>>()->default_value({1, 1, 1})
+    , cxxopts::value<std::vector<float>>()->default_value("1.0f,1.0f,1.0f")
     ) (
       "T,camera-target", "camera lookat target"
-    , cxxopts::value<std::vector<float>>()->default_value({0, 0, 0})
+    , cxxopts::value<std::vector<float>>()->default_value("0.0f,0.0f,0.0f")
     ) (
       "r,resolution", "window resolution \"Width,Height\"",
       cxxopts::value<std::vector<uint32_t>>()->default_value("640,480")
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
   { // -- camera setup
     camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
     camera.fov = cameraFov;
-    camera.lookat = (scene.bboxMax + scene.bboxMin) * 0.5f;
+    camera.lookat = cameraLookat;
     camera.ori = cameraOrigin;
   }
 
