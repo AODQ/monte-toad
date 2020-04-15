@@ -47,16 +47,7 @@ find_package(assimp REQUIRED FATAL_ERROR)
 find_package(OpenMP)
 
 # Adds BVH dependency
-set(BVH_INCLUDE_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}/third-party/bvh/include/
-  CACHE PATH "bvh include directory"
-)
-add_library(bvh INTERFACE)
-target_include_directories(bvh INTERFACE $<BUILD_INTERFACE:${BVH_INCLUDE_DIR}>)
-
-include("third-party/bvh/cmake/FindRestrictKeyword.cmake")
-find_restrict_keyword(restrict_keyword)
-target_compile_definitions(bvh INTERFACE -Dbvh__restrict__=${restrict_keyword})
+add_subdirectory(third-party/bvh)
 
 # Adds STB dependency
 set(STB_INCLUDE_DIR
