@@ -169,10 +169,10 @@ int main(int argc, char** argv) {
     "BVH nodes: {}"
   , scene.accelStructure->boundingVolume.node_count
   );
-  spdlog::info(
-    "BVH traversal cost: {}"
-  , scene.accelStructure->boundingVolume.traversal_cost
-  );
+  /* spdlog::info( */
+  /*   "BVH traversal cost: {}" */
+  /* , scene.accelStructure->boundingVolume.traversal_cost */
+  /* ); */
 
   Camera camera;
   { // -- camera setup

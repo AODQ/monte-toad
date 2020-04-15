@@ -192,7 +192,7 @@ PropagationStatus Propagate(
 
   { // apply next raycast
     rd = bsdfRayWo;
-    ro += rd*results.intersection.distance;
+    ro += rd*results.intersection.length;
     auto [triangle, intersection] = Raycast(scene, ro + rd*0.1f, rd, useBvh);
     results = RaycastInfo::Construct(triangle, intersection);
   }

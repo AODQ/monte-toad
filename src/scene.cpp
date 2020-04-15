@@ -195,8 +195,8 @@ std::pair<Triangle const *, Intersection> Raycast(
 
     for (auto const & tri : scene.accelStructure->triangles) {
       auto i = RayTriangleIntersection(ori, dir, tri);
-      if (i && i->distance < dist) {
-        dist = i->distance;
+      if (i && i->distance() < dist) {
+        dist = i->distance();
         intersection = *i;
         closestTri = &tri;
       }

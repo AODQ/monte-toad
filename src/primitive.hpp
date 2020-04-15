@@ -1,6 +1,5 @@
 #pragma once
 
-#include <bvh/binned_sah_builder.hpp>
 #include <bvh/single_ray_traversal.hpp>
 #include <bvh/bvh.hpp>
 #include <glm/glm.hpp>
@@ -42,8 +41,10 @@ struct Triangle {
 struct Intersection {
   Intersection() = default;
   size_t triangleIndex;
-  float distance;
+  float length;
   glm::vec2 barycentricUv;
+
+  float distance() const { return length; }
 };
 
 enum class CullFace { None, Front, Back };
@@ -60,7 +61,7 @@ struct AccelerationStructure {
   AccelerationStructure() = default;
 
   std::vector<Triangle> triangles;
-  bvh::Bvh<64> boundingVolume;
+  bvh::Bvh<float> boundingVolume;
   bvh::SingleRayTraversal<decltype(boundingVolume)>
     boundingVolumeTraversal { boundingVolume };
 

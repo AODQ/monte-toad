@@ -23,7 +23,7 @@ project (
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "-Wall -fno-exceptions")
+set(CMAKE_CXX_FLAGS "-Wall -fno-exceptions -march=native")
 
 add_compile_definitions(
   SPDLOG_NO_EXCEPTIONS
@@ -54,6 +54,10 @@ set(BVH_INCLUDE_DIR
 add_library(bvh INTERFACE)
 target_include_directories(bvh INTERFACE $<BUILD_INTERFACE:${BVH_INCLUDE_DIR}>)
 
+include("third-party/bvh/cmake/FindRestrictKeyword.cmake")
+find_restrict_keyword(restrict_keyword)
+target_compile_definitions(bvh INTERFACE -Dbvh__restrict__=${restrict_keyword})
+
 # Adds STB dependency
 set(STB_INCLUDE_DIR
   ${CMAKE_CURRENT_SOURCE_DIR}/third-party/stb/include/
@@ -75,6 +79,7 @@ target_include_directories(cxxopts
 ## source list for application (src/include)
 set(SOURCE_LIST
   "src/io.cpp"
+  "src/math.cpp"
   "src/noise.cpp"
   "src/primitive.cpp"
   "src/render.cpp"
@@ -85,6 +90,7 @@ set(SOURCE_LIST
 )
 set(HEADER_LIST
   "src/io.hpp"
+  "src/math.hpp"
   "src/log.hpp"
   "src/noise.hpp"
   "src/primitive.hpp"

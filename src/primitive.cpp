@@ -1,5 +1,14 @@
 #include "primitive.hpp"
 
+#include "math.hpp"
+#include "span.hpp"
+
+#include <bvh/binned_sah_builder.hpp>
+#include <bvh/locally_ordered_clustering_builder.hpp>
+#include <bvh/parallel_reinsertion_optimization.hpp>
+#include <bvh/utilities.hpp>
+#include <bvh/sweep_sah_builder.hpp>
+
 #include <spdlog/spdlog.h>
 
 #include "span.hpp"
@@ -60,7 +69,7 @@ std::optional<Intersection> RayTriangleIntersection(
   if (distance <= 0.0f) { return std::nullopt; }
 
   Intersection intersection;
-  intersection.distance = distance;
+  intersection.length = distance;
   intersection.barycentricUv = uv;
   return std::make_optional(intersection);
 }
@@ -74,43 +83,56 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
 
   self->triangles = std::move(trianglesMv);
 
-  auto boundingBoxes = std::vector<bvh::BoundingBox>();
+  auto boundingBoxes = std::vector<bvh::BoundingBox<float>>();
   boundingBoxes.resize(self->triangles.size());
-  auto centers = std::vector<glm::vec3>();
+  auto centers = std::vector<bvh::Vector3<float>>();
   centers.resize(self->triangles.size());
 
+  // -- calculate bounding boxes
   #pragma omp parallel for
   for (size_t i = 0; i < self->triangles.size(); ++ i) {
     auto & triangle = self->triangles[i];
 
-    auto bbox = bvh::BoundingBox { triangle.v0 };
-    bbox.extend(triangle.v1);
-    bbox.extend(triangle.v2);
+    auto bbox = bvh::BoundingBox<float>(ToBvh(triangle.v0));
+    bbox.extend(ToBvh(triangle.v1));
+    bbox.extend(ToBvh(triangle.v2));
 
     boundingBoxes[i] = bbox;
-    centers[i]       = (triangle.v0 + triangle.v1 + triangle.v2) * (1.0f/3.0f);
+    centers[i] = ToBvh((triangle.v0 + triangle.v1 + triangle.v2) * (1.0f/3.0f));
   }
 
-  bvh::BinnedSahBuilder<decltype(self->boundingVolume), 32>
-    boundingVolumeBuilder { self->boundingVolume };
+  // -- calculate global bounding box (not thread-safe w/o omp reduction)
+  auto globalBbox =
+    bvh::compute_bounding_boxes_union(
+      boundingBoxes.data()
+    , self->triangles.size()
+    );
 
-  boundingVolumeBuilder.build(
-    boundingBoxes.data(), centers.data(), self->triangles.size()
+  { // -- build tree
+    /* bvh::BinnedSahBuilder<decltype(self->boundingVolume), 32> */
+    bvh::SweepSahBuilder<decltype(self->boundingVolume)>
+    /* bvh::LocallyOrderedClusteringBuilder< */
+    /*   decltype(self->boundingVolume), uint32_t */
+    /* > */
+      boundingVolumeBuilder { self->boundingVolume };
+
+    boundingVolumeBuilder.build(
+      globalBbox, boundingBoxes.data(), centers.data(), self->triangles.size()
+    );
+  }
+
+  /* { // -- optimize */
+  /*   bvh::ParallelReinsertionOptimization<decltype(self->boundingVolume)> */
+  /*     boundingVolumeOptimizer { self->boundingVolume }; */
+
+  /*   boundingVolumeOptimizer.optimize(); */
+  /* } */
+
+  bvh::shuffle_primitives(
+    self->triangles.data()
+  , self->boundingVolume.primitive_indices.get()
+  , self->triangles.size()
   );
-
-  // Reorder primitives to BVH's primitive indices, ei before you would have to
-  // access the triangles as
-  //   self->triangles[self->boundingVolume.primitive_indices[i]]
-  // now you can just do
-  //   self->triangles[i]
-  decltype(self->triangles) primitivesCopy;
-  primitivesCopy.resize(self->triangles.size());
-  #pragma omp parallel for
-  for (size_t i = 0; i < self->triangles.size(); ++ i) {
-    primitivesCopy[i] =
-      self->triangles[self->boundingVolume.primitive_indices[i]];
-  }
-  std::swap(self->triangles, primitivesCopy);
 
   return self;
 }
@@ -137,11 +159,17 @@ IntersectClosest(
       return intersector;
     }
 
-    std::optional<Intersection> operator()(size_t idx, bvh::Ray const & ray)
-      const
-    {
+    std::optional<Intersection> operator()(
+      size_t idx
+    , bvh::Ray<float> const & ray
+    ) const {
       auto intersection =
-        RayTriangleIntersection(ray.origin, ray.direction, triangles[idx]);
+        RayTriangleIntersection(
+          ToGlm(ray.origin)
+        , ToGlm(ray.direction)
+        , triangles[idx]
+        );
+
       if (intersection.has_value()) {
         intersection->triangleIndex = idx;
       }
@@ -152,5 +180,7 @@ IntersectClosest(
   auto intersector = ClosestIntersector::Construct(accel);
 
   return
-    accel.boundingVolumeTraversal.intersect(bvh::Ray(ori, dir), intersector);
+    accel
+      .boundingVolumeTraversal
+      .intersect(bvh::Ray(ToBvh(ori), ToBvh(dir)), intersector);
 }
