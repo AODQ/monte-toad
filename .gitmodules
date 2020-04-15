@@ -1,3 +1,6 @@
 [submodule "third-party/cxxopts"]
 	path = third-party/cxxopts
 	url = https://github.com/jarro2783/cxxopts
+[submodule "third-party/bvh"]
+	path = third-party/bvh
+	url = https://github.com/madmann91/bvh
