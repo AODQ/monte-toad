@@ -4,10 +4,11 @@
 #include "span.hpp"
 
 #include <bvh/binned_sah_builder.hpp>
+#include <bvh/heuristic_primitive_splitter.hpp>
 #include <bvh/locally_ordered_clustering_builder.hpp>
 #include <bvh/parallel_reinsertion_optimization.hpp>
-#include <bvh/utilities.hpp>
 #include <bvh/sweep_sah_builder.hpp>
+#include <bvh/utilities.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -109,11 +110,7 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
     );
 
   { // -- build tree
-    /* bvh::BinnedSahBuilder<decltype(self->boundingVolume), 32> */
     bvh::SweepSahBuilder<decltype(self->boundingVolume)>
-    /* bvh::LocallyOrderedClusteringBuilder< */
-    /*   decltype(self->boundingVolume), uint32_t */
-    /* > */
       boundingVolumeBuilder { self->boundingVolume };
 
     boundingVolumeBuilder.build(
@@ -121,18 +118,25 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
     );
   }
 
-  /* { // -- optimize */
-  /*   bvh::ParallelReinsertionOptimization<decltype(self->boundingVolume)> */
-  /*     boundingVolumeOptimizer { self->boundingVolume }; */
+  { // -- optimize
+    bvh::ParallelReinsertionOptimization<decltype(self->boundingVolume)>
+      boundingVolumeOptimizer { self->boundingVolume };
+    boundingVolumeOptimizer.optimize();
+  }
 
-  /*   boundingVolumeOptimizer.optimize(); */
-  /* } */
-
-  bvh::shuffle_primitives(
-    self->triangles.data()
-  , self->boundingVolume.primitive_indices.get()
-  , self->triangles.size()
-  );
+  // Reorder primitives to BVH's primitive indices, ei before you would have to
+  // access the triangles as
+  //   accel.triangles[accel.boundingVolume.primitive_indices[i]]
+  // now you can just do
+  //   accel.triangles[i]
+  decltype(self->triangles) primitivesCopy;
+  primitivesCopy.resize(self->triangles.size());
+  #pragma omp parallel for
+  for (size_t i = 0; i < self->triangles.size(); ++ i) {
+    primitivesCopy[i] =
+      self->triangles[self->boundingVolume.primitive_indices[i]];
+  }
+  std::swap(self->triangles, primitivesCopy);
 
   return self;
 }
