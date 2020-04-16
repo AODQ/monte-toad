@@ -32,3 +32,18 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX=../install ../repo
 make -j4 install
 ```
+
+# Running
+There are several shell scripts provided under scripts that should assist in
+default scene configurations. (In the future these will probably be json files).
+
+As an example to render the BMW (with environmental spherical map)
+
+```
+git clone https://github.com/aodq/test-models
+cd test-models
+./extract.sh
+cd ..
+./scripts/bmw-front.sh -e ~/spherical-texture.png
+feh --force-aliasing out.ppm
+```
