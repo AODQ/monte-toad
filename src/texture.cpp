@@ -11,7 +11,7 @@
 Texture Texture::Construct(std::string const & filename) {
   stbi_set_flip_vertically_on_load(false);
 
-  spdlog::info("Loading texture {}", filename);
+  spdlog::debug("Loading texture {}", filename);
 
   Texture texture;
   texture.filename = filename;
@@ -30,8 +30,6 @@ Texture Texture::Construct(std::string const & filename) {
     if (!rawByteData) {
       spdlog::error("Could not load texture {}", filename);
     }
-
-    spdlog::info("channels {}", channels);
 
     // -- copy stbi texture into our own texture format for fast/simple access
     texture.data.resize(texture.width*texture.height);
@@ -63,11 +61,7 @@ Texture Texture::Construct(std::string const & filename) {
     stbi_image_free(rawByteData);
   }
 
-  spdlog::info(
-    "Resize texture {}x{} components to {}",
-    texture.width, texture.height
-  , texture.data.size()
-  );
+  spdlog::debug("\ttexture size {}x{}", texture.width, texture.height);
 
   return texture;
 }

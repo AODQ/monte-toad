@@ -1,15 +1,11 @@
 #pragma once
 
+#include "math.hpp"
+
 #include <bvh/single_ray_traversal.hpp>
 #include <bvh/bvh.hpp>
-#include <glm/glm.hpp>
 
 #include <memory>
-
-constexpr static float Pi     = 3.141592653589793f;
-constexpr static float InvPi  = 0.318309886183791f;
-constexpr static float Tau    = 6.283185307179586f;
-constexpr static float InvTau = 0.159154943091895f;
 
 struct Camera {
   glm::vec3 ori;

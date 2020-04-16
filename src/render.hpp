@@ -14,5 +14,6 @@ glm::vec3 Render(
 , Scene const & scene
 , Camera const & camera
 , uint32_t samplesPerPixel
+, uint32_t pathsPerSample
 , bool useBvh
 );

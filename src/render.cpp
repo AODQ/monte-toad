@@ -1,6 +1,7 @@
 #include "render.hpp"
 
 #include "log.hpp"
+#include "math.hpp"
 #include "noise.hpp"
 #include "primitive.hpp"
 #include "scene.hpp"
@@ -73,11 +74,6 @@ struct RaycastInfo {
           , self.intersection.barycentricUv
           )
         );
-
-      if (self.normal == glm::vec3(0.0f)) {
-        // calculate them
-        spdlog::info("Good to calculate");
-      }
     }
 
     return self;
@@ -118,7 +114,7 @@ std::pair<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
   glm::vec2 u = SampleUniform2(*pixelInfo.noise);
   glm::vec3 wo =
     ReorientHemisphere(
-      glm::normalize(ToCartesian(glm::sqrt(u.y), Tau*u.x))
+      glm::normalize(ToCartesian(glm::sqrt(u.y), glm::Tau*u.x))
     , results.normal
     );
   return std::make_pair(wo, BsdfPdf(results, wi, wo));
@@ -130,13 +126,52 @@ glm::vec3 BsdfFs(
 , RaycastInfo const & results
 , glm::vec3 wi, glm::vec3 wo
 ) {
-  glm::vec3 diffuse = glm::vec3(0.88f);
   auto const & mesh = scene.meshes[results.triangle->meshIdx];
-  if (mesh.diffuseTextureIdx != static_cast<size_t>(-1)) {
-    diffuse =
-      SampleBilinear(scene.textures[mesh.diffuseTextureIdx], results.uv);
+
+  glm::vec3 baseColor = glm::vec3(0.88f);
+  if (mesh.material.baseColorTextureIdx != static_cast<size_t>(-1)) {
+    baseColor =
+      SampleBilinear(
+        scene.textures[mesh.material.baseColorTextureIdx]
+      , results.uv
+      );
+  } else {
+    baseColor = mesh.material.colorDiffuse;
   }
-  return diffuse / Pi;
+
+  glm::vec3 colorSpecular = glm::vec3(0.88f);
+  colorSpecular = baseColor;
+  if (mesh.material.baseColorTextureIdx == static_cast<size_t>(-1)) {
+    colorSpecular = mesh.material.colorSpecular;
+  }
+
+  float roughness = 0.88f;
+  if (mesh.material.diffuseRoughnessTextureIdx != static_cast<size_t>(-1)) {
+    // ... TODO ...
+  } else {
+    // approximation of shininess to roughness
+    roughness =
+      glm::sqrt(2.0f/(glm::max(mesh.material.shininess, 1.0f) + 1.0f));
+  }
+
+  float cosNWo = glm::dot(results.normal, wo);
+  float cosNWo2 = SQR(cosNWo);
+
+  float roughnessDividend =
+    glm::Pi * glm::sqr((roughness - 1.0f) * cosNWo2 + 1.0f);
+
+  // GGX for now
+  roughness *= roughness;
+  float distribution = roughness/roughnessDividend;
+
+
+  // temporarily calculate pdf here until it is importance sampled
+  float bsdfPdf = (roughness * cosNWo)/roughnessDividend;
+
+  auto color = (baseColor / glm::Pi) + (colorSpecular * distribution);
+
+  return (cosNWo * color) / bsdfPdf;
+  /* return glm::clamp(color / bsdfPdf, glm::vec3(0.0f), glm::vec3(1.0f)); */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +184,7 @@ float SphericalTheta(glm::vec3 const & v) {
 float SphericalPhi(glm::vec3 const & v) {
   (void)SphericalPhi; // FIXME TODO
   float p = glm::atan(v.y, v.x);
-  return (p < 0.0f) ? (p + 2.0f*Pi) : p;
+  return (p < 0.0f) ? (p + 2.0f*glm::Pi) : p;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,17 +213,28 @@ PropagationStatus Propagate(
     if (!scene.environmentTexture.Valid()) {
       return PropagationStatus::End;
     }
-    glm::vec3 environmentColor = Sample(scene.environmentTexture, rd);
+    glm::vec3 emissiveColor = Sample(scene.environmentTexture, rd);
 
-    accumulatedIrradiance = radiance * environmentColor;
+    accumulatedIrradiance = radiance * emissiveColor;
+    return PropagationStatus::DirectAccumulation;
+  }
+
+  auto const & mesh = scene.meshes[results.triangle->meshIdx];
+
+  if (mesh.material.emissive) {
+    glm::vec3 emissiveColor = mesh.material.colorEmissive;
+
+    accumulatedIrradiance = radiance * emissiveColor;
     return PropagationStatus::DirectAccumulation;
   }
 
   auto [bsdfRayWo, bsdfPdf] = BsdfSample(pixelInfo, results, rd);
+
   radiance *=
-    glm::dot(results.normal, bsdfRayWo)
-  * BsdfFs(scene, results, rd, bsdfRayWo)
-  / (1.0f / (2.0f * Pi));
+    /* glm::dot(results.normal, bsdfRayWo) */
+    BsdfFs(scene, results, rd, bsdfRayWo)
+  /* / bsdfPdf */
+  ;
 
   { // apply next raycast
     rd = bsdfRayWo;
@@ -225,6 +271,7 @@ RenderResults Render(
   PixelInfo & pixelInfo
 , Scene const & scene
 , Camera const & camera
+, uint32_t pathsPerSample
 , bool useBvh
 ) {
   glm::vec3 eyeOri, eyeDir;
@@ -266,7 +313,7 @@ RenderResults Render(
     radiance = glm::vec3(1.0f)
   , accumulatedIrradiance = glm::vec3(1.0f);
 
-  for (size_t it = 0; it < 4; ++ it) {
+  for (size_t it = 0; it < pathsPerSample; ++ it) {
     PropagationStatus status =
       Propagate(
         pixelInfo
@@ -282,10 +329,10 @@ RenderResults Render(
 
     if (status == PropagationStatus::End) { break; }
     if (status == PropagationStatus::IndirectAccumulation) {
-      hit = 1;
+      hit = true;
     }
     if (status == PropagationStatus::DirectAccumulation) {
-      hit = 1;
+      hit = true;
       break;
     }
   }
@@ -304,6 +351,7 @@ glm::vec3 Render(
 , Scene const & scene
 , Camera const & camera
 , uint32_t samplesPerPixel
+, uint32_t pathsPerSample
 , bool useBvh
 ) {
   glm::vec3 accumulatedColor = glm::vec3(0.0f);
@@ -314,7 +362,8 @@ glm::vec3 Render(
   pixelInfo.noise = &noiseGenerator;
 
   for (uint32_t it = 0, maxIt = 0; maxIt < samplesPerPixel; ++ maxIt) {
-    auto renderResults = Render(pixelInfo, scene, camera, useBvh);
+    auto renderResults =
+      Render(pixelInfo, scene, camera, pathsPerSample, useBvh);
     if (!renderResults.valid) { continue; }
     // apply averaging to accumulated color corresponding to current
     // collected it

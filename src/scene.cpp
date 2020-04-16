@@ -1,12 +1,12 @@
 #include "scene.hpp"
 
+#include "log.hpp"
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <assimp/pbrmaterial.h>
 #include <glm/ext.hpp>
-#include <spdlog/spdlog.h>
-
-#include <filesystem>
 
 namespace {
   //////////////////////////////////////////////////////////////////////////////
@@ -19,16 +19,21 @@ namespace {
     aiScene const * asset =
       importer.ReadFile(
         filename
-      , //aiProcess_CalcTangentSpace
-        aiProcess_JoinIdenticalVertices
-      | aiProcess_Triangulate
-      /* | aiProcess_ImproveCacheLocality */ // might want to test this one
-      /* | aiProcess_OptimizeMeshes */ // probably not useful right now
-      /* | aiProcess_OptimizeGraph  */ // this is probably not useful either
+      , aiProcess_CalcTangentSpace
+      | aiProcess_FindDegenerates
+      | aiProcess_FixInfacingNormals
+      | aiProcess_GenSmoothNormals
+      | aiProcess_GlobalScale
+      | aiProcess_ImproveCacheLocality
+      | aiProcess_JoinIdenticalVertices
+      | aiProcess_OptimizeGraph
+      | aiProcess_OptimizeMeshes
       | aiProcess_PreTransformVertices
+      | aiProcess_TransformUVCoords
+      | aiProcess_Triangulate
       );
 
-    auto basePath = std::filesystem::path{filename}.remove_filename();
+    model.basePath = std::filesystem::path{filename}.remove_filename();
 
     if (!asset) {
       spdlog::error(
@@ -46,36 +51,8 @@ namespace {
       { // -- process mesh
         Mesh modelMesh;
 
-        aiMaterial * material = asset->mMaterials[mesh.mMaterialIndex];
-        aiString textureFile;
-        if (
-          material->Get(
-            AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0)
-          , textureFile
-          ) == aiReturn_SUCCESS
-        ) {
-          auto filename = std::string{textureFile.C_Str()};
-          // Have to fix incoming file paths as they may be encoded using
-          // windows file path "/", and std::filesystem will not handle this.
-          std::replace(filename.begin(), filename.end(), '\\', '/');
-          filename = (basePath / filename).string();
-
-          // try to find cached texture
-          modelMesh.diffuseTextureIdx = static_cast<size_t>(-1);
-
-          for (size_t i = 0; i < model.textures.size(); ++ i) {
-            if (model.textures[i].filename == filename) {
-              modelMesh.diffuseTextureIdx = i;
-              break;
-            }
-          }
-
-          if (modelMesh.diffuseTextureIdx == static_cast<size_t>(-1)) {
-            // TODO support embedded textures
-            model.textures.emplace_back(Texture::Construct(filename));
-            modelMesh.diffuseTextureIdx = model.textures.size() - 1;
-          }
-        }
+        modelMesh.material =
+          Material::Construct(*asset->mMaterials[mesh.mMaterialIndex], model);
 
         model.meshes.emplace_back(std::move(modelMesh));
       }
@@ -155,6 +132,116 @@ namespace {
 
     return triangles;
   }
+
+////////////////////////////////////////////////////////////////////////////////
+void GetProperty(
+  aiMaterial const & aiMaterial
+, float & member
+, std::string const & property, int type, int idx // generated from AI_MATKEY_*
+) {
+  if (
+    ai_real value;
+    aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS
+  ) {
+    member = value;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void GetProperty(
+  aiMaterial const & aiMaterial
+, glm::vec3 & member
+, std::string const & property, int type, int idx // generated from AI_MATKEY_*
+) {
+  if (
+    aiColor3D value;
+    aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS
+  ) {
+    member = glm::vec3(value.r, value.g, value.b);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void GetProperty(
+  aiMaterial const & aiMaterial
+, std::string & member
+, std::string const & property, int type, int idx // generated from AI_MATKEY_*
+) {
+  if (
+    aiString value;
+    aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS
+  ) {
+    member = std::string{value.C_Str()};
+  }
+}
+
+} // -- end namespace
+
+
+Material Material::Construct(aiMaterial const & aiMaterial, Scene & scene) {
+  Material self;
+
+  auto fixFilename = [&basePath=scene.basePath](aiString const & file) {
+    auto filename = std::string{file.C_Str()};
+    // Have to fix incoming file paths as they may be encoded using
+    // windows file path "/", and std::filesystem will not handle this.
+    std::replace(filename.begin(), filename.end(), '\\', '/');
+    return (basePath / filename).string();
+  };
+
+  GetProperty(aiMaterial, self.name, AI_MATKEY_NAME);
+
+  // -- attempt first to load global properties (ei for obj)
+  GetProperty(aiMaterial, self.colorDiffuse,      AI_MATKEY_COLOR_DIFFUSE);
+  GetProperty(aiMaterial, self.colorSpecular,     AI_MATKEY_COLOR_SPECULAR);
+  GetProperty(aiMaterial, self.colorAmbient,      AI_MATKEY_COLOR_AMBIENT);
+  GetProperty(aiMaterial, self.colorEmissive,     AI_MATKEY_COLOR_EMISSIVE);
+  GetProperty(aiMaterial, self.colorTransparent,  AI_MATKEY_COLOR_TRANSPARENT);
+  GetProperty(aiMaterial, self.opacity,           AI_MATKEY_OPACITY);
+  GetProperty(aiMaterial, self.shininess,         AI_MATKEY_SHININESS);
+  GetProperty(aiMaterial, self.shininessStrength, AI_MATKEY_SHININESS_STRENGTH);
+  GetProperty(aiMaterial, self.indexOfRefraction, AI_MATKEY_REFRACTI);
+
+  self.emissive = self.emissive | (glm::length(self.colorEmissive) > 0.001f);
+
+  // load baseColor texture
+  if (
+    aiString textureFile;
+    aiMaterial.GetTexture(
+      AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE
+    , &textureFile
+    ) == aiReturn_SUCCESS
+  ) {
+    auto filename = fixFilename(textureFile);
+
+    // try to find cached texture
+    for (size_t i = 0; i < scene.textures.size(); ++ i) {
+      if (scene.textures[i].filename == filename) {
+        self.baseColorTextureIdx = i;
+        break;
+      }
+    }
+
+    // if not cached, create texture
+    if (self.baseColorTextureIdx == static_cast<size_t>(-1)) {
+      // TODO support embedded textures
+      scene.textures.emplace_back(Texture::Construct(filename));
+      self.baseColorTextureIdx = scene.textures.size() - 1;
+    }
+  }
+
+  spdlog::debug("Loaded material {}", self.name);
+  spdlog::debug("\t colorDiffuse:      {}", self.colorDiffuse     );
+  spdlog::debug("\t colorSpecular:     {}", self.colorSpecular    );
+  spdlog::debug("\t colorAmbient:      {}", self.colorAmbient     );
+  spdlog::debug("\t colorEmissive:     {}", self.colorEmissive    );
+  spdlog::debug("\t colorTransparent:  {}", self.colorTransparent );
+  spdlog::debug("\t opacity:           {}", self.opacity          );
+  spdlog::debug("\t shininess:         {}", self.shininess        );
+  spdlog::debug("\t shininessStrength: {}", self.shininessStrength);
+  spdlog::debug("\t emissive:          {}", self.emissive         );
+
+  return self;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

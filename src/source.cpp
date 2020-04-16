@@ -25,6 +25,9 @@ int main(int argc, char** argv) {
     (
       "f,file", "input model file (required)", cxxopts::value<std::string>()
     ) (
+      "d,debug", "enable debug printing"
+    , cxxopts::value<bool>()->default_value("false")
+    ) (
       "o,output", "image output file"
     , cxxopts::value<std::string>()->default_value("out.ppm")
     ) (
@@ -59,6 +62,9 @@ int main(int argc, char** argv) {
     ) (
       "spp", "number of iterations/samples per pixel (spp)"
     , cxxopts::value<uint32_t>()->default_value("8")
+    ) (
+      "pps", "number of paths per sample"
+    , cxxopts::value<uint32_t>()->default_value("4")
     ) (
       "U,up-axis", "model up-axis set to Z (Y when not set)"
     , cxxopts::value<bool>()->default_value("false")
@@ -95,6 +101,7 @@ int main(int argc, char** argv) {
   bool         optimizeBvh;
   uint16_t     numThreads;
   uint32_t     samplesPerPixel;
+  uint32_t     pathsPerSample;
 
   { // -- collect values
     if (!result["file"].count()) {
@@ -112,6 +119,7 @@ int main(int argc, char** argv) {
     useBvh          = result["no-bvh"]         .as<bool>();
     optimizeBvh     = result["no-optimize-bvh"].as<bool>();
     samplesPerPixel = result["spp"]            .as<uint32_t>();
+    pathsPerSample  = result["pps"]            .as<uint32_t>();
     environmentMapFilename = result["environment-map"].as<std::string>();
 
     { // resolution
@@ -141,6 +149,12 @@ int main(int argc, char** argv) {
       cameraLookat = glm::vec3(value[0], value[1], value[2]);
     }
 
+    { // debug print
+      auto value = result["debug"].as<bool>();
+      if (value)
+        { spdlog::set_level(spdlog::level::debug); }
+    }
+
     // convert command-line units to application units
     cameraFov       = 180.0f - cameraFov;
     displayProgress = !displayProgress;
@@ -159,20 +173,16 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  spdlog::info("Model triangles: {}", scene.accelStructure->triangles.size());
-  spdlog::info("Model meshes: {}", scene.meshes.size());
-  spdlog::info("Model textures: {}", scene.textures.size());
-  spdlog::info("Model bounds: {} -> {}", scene.bboxMin, scene.bboxMax);
-  spdlog::info("Model center: {}", (scene.bboxMax + scene.bboxMin) * 0.5f);
-  spdlog::info("Model size: {}", (scene.bboxMax - scene.bboxMin));
-  spdlog::info(
+  spdlog::debug("Model triangles: {}", scene.accelStructure->triangles.size());
+  spdlog::debug("Model meshes: {}", scene.meshes.size());
+  spdlog::debug("Model textures: {}", scene.textures.size());
+  spdlog::debug("Model bounds: {} -> {}", scene.bboxMin, scene.bboxMax);
+  spdlog::debug("Model center: {}", (scene.bboxMax + scene.bboxMin) * 0.5f);
+  spdlog::debug("Model size: {}", (scene.bboxMax - scene.bboxMin));
+  spdlog::debug(
     "BVH nodes: {}"
   , scene.accelStructure->boundingVolume.node_count
   );
-  /* spdlog::info( */
-  /*   "BVH traversal cost: {}" */
-  /* , scene.accelStructure->boundingVolume.traversal_cost */
-  /* ); */
 
   Camera camera;
   { // -- camera setup
@@ -223,6 +233,7 @@ int main(int argc, char** argv) {
         , scene
         , camera
         , samplesPerPixel
+        , pathsPerSample
         , useBvh
         );
 
