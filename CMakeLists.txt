@@ -112,9 +112,21 @@ target_include_directories(
 )
 target_sources(cpuraytracer PRIVATE ${SOURCE_LIST} ${HEADER_LIST})
 
+macro(install_directory directory)
+  message(STATUS "Copying resource directory ${directory}")
+  install(
+    DIRECTORY ${directory}
+    DESTINATION .
+    USE_SOURCE_PERMISSIONS
+  )
+endmacro()
+
 ## install binary files
 install(
   TARGETS cpuraytracer
-  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-  COMPONENT core
+  RUNTIME
+    DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    COMPONENT core
 )
+
+install_directory(scripts)
