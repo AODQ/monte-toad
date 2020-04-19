@@ -82,7 +82,10 @@ struct RaycastInfo {
 
 ///////////////////////////////////////////////////////////////////////////////u/
 std::pair<glm::vec3, glm::vec3> CalculateXY(glm::vec3 const & normal) {
-  glm::vec3 binormal = glm::vec3(1.0f, 0.0f, 0.0f); // TODO swap if eq to normal
+  glm::vec3 binormal =
+    glm::abs(normal.x) > 0.1f
+  ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
+
   binormal = glm::normalize(glm::cross(normal, binormal));
   glm::vec3 bitangent = glm::cross(binormal, normal);
   return std::make_pair(binormal, bitangent);
@@ -102,7 +105,7 @@ glm::vec3 ToCartesian(float cosTheta, float phi) {
 
 ////////////////////////////////////////////////////////////////////////////////
 float BsdfPdf(RaycastInfo const & results, glm::vec3 wi, glm::vec3 wo) {
-  return 1.0f/3.14159f;
+  return 1.0f/glm::Pi;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -112,6 +115,7 @@ std::pair<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
 , glm::vec3 const & wi
 ) {
   glm::vec2 u = SampleUniform2(*pixelInfo.noise);
+
   glm::vec3 wo =
     ReorientHemisphere(
       glm::normalize(ToCartesian(glm::sqrt(u.y), glm::Tau*u.x))
@@ -139,39 +143,41 @@ glm::vec3 BsdfFs(
     baseColor = mesh.material.colorDiffuse;
   }
 
-  glm::vec3 colorSpecular = glm::vec3(0.88f);
-  colorSpecular = baseColor;
-  if (mesh.material.baseColorTextureIdx == static_cast<size_t>(-1)) {
-    colorSpecular = mesh.material.colorSpecular;
-  }
+  return baseColor * (1.0f / glm::Pi);
 
-  float roughness = 0.88f;
-  if (mesh.material.diffuseRoughnessTextureIdx != static_cast<size_t>(-1)) {
-    // ... TODO ...
-  } else {
-    // approximation of shininess to roughness
-    roughness =
-      glm::sqrt(2.0f/(glm::max(mesh.material.shininess, 1.0f) + 1.0f));
-  }
+  /* glm::vec3 colorSpecular = glm::vec3(0.88f); */
+  /* colorSpecular = baseColor; */
+  /* if (mesh.material.baseColorTextureIdx == static_cast<size_t>(-1)) { */
+  /*   colorSpecular = mesh.material.colorSpecular; */
+  /* } */
 
-  float cosNWo = glm::dot(results.normal, wo);
-  float cosNWo2 = SQR(cosNWo);
+  /* float roughness = 0.88f; */
+  /* if (mesh.material.diffuseRoughnessTextureIdx != static_cast<size_t>(-1)) { */
+  /*   // ... TODO ... */
+  /* } else { */
+  /*   // approximation of shininess to roughness */
+  /*   roughness = */
+  /*     glm::sqrt(2.0f/(glm::max(mesh.material.shininess, 1.0f) + 1.0f)); */
+  /* } */
 
-  float roughnessDividend =
-    glm::Pi * glm::sqr((roughness - 1.0f) * cosNWo2 + 1.0f);
+  /* float cosNWo = glm::dot(results.normal, wo); */
+  /* float cosNWo2 = SQR(cosNWo); */
 
-  // GGX for now
-  roughness *= roughness;
-  float distribution = roughness/roughnessDividend;
+  /* float roughnessDividend = */
+  /*   glm::Pi * glm::sqr((roughness - 1.0f) * cosNWo2 + 1.0f); */
+
+  /* // GGX for now */
+  /* roughness *= roughness; */
+  /* float distribution = roughness/roughnessDividend; */
 
 
-  // temporarily calculate pdf here until it is importance sampled
-  float bsdfPdf = (roughness * cosNWo)/roughnessDividend;
+  /* // temporarily calculate pdf here until it is importance sampled */
+  /* float bsdfPdf = (roughness * cosNWo)/roughnessDividend; */
 
-  auto color = (baseColor / glm::Pi) + (colorSpecular * distribution);
+  /* auto color = (baseColor / glm::Pi) + (colorSpecular * distribution); */
 
-  return (cosNWo * color) / bsdfPdf;
-  /* return glm::clamp(color / bsdfPdf, glm::vec3(0.0f), glm::vec3(1.0f)); */
+  /* return (cosNWo * color) / bsdfPdf; */
+  /* /1* return glm::clamp(color / bsdfPdf, glm::vec3(0.0f), glm::vec3(1.0f)); *1/ */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -231,9 +237,9 @@ PropagationStatus Propagate(
   auto [bsdfRayWo, bsdfPdf] = BsdfSample(pixelInfo, results, rd);
 
   radiance *=
-    /* glm::dot(results.normal, bsdfRayWo) */
-    BsdfFs(scene, results, rd, bsdfRayWo)
-  /* / bsdfPdf */
+    glm::dot(results.normal, bsdfRayWo)
+  * BsdfFs(scene, results, rd, bsdfRayWo)
+  / bsdfPdf
   ;
 
   { // apply next raycast

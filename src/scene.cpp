@@ -22,7 +22,7 @@ namespace {
       , aiProcess_CalcTangentSpace
       | aiProcess_FindDegenerates
       | aiProcess_FixInfacingNormals
-      | aiProcess_GenNormals
+      | aiProcess_GenSmoothNormals
       | aiProcess_GlobalScale
       | aiProcess_ImproveCacheLocality
       | aiProcess_JoinIdenticalVertices
@@ -208,7 +208,9 @@ Material Material::Construct(aiMaterial const & aiMaterial, Scene & scene) {
   if (
     aiString textureFile;
     aiMaterial.GetTexture(
-      AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE
+      /* AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE */
+      /* AI_MATKEY_TEXTURE_DIFFUSE */
+      aiTextureType_DIFFUSE, 0
     , &textureFile
     ) == aiReturn_SUCCESS
   ) {

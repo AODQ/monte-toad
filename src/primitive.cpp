@@ -1,5 +1,6 @@
 #include "primitive.hpp"
 
+#include "log.hpp"
 #include "math.hpp"
 #include "span.hpp"
 
@@ -11,8 +12,6 @@
 #include <bvh/spatial_split_bvh_builder.hpp>
 #include <bvh/sweep_sah_builder.hpp>
 #include <bvh/utilities.hpp>
-
-#include <spdlog/spdlog.h>
 
 #include "span.hpp"
 
@@ -49,7 +48,7 @@ std::optional<Intersection> RayTriangleIntersection(
   auto invDet = float(1.0) / absDet;
   Intersection intersection;
   intersection.length = t * invDet;
-  intersection.barycentricUv = glm::vec2(u, v);
+  intersection.barycentricUv = glm::vec2(u, v) * invDet;
   return intersection;
 }
 
@@ -169,6 +168,15 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
     builder.build(global_bbox, bboxes.get(), centers.get(), referenceCount);
   }
 
+  { // -- optimizer
+    bvh::ParallelReinsertionOptimization<bvh::Bvh<float>> optimization(
+      self->boundingVolume
+    );
+    optimization.optimize();
+  }
+
+  bvh::optimize_bvh_layout(self->boundingVolume, referenceCount);
+
   auto shuffledTriangles =
     bvh::shuffle_primitives(
       triangles.data(),
@@ -195,13 +203,11 @@ IntersectClosest(
   bvh::ClosestIntersector<true, bvh::Bvh<float>, Triangle>
     intersector(self.boundingVolume, self.triangles.data());
   bvh::SingleRayTraversal<bvh::Bvh<float>> traversal(self.boundingVolume);
-  auto result = 
+  auto result =
     traversal.intersect(bvh::Ray(ToBvh(ori), ToBvh(dir)), intersector);
   if (!result) { return std::nullopt; }
 
-  Intersection intersection;
-  intersection.barycentricUv = glm::vec2(0.0f);
-  intersection.length = result->distance();
-  intersection.triangleIdx = result->primitive_index;
-  return intersection;
+  // have to copy over triangle idx as that's not done in intersection code
+  result->intersection.triangleIdx = result->primitive_index;
+  return result->intersection;
 }
