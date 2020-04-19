@@ -22,7 +22,7 @@ namespace {
       , aiProcess_CalcTangentSpace
       | aiProcess_FindDegenerates
       | aiProcess_FixInfacingNormals
-      | aiProcess_GenSmoothNormals
+      | aiProcess_GenNormals
       | aiProcess_GlobalScale
       | aiProcess_ImproveCacheLocality
       | aiProcess_JoinIdenticalVertices
@@ -281,7 +281,7 @@ std::pair<Triangle const *, Intersection> Raycast(
     Intersection intersection;
 
     for (auto const & tri : scene.accelStructure->triangles) {
-      auto i = RayTriangleIntersection(ori, dir, tri);
+      auto i = RayTriangleIntersection(bvh::Ray(ToBvh(ori), ToBvh(dir)), tri);
       if (i && i->distance() < dist) {
         dist = i->distance();
         intersection = *i;
@@ -293,5 +293,5 @@ std::pair<Triangle const *, Intersection> Raycast(
 
   auto hit = IntersectClosest(*scene.accelStructure, ori, dir);
   if (!hit.has_value()) { return { nullptr, {} }; }
-  return { scene.accelStructure->triangles.data() + hit->triangleIndex, *hit };
+  return { scene.accelStructure->triangles.data() + hit->triangleIdx, *hit };
 }

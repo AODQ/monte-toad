@@ -5,14 +5,53 @@
 
 #include <bvh/binned_sah_builder.hpp>
 #include <bvh/heuristic_primitive_splitter.hpp>
+#include <bvh/intersectors.hpp>
 #include <bvh/locally_ordered_clustering_builder.hpp>
 #include <bvh/parallel_reinsertion_optimization.hpp>
+#include <bvh/spatial_split_bvh_builder.hpp>
 #include <bvh/sweep_sah_builder.hpp>
 #include <bvh/utilities.hpp>
 
 #include <spdlog/spdlog.h>
 
 #include "span.hpp"
+
+////////////////////////////////////////////////////////////////////////////////
+std::optional<Intersection> RayTriangleIntersection(
+  bvh::Ray<float> const & ray
+, Triangle const & triangle
+, CullFace cullFace
+, float epsilon
+) {
+  // Adapted from BVH triangle intersection code, as my personal intersection
+  // code doesn't seem to work with the library (neither does replacing these
+  // bvh::* operations with glm::* , maybe should investigate as to why later?)
+  auto const p0 = ToBvh(triangle.v0);
+  auto const e1 = ToBvh(triangle.v0 - triangle.v1);
+  auto const e2 = ToBvh(triangle.v2 - triangle.v0);
+  auto const n = bvh::cross(e1, e2);
+
+  static constexpr float tolerance = float(1e-9);
+
+  auto const c = p0 - ray.origin;
+  auto const r = bvh::cross(ray.direction, c);
+  auto const det = bvh::dot(n, ray.direction);
+  auto const absDet = std::fabs(det);
+
+  auto const u = bvh::product_sign(bvh::dot(r, e2), det);
+  auto const v = bvh::product_sign(bvh::dot(r, e1), det);
+  auto const w = absDet - u - v;
+
+  if (u < -tolerance || v < -tolerance || w < -tolerance) return std::nullopt;
+  auto t = bvh::product_sign(bvh::dot(n, c), det);
+  if (t < absDet * ray.tmin || absDet * ray.tmax <= t) return std::nullopt;
+
+  auto invDet = float(1.0) / absDet;
+  Intersection intersection;
+  intersection.length = t * invDet;
+  intersection.barycentricUv = glm::vec2(u, v);
+  return intersection;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 Triangle::Triangle() {}
@@ -31,49 +70,80 @@ Triangle::Triangle(
 {}
 
 ////////////////////////////////////////////////////////////////////////////////
-Triangle::~Triangle() {}
+std::pair<bvh::BoundingBox<float>, bvh::BoundingBox<float>>
+Triangle::split(
+  size_t axis
+, float position
+) const {
+  // Adapted from BVH's triangle code again
+  auto left  = bvh::BoundingBox<float>::empty();
+  auto right = bvh::BoundingBox<float>::empty();
+  auto splitEdge =
+    [=] (const glm::vec3& a, const glm::vec3& b) {
+      auto t = (position - a[axis]) / (b[axis] - a[axis]);
+      return a + t * (b - a);
+    };
+  auto q0 = this->v0[axis] <= position;
+  auto q1 = this->v1[axis] <= position;
+  auto q2 = this->v2[axis] <= position;
+  if (q0) { left.extend(ToBvh(this->v0)); }
+  else    { right.extend(ToBvh(this->v0)); }
+  if (q1) { left.extend(ToBvh(this->v1)); }
+  else    { right.extend(ToBvh(this->v1)); }
+  if (q2) { left.extend(ToBvh(this->v2)); }
+  else    { right.extend(ToBvh(this->v2)); }
+  if (q0 ^ q1) {
+      auto m = splitEdge(this->v0, this->v1);
+      left.extend(ToBvh(m));
+      right.extend(ToBvh(m));
+  }
+  if (q1 ^ q2) {
+      auto m = splitEdge(this->v1, this->v2);
+      left.extend(ToBvh(m));
+      right.extend(ToBvh(m));
+  }
+  if (q2 ^ q0) {
+      auto m = splitEdge(this->v2, this->v0);
+      left.extend(ToBvh(m));
+      right.extend(ToBvh(m));
+  }
+  return std::make_pair(left, right);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
-// TODO support min/max distance
-std::optional<Intersection> RayTriangleIntersection(
-  glm::vec3 ori
-, glm::vec3 dir
-, Triangle const & triangle
-, CullFace cullFace
-, float epsilon
-) {
-  glm::vec3 ab = triangle.v1 - triangle.v0;
-  glm::vec3 ac = triangle.v2 - triangle.v0;
-  glm::vec3 pvec = glm::cross(dir, ac);
-  float determinant = glm::dot(ab, pvec);
-
-  if ((cullFace == CullFace::None  && glm::abs(determinant) <  epsilon)
-   || (cullFace == CullFace::Back  &&          determinant  <  epsilon)
-   || (cullFace == CullFace::Front &&          determinant  > -epsilon)
-  ) {
-    return std::nullopt;
-  }
-
-  float determinantInv = 1.0f / determinant;
-
-  glm::vec2 uv;
-
-  glm::vec3 tvec = ori - triangle.v0;
-  uv.x = determinantInv * glm::dot(tvec, pvec);
-  if (uv.x < 0.0f || uv.x > 1.0f) { return std::nullopt; }
-
-  glm::vec3 qvec = glm::cross(tvec, ab);
-  uv.y = determinantInv * glm::dot(dir, qvec);
-  if (uv.y < 0.0f || uv.x + uv.y > 1.0f) { return std::nullopt; }
-
-  float distance = determinantInv * glm::dot(ac, qvec);
-  if (distance <= 0.0f) { return std::nullopt; }
-
-  Intersection intersection;
-  intersection.length = distance;
-  intersection.barycentricUv = uv;
-  return std::make_optional(intersection);
+bvh::BoundingBox<float> Triangle::bounding_box() const {
+  auto bbox = bvh::BoundingBox<float>(ToBvh(this->v0));
+  bbox.extend(ToBvh(this->v1));
+  bbox.extend(ToBvh(this->v2));
+  return bbox;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+bvh::Vector3<float> Triangle::center() const {
+  return ToBvh(Center());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+glm::vec3 Triangle::Center() const {
+  return (this->v0 + this->v1 + this->v2) * (1.0f/3.0f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+float Triangle::area() const {
+  auto const edge0 = this->v0 - this->v1;
+  auto const edge1 = this->v2 - this->v0;
+  return glm::length(glm::cross(edge0, edge1)) * 0.5f;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+std::optional<Intersection> Triangle::intersect(
+  bvh::Ray<float> const & ray
+) const {
+  return RayTriangleIntersection(ray, *this);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+Triangle::~Triangle() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
@@ -84,59 +154,34 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
 
   self->triangles = std::move(trianglesMv);
 
-  auto boundingBoxes = std::vector<bvh::BoundingBox<float>>();
-  boundingBoxes.resize(self->triangles.size());
-  auto centers = std::vector<bvh::Vector3<float>>();
-  centers.resize(self->triangles.size());
+  auto & triangles = self->triangles;
 
-  // -- calculate bounding boxes
-  #pragma omp parallel for
-  for (size_t i = 0; i < self->triangles.size(); ++ i) {
-    auto & triangle = self->triangles[i];
+  auto [bboxes, centers] =
+    bvh::compute_bounding_boxes_and_centers(triangles.data(), triangles.size());
 
-    auto bbox = bvh::BoundingBox<float>(ToBvh(triangle.v0));
-    bbox.extend(ToBvh(triangle.v1));
-    bbox.extend(ToBvh(triangle.v2));
+  auto global_bbox =
+    bvh::compute_bounding_boxes_union(bboxes.get(), triangles.size());
 
-    boundingBoxes[i] = bbox;
-    centers[i] = ToBvh((triangle.v0 + triangle.v1 + triangle.v2) * (1.0f/3.0f));
+  auto referenceCount = triangles.size();
+
+  { // -- build SAH
+    bvh::SweepSahBuilder<bvh::Bvh<float>> builder(self->boundingVolume);
+    builder.build(global_bbox, bboxes.get(), centers.get(), referenceCount);
   }
 
-  // -- calculate global bounding box (not thread-safe w/o omp reduction)
-  auto globalBbox =
-    bvh::compute_bounding_boxes_union(
-      boundingBoxes.data()
-    , self->triangles.size()
+  auto shuffledTriangles =
+    bvh::shuffle_primitives(
+      triangles.data(),
+      self->boundingVolume.primitive_indices.get(),
+      referenceCount
     );
 
-  { // -- build tree
-    bvh::SweepSahBuilder<decltype(self->boundingVolume)>
-      boundingVolumeBuilder { self->boundingVolume };
-
-    boundingVolumeBuilder.build(
-      globalBbox, boundingBoxes.data(), centers.data(), self->triangles.size()
-    );
-  }
-
-  { // -- optimize
-    bvh::ParallelReinsertionOptimization<decltype(self->boundingVolume)>
-      boundingVolumeOptimizer { self->boundingVolume };
-    boundingVolumeOptimizer.optimize();
-  }
-
-  // Reorder primitives to BVH's primitive indices, ei before you would have to
-  // access the triangles as
-  //   accel.triangles[accel.boundingVolume.primitive_indices[i]]
-  // now you can just do
-  //   accel.triangles[i]
-  decltype(self->triangles) primitivesCopy;
-  primitivesCopy.resize(self->triangles.size());
-  #pragma omp parallel for
-  for (size_t i = 0; i < self->triangles.size(); ++ i) {
-    primitivesCopy[i] =
-      self->triangles[self->boundingVolume.primitive_indices[i]];
-  }
-  std::swap(self->triangles, primitivesCopy);
+  triangles.resize(referenceCount);
+  std::memcpy(
+    reinterpret_cast<void*>(triangles.data()),
+    reinterpret_cast<void*>(shuffledTriangles.get()),
+    referenceCount * sizeof(Triangle)
+  );
 
   return self;
 }
@@ -144,47 +189,19 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
 ////////////////////////////////////////////////////////////////////////////////
 std::optional<Intersection>
 IntersectClosest(
-  AccelerationStructure const & accel
+  AccelerationStructure const & self
 , glm::vec3 ori, glm::vec3 dir
 ) {
-  struct ClosestIntersector {
-    ClosestIntersector() = default;
+  bvh::ClosestIntersector<true, bvh::Bvh<float>, Triangle>
+    intersector(self.boundingVolume, self.triangles.data());
+  bvh::SingleRayTraversal<bvh::Bvh<float>> traversal(self.boundingVolume);
+  auto result = 
+    traversal.intersect(bvh::Ray(ToBvh(ori), ToBvh(dir)), intersector);
+  if (!result) { return std::nullopt; }
 
-    span<Triangle const> triangles;
-
-    using Result = Intersection;
-    bool const any_hit = false;
-
-    static ClosestIntersector Construct(
-      AccelerationStructure const & accel
-    ) {
-      ClosestIntersector intersector;
-      intersector.triangles = make_span(accel.triangles);
-      return intersector;
-    }
-
-    std::optional<Intersection> operator()(
-      size_t idx
-    , bvh::Ray<float> const & ray
-    ) const {
-      auto intersection =
-        RayTriangleIntersection(
-          ToGlm(ray.origin)
-        , ToGlm(ray.direction)
-        , triangles[idx]
-        );
-
-      if (intersection.has_value()) {
-        intersection->triangleIndex = idx;
-      }
-      return intersection;
-    }
-  };
-
-  auto intersector = ClosestIntersector::Construct(accel);
-
-  return
-    accel
-      .boundingVolumeTraversal
-      .intersect(bvh::Ray(ToBvh(ori), ToBvh(dir)), intersector);
+  Intersection intersection;
+  intersection.barycentricUv = glm::vec2(0.0f);
+  intersection.length = result->distance();
+  intersection.triangleIdx = result->primitive_index;
+  return intersection;
 }

@@ -78,6 +78,8 @@ struct Scene {
   glm::vec3 bboxMin, bboxMax;
 };
 
+#include <bvh/triangle.hpp>
+
 std::pair<Triangle const *, Intersection> Raycast(
   Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
