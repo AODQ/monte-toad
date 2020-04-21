@@ -10,14 +10,6 @@
 #include <random>
 
 namespace {
-////////////////////////////////////////////////////////////////////////////////
-template <typename U>
-U BarycentricInterpolation(
-  U const & v0, U const & v1, U const & v2
-, glm::vec2 const & uv
-) {
-  return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up, float fovRadians) {
@@ -52,6 +44,7 @@ struct RaycastInfo {
   static RaycastInfo Construct(
     Triangle const * triangle
   , Intersection intersection
+  , glm::vec3 const & wi
   ) {
     RaycastInfo self;
     self.triangle = triangle;
@@ -66,6 +59,9 @@ struct RaycastInfo {
           , self.intersection.barycentricUv
           )
         );
+
+      // might want to flip normal dependent on direction
+      /* if (glm::dot(wi, self.normal) < 0.0f) { self.normal *= -1.0f; } */
 
       self.uv =
         glm::normalize(
@@ -87,7 +83,7 @@ std::pair<glm::vec3, glm::vec3> CalculateXY(glm::vec3 const & normal) {
   ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
 
   binormal = glm::normalize(glm::cross(normal, binormal));
-  glm::vec3 bitangent = glm::cross(binormal, normal);
+  glm::vec3 bitangent = (glm::cross(binormal, normal));
   return std::make_pair(binormal, bitangent);
 }
 
@@ -105,7 +101,8 @@ glm::vec3 ToCartesian(float cosTheta, float phi) {
 
 ////////////////////////////////////////////////////////////////////////////////
 float BsdfPdf(RaycastInfo const & results, glm::vec3 wi, glm::vec3 wo) {
-  return 1.0f/glm::Pi;
+  auto cosTheta = glm::dot(wo, results.normal);
+  return cosTheta < 0.0f ? 0.0f : cosTheta * glm::InvPi;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -122,6 +119,14 @@ std::pair<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
     , results.normal
     );
   return std::make_pair(wo, BsdfPdf(results, wi, wo));
+
+  // -- uniform weighted hemisphere
+  /* float const r = glm::sqrt(1.0f - u.x*u.x); */
+  /* float const phi = 2.0f * glm::Pi * u.y; */
+  /* auto wo = */
+  /*   ReorientHemisphere( */
+  /*     glm::vec3(glm::cos(phi) * r, glm::sin(phi) * r, u.x), results.normal */
+  /*   ); */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +148,7 @@ glm::vec3 BsdfFs(
     baseColor = mesh.material.colorDiffuse;
   }
 
-  return baseColor * (1.0f / glm::Pi);
+  return baseColor * (1.0f / glm::Pi) * glm::dot(results.normal, wo);
 
   /* glm::vec3 colorSpecular = glm::vec3(0.88f); */
   /* colorSpecular = baseColor; */
@@ -212,6 +217,7 @@ PropagationStatus Propagate(
 , uint16_t step
 , bool useBvh
 ) {
+  // -- check if skybox (if available) was hit
   if (results.triangle == nullptr) {
     // if no collision is made, either all direct accumulation must be
     // discarded, or if there's an environment map, that can be used as an
@@ -221,34 +227,84 @@ PropagationStatus Propagate(
     }
     glm::vec3 emissiveColor = Sample(scene.environmentTexture, rd);
 
-    accumulatedIrradiance = radiance * emissiveColor;
+    accumulatedIrradiance += radiance * emissiveColor;
     return PropagationStatus::DirectAccumulation;
   }
 
   auto const & mesh = scene.meshes[results.triangle->meshIdx];
 
+  // -- apply direct emission
   if (mesh.material.emissive) {
     glm::vec3 emissiveColor = mesh.material.colorEmissive;
 
-    accumulatedIrradiance = radiance * emissiveColor;
+    accumulatedIrradiance += radiance * emissiveColor;
     return PropagationStatus::DirectAccumulation;
   }
 
-  auto [bsdfRayWo, bsdfPdf] = BsdfSample(pixelInfo, results, rd);
+  // generate bsdf sample (this will also be used for next propagation)
+  auto [bsdfWo, bsdfPdf] = BsdfSample(pixelInfo, results, rd);
 
-  radiance *=
-    glm::dot(results.normal, bsdfRayWo)
-  * BsdfFs(scene, results, rd, bsdfRayWo)
-  / bsdfPdf
-  ;
+  // save previous radiance if necessary for future computations (ei NEE)
+  auto previousRadiance = radiance;
+
+  if (bsdfPdf != 0.0f) {
+    radiance *=
+      BsdfFs(scene, results, rd, bsdfWo)
+    / bsdfPdf
+    ;
+  }
+
+  auto propagationStatus = PropagationStatus::Continue;
+
+  /* { // -- apply next-event estimation */
+  /*   auto [emissionTriangle, emissionBarycentricUvCoords] = */
+  /*     EmissionSourceTriangle(scene, *pixelInfo.noise); */
+  /*   auto emissionOrigin = */
+  /*     BarycentricInterpolation( */
+  /*       emissionTriangle->v0, emissionTriangle->v1, emissionTriangle->v2 */
+  /*     , emissionBarycentricUvCoords */
+  /*     ); */
+
+  /*   glm::vec3 emissionWo = glm::normalize(emissionOrigin - ro); */
+
+  /*   // check that emission source is within reflected hemisphere */
+  /*   if (glm::dot(emissionWo, results.normal) > 0.0f) { */
+  /*     auto [triangle, intersection] = */
+  /*       Raycast(scene, ro + emissionWo*0.01f, emissionWo, useBvh); */
+
+  /*     if (triangle == emissionTriangle) { */
+  /*       propagationStatus = PropagationStatus::IndirectAccumulation; */
+  /*       float surfaceArea = triangle->area(); */
+  /*       float distance = glm::length(emissionOrigin - ro); */
+  /*       float emitPdf = ( (surfaceArea*SQR(distance))); */
+  /*       float bsdfPdf = BsdfPdf(results, rd, emissionWo); */
+  /*       accumulatedIrradiance += */
+  /*         scene.meshes[triangle->meshIdx].material.colorEmissive */
+  /*       * BsdfFs(scene, results, rd, emissionWo) */
+  /*       * previousRadiance */
+  /*       / (bsdfPdf/(bsdfPdf + emitPdf)) */
+  /*       ; */
+  /*       /1* spdlog::info("{} {} {}", *1/ */
+  /*       /1*   bsdfPdf, emitPdf,  (bsdfPdf/(bsdfPdf + emitPdf)) *1/ */
+  /*       /1* ); *1/ */
+  /*       /1*   scene.meshes[triangle->meshIdx].material.colorEmissive *1/ */
+  /*       /1* , BsdfFs(scene, results, rd, emissionWo) *1/ */
+  /*       /1* ); *1/ */
+
+  /*       return PropagationStatus::DirectAccumulation; */
+  /*     } */
+  /*   } */
+  /* } */
 
   { // apply next raycast
-    rd = bsdfRayWo;
+    auto [triangle, intersection] =
+      Raycast(scene, ro + bsdfWo*0.01f, bsdfWo, useBvh);
+    results = RaycastInfo::Construct(triangle, intersection, rd);
+
     ro += rd*results.intersection.length;
-    auto [triangle, intersection] = Raycast(scene, ro + rd*0.1f, rd, useBvh);
-    results = RaycastInfo::Construct(triangle, intersection);
+    rd = bsdfWo;
   }
-  return PropagationStatus::Continue;
+  return propagationStatus;
 }
 
 } // -- end anon namespace
@@ -280,15 +336,16 @@ RenderResults Render(
 , uint32_t pathsPerSample
 , bool useBvh
 ) {
-  glm::vec3 eyeOri, eyeDir;
-  eyeOri = camera.ori;
+  glm::vec3 wi;
 
+  // -- apply dithering to pixel uv
   glm::vec2 ditherUv = pixelInfo.uv;
-  ditherUv *= pixelInfo.dimensions;
-  ditherUv += glm::vec2(-0.5f) + SampleUniform2(*pixelInfo.noise);
-  ditherUv /= pixelInfo.dimensions;
+  /* ditherUv += */
+  /*   (glm::vec2(-0.5f) + SampleUniform2(*pixelInfo.noise)) */
+  /* * pixelInfo.dimensions; */
 
-  eyeDir =
+  // -- get initial incoming angle
+  wi =
     LookAt(
       glm::normalize(camera.lookat - camera.ori)
     , ditherUv
@@ -296,18 +353,22 @@ RenderResults Render(
     , glm::radians(camera.fov)
     );
 
-  // apply initial raycast
+  // -- apply initial raycast
   RaycastInfo raycastResult;
+  glm::vec3 origin;
   {
-    auto [triangle, intersection] = Raycast(scene, eyeOri, eyeDir, useBvh);
-    raycastResult = RaycastInfo::Construct(triangle, intersection);
+    auto [triangle, intersection] = Raycast(scene, camera.ori, wi, useBvh);
+    raycastResult = RaycastInfo::Construct(triangle, intersection, wi);
+    // important to update origin, otherwise origin would start at camera origin
+    origin = camera.ori + wi*intersection.length;
   }
 
+  // -- if nothing is hit just sample the skybox
   if (!raycastResult.triangle) {
     RenderResults renderResults;
-    renderResults.color = glm::vec3(ditherUv, 0.5f);
+    renderResults.color = glm::vec3(1.0f, 0.0f, 1.0f);
     if (scene.environmentTexture.Valid()) {
-      renderResults.color = Sample(scene.environmentTexture, eyeDir);
+      renderResults.color = Sample(scene.environmentTexture, wi);
     }
     renderResults.valid = true;
     return renderResults;
@@ -317,7 +378,7 @@ RenderResults Render(
   bool hit = false;
   glm::vec3
     radiance = glm::vec3(1.0f)
-  , accumulatedIrradiance = glm::vec3(1.0f);
+  , accumulatedIrradiance = glm::vec3(0.0f);
 
   for (size_t it = 0; it < pathsPerSample; ++ it) {
     PropagationStatus status =
@@ -327,8 +388,8 @@ RenderResults Render(
       , raycastResult
       , radiance
       , accumulatedIrradiance
-      , eyeOri
-      , eyeDir
+      , origin
+      , wi
       , it
       , useBvh
       );
@@ -360,24 +421,34 @@ glm::vec3 Render(
 , uint32_t pathsPerSample
 , bool useBvh
 ) {
-  glm::vec3 accumulatedColor = glm::vec3(0.0f);
-
   auto pixelInfo = PixelInfo{};
   pixelInfo.uv = uv;
   pixelInfo.dimensions = dimensions;
   pixelInfo.noise = &noiseGenerator;
 
-  for (uint32_t it = 0, maxIt = 0; maxIt < samplesPerPixel; ++ maxIt) {
+  std::vector<glm::vec3> samples;
+  samples.reserve(samplesPerPixel);
+
+  // iterate collecting every sample per pixel; dependent on the scene, there
+  // might be no pixel contribution on sample iterations, in which case the
+  // calculation is ignored.
+  // To help alleviate the chance of ignored samples, we make up to 2x the
+  // attempts to collect samples
+  for (uint32_t maxIt = 0; maxIt < samplesPerPixel*1.5f; ++ maxIt) {
     auto renderResults =
       Render(pixelInfo, scene, camera, pathsPerSample, useBvh);
     if (!renderResults.valid) { continue; }
-    // apply averaging to accumulated color corresponding to current
-    // collected it
-    /* accumulatedColor += (Tau)/samplesPerPixel * renderResults.color; */
-    accumulatedColor += 1.0f/samplesPerPixel * renderResults.color;
-
-    if (++ it >= samplesPerPixel) { break; }
+    samples.emplace_back(renderResults.color);
+    if (samples.size() >= samplesPerPixel) { break; }
   }
+
+  // apply averaging to accumulated colors
+  glm::vec3 accumulatedColor = glm::vec3(0.0f);
+  for (auto & s : samples)
+    { accumulatedColor += 1.0f/static_cast<float>(samples.size()) * s; }
+  // I've heard that average should not be done by 1.0f/ but glm::Tau on
+  // twitter, need to find out how true that is; i think it might depdend on
+  // camera model anyways
 
   return accumulatedColor;
 }

@@ -22,7 +22,8 @@ namespace {
       , aiProcess_CalcTangentSpace
       | aiProcess_FindDegenerates
       | aiProcess_FixInfacingNormals
-      | aiProcess_GenSmoothNormals
+      /* | aiProcess_GenSmoothNormals */
+      | aiProcess_GenNormals
       | aiProcess_GlobalScale
       | aiProcess_ImproveCacheLocality
       | aiProcess_JoinIdenticalVertices
@@ -268,11 +269,19 @@ Scene Scene::Construct(
     scene.environmentTexture = Texture::Construct(environmentMapFilename);
   }
 
+  { // -- parse emission source
+    for (size_t i = 0; i < scene.accelStructure->triangles.size(); ++ i) {
+      auto & tri = scene.accelStructure->triangles[i];
+      if (scene.meshes[tri.meshIdx].material.emissive)
+        { scene.emissionSource.triangles.emplace_back(i); }
+    }
+  }
+
   return scene;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::pair<Triangle const *, Intersection> Raycast(
+std::tuple<Triangle const *, Intersection> Raycast(
   Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
 , bool useBvh
@@ -296,4 +305,29 @@ std::pair<Triangle const *, Intersection> Raycast(
   auto hit = IntersectClosest(*scene.accelStructure, ori, dir);
   if (!hit.has_value()) { return { nullptr, {} }; }
   return { scene.accelStructure->triangles.data() + hit->triangleIdx, *hit };
+}
+
+#include "math.hpp"
+#include "noise.hpp"
+
+////////////////////////////////////////////////////////////////////////////////
+std::tuple<Triangle const *, glm::vec2> EmissionSourceTriangle(
+  Scene const & scene
+, GenericNoiseGenerator & noiseType
+) {
+  if (scene.emissionSource.triangles.size() == 0)
+    { return std::make_pair(nullptr, glm::vec2()); }
+  // this needs to take into account triangle surface area as that plays heavily
+  // into which ones need to be sampled
+  auto const & tri =
+    scene.accelStructure->triangles[
+      scene.emissionSource.triangles[
+        SampleUniform1(noiseType) * scene.emissionSource.triangles.size()
+      ]
+    ];
+
+  // generate random barycentric coords
+  glm::vec2 u = SampleUniform2(noiseType);
+  u.y *= (1.0f - u.x);
+  return std::make_pair(&tri, u);
 }

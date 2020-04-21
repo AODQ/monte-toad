@@ -16,3 +16,11 @@ float sqr(float i);
 
 bvh::Vector3<float> ToBvh(glm::vec3 vertex);
 glm::vec3 ToGlm(bvh::Vector3<float> vertex);
+
+template <typename U>
+U BarycentricInterpolation(
+  U const & v0, U const & v1, U const & v2
+, glm::vec2 const & uv
+) {
+  return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0);
+}

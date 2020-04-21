@@ -9,6 +9,7 @@
 #include "span.hpp"
 #include <string>
 #include <vector>
+#include <variant>
 
 struct aiMaterial;
 
@@ -56,6 +57,10 @@ struct Mesh {
   Material material;
 };
 
+struct EmissionSource {
+  std::vector<size_t> triangles;
+};
+
 struct Scene {
   Scene() = default;
 
@@ -74,14 +79,20 @@ struct Scene {
   Texture environmentTexture;
 
   std::unique_ptr<AccelerationStructure> accelStructure;
+  EmissionSource emissionSource;
 
   glm::vec3 bboxMin, bboxMax;
 };
 
-#include <bvh/triangle.hpp>
-
-std::pair<Triangle const *, Intersection> Raycast(
+std::tuple<Triangle const *, Intersection> Raycast(
   Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
 , bool useBvh
+);
+
+#include "noise.hpp"
+
+std::tuple<Triangle const *, glm::vec2> EmissionSourceTriangle(
+  Scene const & scene
+, GenericNoiseGenerator & noise
 );
