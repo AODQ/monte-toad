@@ -30,7 +30,7 @@ std::optional<Intersection> RayTriangleIntersection(
   auto const e2 = ToBvh(triangle.v2 - triangle.v0);
   auto const n = bvh::cross(e1, e2);
 
-  static constexpr float tolerance = float(1e-9);
+  static constexpr float tolerance = 1e-5f;
 
   auto const c = p0 - ray.origin;
   auto const r = bvh::cross(ray.direction, c);
@@ -45,7 +45,7 @@ std::optional<Intersection> RayTriangleIntersection(
   auto t = bvh::product_sign(bvh::dot(n, c), det);
   if (t < absDet * ray.tmin || absDet * ray.tmax <= t) return std::nullopt;
 
-  auto invDet = float(1.0) / absDet;
+  auto invDet = 1.0f / absDet;
   Intersection intersection;
   intersection.length = t * invDet;
   intersection.barycentricUv = glm::vec2(u, v) * invDet;
@@ -203,6 +203,16 @@ IntersectClosest(
   bvh::ClosestIntersector<true, bvh::Bvh<float>, Triangle>
     intersector(self.boundingVolume, self.triangles.data());
   bvh::SingleRayTraversal<bvh::Bvh<float>> traversal(self.boundingVolume);
+
+  // weird hack to make sure none of the components are 0, as BVH doesn't seem
+  // to work with it (or maybe how I interact with BVH)
+  if (dir.x == 0.0f)
+    { dir = glm::normalize(dir + glm::vec3(0.00001f, 0.0f, 0.0f)); }
+  if (dir.z == 0.0f)
+    { dir = glm::normalize(dir + glm::vec3(0.0, 0.0f, 0.00001f)); }
+  if (dir.y == 0.0f)
+    { dir = glm::normalize(dir + glm::vec3(0.0, 0.0f, 0.00001f)); }
+
   auto result =
     traversal.intersect(bvh::Ray(ToBvh(ori), ToBvh(dir)), intersector);
   if (!result) { return std::nullopt; }
