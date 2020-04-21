@@ -175,7 +175,7 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
     optimization.optimize();
   }
 
-  bvh::optimize_bvh_layout(self->boundingVolume, referenceCount);
+  /* bvh::optimize_bvh_layout(self->boundingVolume, referenceCount); */
 
   auto shuffledTriangles =
     bvh::shuffle_primitives(
