@@ -101,8 +101,10 @@ glm::vec3 ToCartesian(float cosTheta, float phi) {
 
 ////////////////////////////////////////////////////////////////////////////////
 float BsdfPdf(RaycastInfo const & results, glm::vec3 wi, glm::vec3 wo) {
-  auto cosTheta = glm::dot(wo, results.normal);
-  return cosTheta < 0.0f ? 0.0f : cosTheta * glm::InvPi;
+  return glm::InvPi;
+  /* auto cosTheta = glm::dot(wo, results.normal); */
+  /* return cosTheta < 0.0f ? 0.0f : 1.0f/(cosTheta) * glm::InvPi; */
+  /* return cosTheta < 0.0f ? 0.0f : 1.0f/(cosTheta) * glm::InvPi; */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,7 +150,7 @@ glm::vec3 BsdfFs(
     baseColor = mesh.material.colorDiffuse;
   }
 
-  return baseColor * (1.0f / glm::Pi) * glm::dot(results.normal, wo);
+  return baseColor * glm::dot(results.normal, wo);
 
   /* glm::vec3 colorSpecular = glm::vec3(0.88f); */
   /* colorSpecular = baseColor; */
@@ -247,11 +249,10 @@ PropagationStatus Propagate(
   // save previous radiance if necessary for future computations (ei NEE)
   auto previousRadiance = radiance;
 
+  auto bsdffs =BsdfFs(scene, results, rd, bsdfWo);
+
   if (bsdfPdf != 0.0f) {
-    radiance *=
-      BsdfFs(scene, results, rd, bsdfWo)
-    / bsdfPdf
-    ;
+    radiance *= bsdffs * bsdfPdf ;
   }
 
   auto propagationStatus = PropagationStatus::Continue;
@@ -284,7 +285,6 @@ PropagationStatus Propagate(
   /*       * previousRadiance */
   /*       / (bsdfPdf/(bsdfPdf + emitPdf)) */
   /*       ; */
-  /*       /1* spdlog::info("{} {} {}", *1/ */
   /*       /1*   bsdfPdf, emitPdf,  (bsdfPdf/(bsdfPdf + emitPdf)) *1/ */
   /*       /1* ); *1/ */
   /*       /1*   scene.meshes[triangle->meshIdx].material.colorEmissive *1/ */
@@ -340,9 +340,9 @@ RenderResults Render(
 
   // -- apply dithering to pixel uv
   glm::vec2 ditherUv = pixelInfo.uv;
-  /* ditherUv += */
-  /*   (glm::vec2(-0.5f) + SampleUniform2(*pixelInfo.noise)) */
-  /* * pixelInfo.dimensions; */
+  ditherUv +=
+    (glm::vec2(-0.5f) + SampleUniform2(*pixelInfo.noise))
+  * (1.0f / pixelInfo.dimensions);
 
   // -- get initial incoming angle
   wi =
@@ -434,7 +434,7 @@ glm::vec3 Render(
   // calculation is ignored.
   // To help alleviate the chance of ignored samples, we make up to 2x the
   // attempts to collect samples
-  for (uint32_t maxIt = 0; maxIt < samplesPerPixel*1.5f; ++ maxIt) {
+  for (uint32_t maxIt = 0; maxIt < samplesPerPixel*2.0f; ++ maxIt) {
     auto renderResults =
       Render(pixelInfo, scene, camera, pathsPerSample, useBvh);
     if (!renderResults.valid) { continue; }
