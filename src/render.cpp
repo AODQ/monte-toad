@@ -61,7 +61,7 @@ struct RaycastInfo {
         );
 
       // might want to flip normal dependent on direction
-      /* if (glm::dot(wi, self.normal) < 0.0f) { self.normal *= -1.0f; } */
+      if (glm::dot(-wi, self.normal) < 0.0f) { self.normal *= -1.0f; }
 
       self.uv =
         glm::normalize(
@@ -215,7 +215,7 @@ PropagationStatus Propagate(
 , glm::vec3 & radiance
 , glm::vec3 & accumulatedIrradiance
 , glm::vec3 & ro
-, glm::vec3 & rd
+, glm::vec3 & wi
 , uint16_t step
 , bool useBvh
 ) {
@@ -227,7 +227,7 @@ PropagationStatus Propagate(
     if (!scene.environmentTexture.Valid()) {
       return PropagationStatus::End;
     }
-    glm::vec3 emissiveColor = Sample(scene.environmentTexture, rd);
+    glm::vec3 emissiveColor = Sample(scene.environmentTexture, wi);
 
     accumulatedIrradiance += radiance * emissiveColor;
     return PropagationStatus::DirectAccumulation;
@@ -244,15 +244,21 @@ PropagationStatus Propagate(
   }
 
   // generate bsdf sample (this will also be used for next propagation)
-  auto [bsdfWo, bsdfPdf] = BsdfSample(pixelInfo, results, rd);
+  auto [bsdfWo, bsdfPdf] = BsdfSample(pixelInfo, results, wi);
 
   // save previous radiance if necessary for future computations (ei NEE)
   auto previousRadiance = radiance;
 
-  auto bsdffs =BsdfFs(scene, results, rd, bsdfWo);
+  auto bsdffs =BsdfFs(scene, results, wi, bsdfWo);
 
   if (bsdfPdf != 0.0f) {
     radiance *= bsdffs * bsdfPdf ;
+  }
+
+  if (step == 1) {
+    /* radiance *= 1000000.0f; */
+    /* accumulatedIrradiance = glm::vec3(1.0f); */
+    /* return PropagationStatus::DirectAccumulation; */
   }
 
   auto propagationStatus = PropagationStatus::Continue;
@@ -278,17 +284,17 @@ PropagationStatus Propagate(
   /*       float surfaceArea = triangle->area(); */
   /*       float distance = glm::length(emissionOrigin - ro); */
   /*       float emitPdf = ( (surfaceArea*SQR(distance))); */
-  /*       float bsdfPdf = BsdfPdf(results, rd, emissionWo); */
+  /*       float bsdfPdf = BsdfPdf(results, wi, emissionWo); */
   /*       accumulatedIrradiance += */
   /*         scene.meshes[triangle->meshIdx].material.colorEmissive */
-  /*       * BsdfFs(scene, results, rd, emissionWo) */
+  /*       * BsdfFs(scene, results, wi, emissionWo) */
   /*       * previousRadiance */
-  /*       / (bsdfPdf/(bsdfPdf + emitPdf)) */
+  /*       / ((1.0f/bsdfPdf)/((1.0f/bsdfPdf) + emitPdf)) */
   /*       ; */
   /*       /1*   bsdfPdf, emitPdf,  (bsdfPdf/(bsdfPdf + emitPdf)) *1/ */
   /*       /1* ); *1/ */
   /*       /1*   scene.meshes[triangle->meshIdx].material.colorEmissive *1/ */
-  /*       /1* , BsdfFs(scene, results, rd, emissionWo) *1/ */
+  /*       /1* , BsdfFs(scene, results, wi, emissionWo) *1/ */
   /*       /1* ); *1/ */
 
   /*       return PropagationStatus::DirectAccumulation; */
@@ -299,10 +305,10 @@ PropagationStatus Propagate(
   { // apply next raycast
     auto [triangle, intersection] =
       Raycast(scene, ro + bsdfWo*0.01f, bsdfWo, useBvh);
-    results = RaycastInfo::Construct(triangle, intersection, rd);
+    results = RaycastInfo::Construct(triangle, intersection, bsdfWo);
 
-    ro += rd*results.intersection.length;
-    rd = bsdfWo;
+    wi = bsdfWo;
+    ro += wi*results.intersection.length;
   }
   return propagationStatus;
 }
