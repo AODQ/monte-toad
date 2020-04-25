@@ -101,7 +101,8 @@ glm::vec3 ToCartesian(float cosTheta, float phi) {
 
 ////////////////////////////////////////////////////////////////////////////////
 float BsdfPdf(RaycastInfo const & results, glm::vec3 wi, glm::vec3 wo) {
-  return glm::InvPi;
+  return glm::InvPi * glm::dot(wo, results.normal);
+  /* return glm::Pi/ glm::dot(wo, results.normal) ; */
   /* auto cosTheta = glm::dot(wo, results.normal); */
   /* return cosTheta < 0.0f ? 0.0f : 1.0f/(cosTheta) * glm::InvPi; */
   /* return cosTheta < 0.0f ? 0.0f : 1.0f/(cosTheta) * glm::InvPi; */
@@ -150,7 +151,8 @@ glm::vec3 BsdfFs(
     baseColor = mesh.material.colorDiffuse;
   }
 
-  return baseColor * glm::dot(results.normal, wo);
+  return baseColor * glm::InvPi;
+  /* return baseColor * glm::dot(results.normal, wo); */
 
   /* glm::vec3 colorSpecular = glm::vec3(0.88f); */
   /* colorSpecular = baseColor; */
@@ -205,9 +207,135 @@ enum class PropagationStatus {
   Continue // normal behaviour, continue propagation
 , End // no propagation could occur (apply only indirect accumulation)
 , IndirectAccumulation // emitter has been indirectly hit (such as for MIS)
-, DirectAccumulation // emitter has been directlly hit, end propagation loop
+, DirectAccumulation // emitter has been directly hit, end propagation loop
 };
 
+// joins results such that only the most relevant component is returned
+void Join(PropagationStatus & l, PropagationStatus r) {
+  l = static_cast<size_t>(l) > static_cast<size_t>(r) ? l : r;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+float EmitterPdf(
+  Triangle const * emissionTri
+, glm::vec3 const & ro
+, glm::vec3 const & emissionOrigin
+) {
+  float const surfaceArea = emissionTri->area();
+  /* float const distance = glm::length(ro - emissionOrigin); */
+  return 1.0f/(surfaceArea);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+PropagationStatus ApplyDirectSkyboxEmission(
+  Scene const & scene
+, glm::vec3 const & wi
+, glm::vec3 const & wo
+, glm::vec3 & accumulatedIrradiance
+, glm::vec3 const & radiance
+) {
+  // if no collision is made, either all direct accumulation must be
+  // discarded, or if there's an environment map, that can be used as an
+  // emission source
+  if (!scene.environmentTexture.Valid())
+    { return PropagationStatus::End; }
+
+  glm::vec3 emissiveColor = Sample(scene.environmentTexture, wi);
+
+  // TODO emission pdf of skybox (maybe it's just 1/TAU? idk)
+
+  accumulatedIrradiance += radiance * emissiveColor;
+  return PropagationStatus::DirectAccumulation;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+PropagationStatus ApplyDirectTriangleEmission(
+  Scene const & scene
+, RaycastInfo const & results
+, glm::vec3 const & ro
+, glm::vec3 const & wi
+, glm::vec3 const & wo
+
+, glm::vec3 const & bsdfFs
+, float const bsdfPdf
+
+, glm::vec3 & accumulatedIrradiance
+, glm::vec3 const & radiance
+) {
+  auto const & mesh = scene.meshes[results.triangle->meshIdx];
+
+  if (!mesh.material.emissive) { return PropagationStatus::Continue; }
+
+  glm::vec3 emissiveColor = mesh.material.colorEmissive;
+
+  float emitPdf =
+    EmitterPdf(
+      results.triangle
+    , ro
+    , ro + wo*results.intersection.length
+    );
+
+  accumulatedIrradiance +=
+    emissiveColor
+  * radiance
+  * bsdfFs
+  / (bsdfPdf/(emitPdf + bsdfPdf));
+
+  // set the propagation status as direct accumulation (which will terminate
+  // rendering); however since there might be indirect accumulation, don't
+  // terminate it just yet
+  return PropagationStatus::DirectAccumulation;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+PropagationStatus ApplyIndirectEmission(
+  PixelInfo & pixelInfo
+, Scene const & scene
+, RaycastInfo const & results
+, glm::vec3 const & radiance
+, glm::vec3 & accumulatedIrradiance
+, glm::vec3 const & ro
+, glm::vec3 const & wi
+, bool useBvh
+) {
+  for (size_t it = 0; it < scene.emissionSource.triangles.size(); ++ it) {
+    auto [emissionTriangle, emissionBarycentricUvCoords] =
+      EmissionSourceTriangle(scene, *pixelInfo.noise, it);
+    auto emissionOrigin =
+      BarycentricInterpolation(
+        emissionTriangle->v0, emissionTriangle->v1, emissionTriangle->v2
+      , emissionBarycentricUvCoords
+      );
+
+    glm::vec3 emissionWo = glm::normalize(emissionOrigin - ro);
+
+    // check that emission source is within reflected hemisphere
+    if (glm::dot(emissionWo, results.normal) > 0.0f) {
+      auto [triangle, intersection] =
+        Raycast(scene, ro + emissionWo*0.01f, emissionWo, useBvh);
+
+      if (triangle == emissionTriangle) {
+        float emitPdf = EmitterPdf(triangle, ro, emissionOrigin);
+        float bsdfEmitPdf = BsdfPdf(results, wi, emissionWo);
+        /* float G = */
+        /*   glm::abs( */
+        /*     glm::dot(emissionWo, results.normal) * glm::dot(wi, results.normal) */
+        /*   ) / SQR(glm::length(ro - emissionOrigin)); */
+        accumulatedIrradiance +=
+          scene.meshes[triangle->meshIdx].material.colorEmissive
+        * radiance
+        * BsdfFs(scene, results, wi, emissionWo)
+        / (emitPdf/(emitPdf + bsdfEmitPdf));
+
+        return PropagationStatus::IndirectAccumulation;
+      }
+    }
+  }
+
+  return PropagationStatus::Continue;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 PropagationStatus Propagate(
   PixelInfo & pixelInfo
 , Scene const & scene
@@ -219,97 +347,60 @@ PropagationStatus Propagate(
 , uint16_t step
 , bool useBvh
 ) {
-  // -- check if skybox (if available) was hit
-  if (results.triangle == nullptr) {
-    // if no collision is made, either all direct accumulation must be
-    // discarded, or if there's an environment map, that can be used as an
-    // emission source
-    if (!scene.environmentTexture.Valid()) {
-      return PropagationStatus::End;
-    }
-    glm::vec3 emissiveColor = Sample(scene.environmentTexture, wi);
-
-    accumulatedIrradiance += radiance * emissiveColor;
-    return PropagationStatus::DirectAccumulation;
-  }
-
-  auto const & mesh = scene.meshes[results.triangle->meshIdx];
-
-  // -- apply direct emission
-  if (mesh.material.emissive) {
-    glm::vec3 emissiveColor = mesh.material.colorEmissive;
-
-    accumulatedIrradiance += radiance * emissiveColor;
-    return PropagationStatus::DirectAccumulation;
-  }
+  // store a value for current propagation status, which could be overwritten
+  auto propagationStatus = PropagationStatus::Continue;
 
   // generate bsdf sample (this will also be used for next propagation)
   auto [bsdfWo, bsdfPdf] = BsdfSample(pixelInfo, results, wi);
+  auto bsdfFs = BsdfFs(scene, results, wi, bsdfWo);
 
-  // save previous radiance if necessary for future computations (ei NEE)
-  auto previousRadiance = radiance;
-
-  auto bsdffs =BsdfFs(scene, results, wi, bsdfWo);
-
-  if (bsdfPdf != 0.0f) {
-    radiance *= bsdffs * bsdfPdf ;
-  }
-
-  if (step == 1) {
-    /* radiance *= 1000000.0f; */
-    /* accumulatedIrradiance = glm::vec3(1.0f); */
-    /* return PropagationStatus::DirectAccumulation; */
-  }
-
-  auto propagationStatus = PropagationStatus::Continue;
-
-  /* { // -- apply next-event estimation */
-  /*   auto [emissionTriangle, emissionBarycentricUvCoords] = */
-  /*     EmissionSourceTriangle(scene, *pixelInfo.noise); */
-  /*   auto emissionOrigin = */
-  /*     BarycentricInterpolation( */
-  /*       emissionTriangle->v0, emissionTriangle->v1, emissionTriangle->v2 */
-  /*     , emissionBarycentricUvCoords */
-  /*     ); */
-
-  /*   glm::vec3 emissionWo = glm::normalize(emissionOrigin - ro); */
-
-  /*   // check that emission source is within reflected hemisphere */
-  /*   if (glm::dot(emissionWo, results.normal) > 0.0f) { */
-  /*     auto [triangle, intersection] = */
-  /*       Raycast(scene, ro + emissionWo*0.01f, emissionWo, useBvh); */
-
-  /*     if (triangle == emissionTriangle) { */
-  /*       propagationStatus = PropagationStatus::IndirectAccumulation; */
-  /*       float surfaceArea = triangle->area(); */
-  /*       float distance = glm::length(emissionOrigin - ro); */
-  /*       float emitPdf = ( (surfaceArea*SQR(distance))); */
-  /*       float bsdfPdf = BsdfPdf(results, wi, emissionWo); */
-  /*       accumulatedIrradiance += */
-  /*         scene.meshes[triangle->meshIdx].material.colorEmissive */
-  /*       * BsdfFs(scene, results, wi, emissionWo) */
-  /*       * previousRadiance */
-  /*       / ((1.0f/bsdfPdf)/((1.0f/bsdfPdf) + emitPdf)) */
-  /*       ; */
-  /*       /1*   bsdfPdf, emitPdf,  (bsdfPdf/(bsdfPdf + emitPdf)) *1/ */
-  /*       /1* ); *1/ */
-  /*       /1*   scene.meshes[triangle->meshIdx].material.colorEmissive *1/ */
-  /*       /1* , BsdfFs(scene, results, wi, emissionWo) *1/ */
-  /*       /1* ); *1/ */
-
-  /*       return PropagationStatus::DirectAccumulation; */
-  /*     } */
-  /*   } */
-  /* } */
-
-  { // apply next raycast
+  RaycastInfo nextRaycastResults;
+  { // -- grab information of next thing (it could be an emitter)
     auto [triangle, intersection] =
       Raycast(scene, ro + bsdfWo*0.01f, bsdfWo, useBvh);
-    results = RaycastInfo::Construct(triangle, intersection, bsdfWo);
+    nextRaycastResults = RaycastInfo::Construct(triangle, intersection, bsdfWo);
+  }
 
+  { // check if an emitter or skybox (or lack thereof) was hit
+    if (nextRaycastResults.triangle == nullptr) {
+      Join(
+        propagationStatus,
+        ApplyDirectSkyboxEmission(
+          scene, wi, bsdfWo, accumulatedIrradiance, radiance
+        )
+      );
+    } else {
+      Join(
+        propagationStatus,
+        ApplyDirectTriangleEmission(
+          scene, nextRaycastResults, ro, wi, bsdfWo
+        , bsdfFs, bsdfPdf
+        , accumulatedIrradiance, radiance
+        )
+      );
+    }
+  }
+
+  Join(
+    propagationStatus,
+    ApplyIndirectEmission(
+      pixelInfo
+    , scene, results, radiance, accumulatedIrradiance, ro, wi, useBvh
+    )
+  );
+
+  // contribute to radiance; do this after emission calculations as they
+  // probably need to do special PDF calculations anyways
+  if (bsdfPdf != 0.0f) { radiance *= bsdfFs / bsdfPdf; }
+
+
+  // -- save raycastinfo if intersection was valid
+  if (nextRaycastResults.triangle) {
+    results = nextRaycastResults;
     wi = bsdfWo;
     ro += wi*results.intersection.length;
   }
+
   return propagationStatus;
 }
 
@@ -376,6 +467,14 @@ RenderResults Render(
     if (scene.environmentTexture.Valid()) {
       renderResults.color = Sample(scene.environmentTexture, wi);
     }
+    renderResults.valid = true;
+    return renderResults;
+  }
+
+  // -- check if it's an emitter
+  if (scene.meshes[raycastResult.triangle->meshIdx].material.emissive) {
+    RenderResults renderResults;
+    renderResults.color = glm::vec3(1.0f); // TODO once "HDR" is implemented
     renderResults.valid = true;
     return renderResults;
   }

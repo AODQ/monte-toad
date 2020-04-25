@@ -314,6 +314,7 @@ std::tuple<Triangle const *, Intersection> Raycast(
 std::tuple<Triangle const *, glm::vec2> EmissionSourceTriangle(
   Scene const & scene
 , GenericNoiseGenerator & noiseType
+, size_t idx
 ) {
   if (scene.emissionSource.triangles.size() == 0)
     { return std::make_pair(nullptr, glm::vec2()); }

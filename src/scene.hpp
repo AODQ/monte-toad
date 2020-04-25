@@ -95,4 +95,5 @@ std::tuple<Triangle const *, Intersection> Raycast(
 std::tuple<Triangle const *, glm::vec2> EmissionSourceTriangle(
   Scene const & scene
 , GenericNoiseGenerator & noise
+, size_t idx
 );
