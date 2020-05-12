@@ -115,7 +115,6 @@ bool mt::Valid(mt::PluginInfo & pluginInfo, mt::PluginType pluginType) {
 
 //------------------------------------------------------------------------------
 void mt::Clean(mt::PluginInfo & pluginInfo, mt::PluginType pluginType) {
-  printf("Cleaning %s!!!\n", ToString(pluginType));
   // cleanup the plugin since it is invalid
   switch (pluginType) {
     case mt::PluginType::Integrator:

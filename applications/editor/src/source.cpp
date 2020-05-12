@@ -158,6 +158,9 @@ int main(int argc, char** argv) {
 
   ui::Run(renderInfo, pluginInfo);
 
+  // clean plugins
+  for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i)
+    { mt::Clean(pluginInfo, static_cast<mt::PluginType>(i)); }
   mt::FreePlugins();
 
   /* spdlog::info("Loading model {}", renderInfo.modelFile); */
