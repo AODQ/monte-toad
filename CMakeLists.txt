@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-cmake_policy(VERSION 3.5)
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_policy(VERSION 3.0)
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
@@ -7,29 +7,25 @@ if(CCACHE_FOUND)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    ccache)
 endif()
 
+## TODO probably not the best way to handle debug mode
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   message("[debug enabled]")
 else()
   add_compile_definitions(NDEBUG)
 endif()
 
+# TODO
 project (
-  cpuraytracer
+  monte-toad
   VERSION 0.0
   LANGUAGES CXX
-  DESCRIPTION "cpu raytracer"
+  DESCRIPTION "a cpu raytracer"
 )
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "-Wall -fno-exceptions -march=native")
-
-add_compile_definitions(
-  SPDLOG_NO_EXCEPTIONS
-  SPDLOG_FMT_EXTERNAL
-  CXXOPTS_NO_EXCEPTIONS
-)
+set(CMAKE_CXX_FLAGS "-fno-exceptions -march=native")
 
 ## requires out of source builds
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
@@ -38,95 +34,11 @@ if (EXISTS "${LOC_PATH}")
 endif()
 
 ## setup project
-set(NAME cpuraytracer)
+set(NAME monte-toad)
 project(${NAME} CXX)
 
-## Add dependents
-find_package(glm REQUIRED FATAL_ERROR)
-find_package(assimp REQUIRED FATAL_ERROR)
-find_package(OpenMP)
-
-# Adds BVH dependency
-add_subdirectory(third-party/bvh)
-
-# Adds STB dependency
-set(STB_INCLUDE_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}/third-party/stb/include/
-  CACHE PATH "stb include directory"
-)
-add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE $<BUILD_INTERFACE:${STB_INCLUDE_DIR}>)
-
-# Adds cxxopts dependency
-set(CXXOPTS_INCLUDE_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}/third-party/cxxopts/include/
-  CACHE PATH "cxxopts include directory"
-)
-add_library(cxxopts INTERFACE)
-target_include_directories(cxxopts
-  INTERFACE $<BUILD_INTERFACE:${CXXOPTS_INCLUDE_DIR}>
-)
-
-## source list for application (src/include)
-set(SOURCE_LIST
-  "src/io.cpp"
-  "src/math.cpp"
-  "src/noise.cpp"
-  "src/primitive.cpp"
-  "src/render.cpp"
-  "src/scene.cpp"
-  "src/source.cpp"
-  "src/texture.cpp"
-  "src/unittest.cpp"
-)
-set(HEADER_LIST
-  "src/io.hpp"
-  "src/math.hpp"
-  "src/log.hpp"
-  "src/noise.hpp"
-  "src/primitive.hpp"
-  "src/render.hpp"
-  "src/scene.hpp"
-  "src/span.hpp"
-  "src/texture.hpp"
-  "src/unittest.hpp"
-)
-
-## add exceutable w/ source list and set compile options
-add_executable(cpuraytracer ${SOURCE_LIST})
-target_compile_features(cpuraytracer PRIVATE cxx_std_20)
-
-## link dependents
-target_link_libraries(cpuraytracer
-  PRIVATE
-    glm spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp cxxopts
-)
-
-## add include/source directories , sources support necessary for (lamer) IDE
-## users
-target_include_directories(
-  cpuraytracer
-  PUBLIC
-    ${GLM_INCLUDE_DIRS}
-    ${BVH_INCLUDE_DIR}
-)
-target_sources(cpuraytracer PRIVATE ${SOURCE_LIST} ${HEADER_LIST})
-
-macro(install_directory directory)
-  message(STATUS "Copying resource directory ${directory}")
-  install(
-    DIRECTORY ${directory}
-    DESTINATION .
-    USE_SOURCE_PERMISSIONS
-  )
-endmacro()
-
-## install binary files
-install(
-  TARGETS cpuraytracer
-  RUNTIME
-    DESTINATION "${CMAKE_INSTALL_BINDIR}"
-    COMPONENT core
-)
-
-install_directory(scripts)
+# adds dependencies in correct order
+add_subdirectory(third-party)
+add_subdirectory(libraries)
+add_subdirectory(applications)
+add_subdirectory(plugins)

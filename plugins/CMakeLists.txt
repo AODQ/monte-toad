@@ -1,0 +1,6 @@
+add_subdirectory(camera)
+add_subdirectory(integrator)
+add_subdirectory(kernel)
+add_subdirectory(material)
+add_subdirectory(random)
+add_subdirectory(ui)
