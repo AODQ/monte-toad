@@ -81,6 +81,11 @@ mt::RenderInfo ParseRenderInfo(cxxopts::ParseResult const & result) {
 
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv) {
+
+  // -- setup logger so everything can be caught
+  ui::InitializeLogger();
+
+  // -- setup options
   auto options = cxxopts::Options("monte-toad-editor", "live raytrace editor");
   options.add_options()
     (

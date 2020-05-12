@@ -10,16 +10,17 @@
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
+#include <cr/cr.h>
 #include <glad/glad.hpp>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.hpp>
 #include <imgui/imgui_impl_glfw.hpp>
 #include <imgui/imgui_impl_opengl3.hpp>
+#include <spdlog/sinks/base_sink.h>
 
 #include <filesystem>
+#include <mutex>
 #include <string>
-
-#include <cr/cr.h>
 
 namespace {
 GLFWwindow* window;
@@ -34,6 +35,44 @@ float imguiScale = 1.0f;
 int displayWidth, displayHeight;
 
 bool rendering = false;
+
+struct GuiLogMessage {
+  GuiLogMessage() = default;
+  std::string preLevel, colorLevel, postLevel;
+  spdlog::level::level_enum level;
+};
+
+//------------------------------------------------------------------------------
+class GuiSink final : public spdlog::sinks::base_sink<std::mutex> {
+public:
+  std::deque<GuiLogMessage> logMessages;
+  size_t maxMessages = 64;
+  bool newMessage = false;
+  void sink_it_(spdlog::details::log_msg const & msg) override {
+    spdlog::memory_buf_t formatted;
+    this->formatter_->format(msg, formatted);
+
+    GuiLogMessage logMsg;
+    auto str = fmt::to_string(formatted);
+    logMsg.preLevel = str.substr(0, msg.color_range_start);
+    logMsg.colorLevel =
+      str.substr(
+        msg.color_range_start
+      , msg.color_range_end - msg.color_range_start
+      );
+    logMsg.postLevel = str.substr(msg.color_range_end, std::string::npos);
+    logMsg.level = msg.level;
+    this->logMessages.emplace_back(logMsg);
+    newMessage = true;
+  }
+
+  void flush_() override {
+    // truncate old messages
+    while (logMessages.size() > maxMessages) { logMessages.pop_front(); }
+  }
+};
+
+std::shared_ptr<GuiSink> imGuiSink;
 
 ////////////////////////////////////////////////////////////////////////////////
 void AllocateGlResources(mt::RenderInfo const & renderInfo) {
@@ -296,6 +335,52 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
   ImGui::End();
 }
 
+//------------------------------------------------------------------------------
+void UiLog() {
+  static bool open = true;
+  if (!ImGui::Begin("Console Log", &open)) { return; }
+  ImGui::SetWindowFontScale(::imguiScale);
+
+  // print out every message to terminal; have to determine colors and labels as
+  // well for each warning level
+  for (auto const & msg : ::imGuiSink->logMessages) {
+    ImVec4 col;
+    switch (msg.level) {
+      default: col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); break;
+      case spdlog::level::level_enum::critical:
+        col = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
+      break;
+      case spdlog::level::level_enum::err:
+        col = ImVec4(1.0f, 0.5f, 0.5f, 1.0f);
+      break;
+      case spdlog::level::level_enum::debug:
+        col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+      break;
+      case spdlog::level::level_enum::info:
+        col = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
+      break;
+      case spdlog::level::level_enum::warn:
+        col = ImVec4(0.8f, 0.8f, 0.3f, 1.0f);
+      break;
+      case spdlog::level::level_enum::trace:
+        col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+      break;
+    }
+    ImGui::Text(msg.preLevel.c_str());
+    ImGui::SameLine(0, 0);
+    ImGui::TextColored(col, msg.colorLevel.c_str());
+    ImGui::SameLine(0, 0);
+    ImGui::Text(msg.postLevel.c_str());
+  }
+
+  if (::imGuiSink->newMessage && !ImGui::IsAnyMouseDown()) {
+    ::imGuiSink->newMessage = false;
+    ImGui::SetScrollHere(1.0f);
+  }
+
+  ImGui::End();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 void UiConfig() {
   static bool open = true;
@@ -482,7 +567,6 @@ void UiEntry(
 , mt::RenderInfo & renderInfo
 , mt::PluginInfo & pluginInfo
 ) {
-
   ImGui::SetNextWindowPos(ImVec2(0, 0));
   ImGui::SetNextWindowSize(ImVec2(::displayWidth, ::displayHeight));
   ImGui::SetNextWindowSize(ImVec2(::displayWidth, ::displayHeight));
@@ -515,10 +599,11 @@ void UiEntry(
 
   ImGui::BeginMenuBar();
   ::UiConfig();
+  ::UiImageOutput(renderInfo);
+  ::UiLog();
   ::UiPlugin(pluginInfo);
   ::UiRenderInfo(renderInfo, pluginInfo);
   ::UiSceneInfo();
-  ::UiImageOutput(renderInfo);
 
   if (pluginInfo.userInterface.Dispatch) {
     pluginInfo
@@ -532,6 +617,11 @@ void UiEntry(
 }
 
 } // -- end anon namespace
+
+void ui::InitializeLogger() {
+  ::imGuiSink = std::make_shared<::GuiSink>();
+  spdlog::default_logger()->sinks().push_back(::imGuiSink);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 bool ui::Initialize(mt::RenderInfo const & renderInfo) {
