@@ -1,4 +1,6 @@
-# CPU raytracer
+# Monte Toad
+
+Ongoing WIP project animation renderer
 
 # External Dependencies
 
@@ -20,9 +22,9 @@
 Installation is trivial if you have used CMake before. For redundancy, here is how to install it locally:
 
 ```
-mkdir cpu-raytracer
-cd cpu-raytracer
-git clone https://github.com/aodq/cpu-raytracer repo
+mkdir monte-toad
+cd monte-toad
+git clone https://github.com/aodq/monte-toad repo
 cd repo
 git submodule update --init --recursive
 cd ..
@@ -33,7 +35,12 @@ cmake -DCMAKE_INSTALL_PREFIX=../install ../repo
 make -j4 install
 ```
 
-# Running
+# Running real-time renderer
+simply run monte-toad-editor; in order to use it though plugins are necessary to
+be loaded. Several plugins are provided for this purpose.
+
+# Running offline renderer
+this is not currently available
 There are several shell scripts provided under scripts that should assist in
 default scene configurations. (In the future these will probably be json files).
 
