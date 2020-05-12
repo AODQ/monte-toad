@@ -15,7 +15,7 @@ set_target_properties(integrator-depth PROPERTIES PREFIX "")
 install(
   TARGETS integrator-depth
   LIBRARY NAMELINK_SKIP
-  RUNTIME
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    COMPONENT runtime
+  LIBRARY
+    DESTINATION plugins/
+    COMPONENT plugin
 )

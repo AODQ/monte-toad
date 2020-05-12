@@ -15,7 +15,7 @@ set_target_properties(ui-base PROPERTIES PREFIX "")
 install(
   TARGETS ui-base
   LIBRARY NAMELINK_SKIP
-  RUNTIME
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    COMPONENT core
+  LIBRARY
+    DESTINATION plugins/
+    COMPONENT plugin
 )

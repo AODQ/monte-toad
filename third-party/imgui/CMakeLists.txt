@@ -20,7 +20,7 @@ target_link_libraries(imgui PUBLIC OpenGL::OpenGL glad)
 
 install(
   TARGETS imgui
-  RUNTIME
-    DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  LIBRARY
+    DESTINATION "lib/"
     COMPONENT core
 )

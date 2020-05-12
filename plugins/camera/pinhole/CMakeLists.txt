@@ -15,7 +15,7 @@ set_target_properties(camera-pinhole PROPERTIES PREFIX "")
 install(
   TARGETS camera-pinhole
   LIBRARY NAMELINK_SKIP
-  RUNTIME
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    COMPONENT runtime
+  LIBRARY
+    DESTINATION plugins/
+    COMPONENT plugin
 )
