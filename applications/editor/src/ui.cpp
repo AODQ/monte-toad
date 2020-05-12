@@ -31,7 +31,9 @@ span<glm::vec4> mappedImageTransitionBuffer;
 GlTexture renderedTexture;
 GlProgram imageTransitionProgram;
 
-float imguiScale = 1.0f;
+std::array<int, 2> imGuiImageResolution;
+
+float imGuiScale = 1.0f;
 int displayWidth, displayHeight;
 
 bool rendering = false;
@@ -251,6 +253,7 @@ void UiPluginLoadFile(
     spdlog::error("Failed to load plugin, or plugin is incomplete");
     mt::Clean(pluginInfo, pluginType);
     file = "";
+    rendering = false;
   }
 }
 
@@ -339,7 +342,7 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
 void UiLog() {
   static bool open = true;
   if (!ImGui::Begin("Console Log", &open)) { return; }
-  ImGui::SetWindowFontScale(::imguiScale);
+  ImGui::SetWindowFontScale(::imGuiScale);
 
   // print out every message to terminal; have to determine colors and labels as
   // well for each warning level
@@ -385,7 +388,7 @@ void UiLog() {
 void UiConfig() {
   static bool open = true;
   if (!ImGui::Begin("UiConfig", &open)) { return; }
-  ImGui::SetWindowFontScale(::imguiScale);
+  ImGui::SetWindowFontScale(::imGuiScale);
 
   static int32_t selectedScale = 1;
   ImGui::RadioButton("Scale 0.5x", &selectedScale, 0);
@@ -394,10 +397,10 @@ void UiConfig() {
   ImGui::RadioButton("Scale 4.0x", &selectedScale, 3);
 
   switch (selectedScale) {
-    case 0: ::imguiScale = 0.5f; break;
-    case 1: ::imguiScale = 1.0f; break;
-    case 2: ::imguiScale = 2.0f; break;
-    case 3: ::imguiScale = 4.0f; break;
+    case 0: ::imGuiScale = 0.5f; break;
+    case 1: ::imGuiScale = 1.0f; break;
+    case 2: ::imGuiScale = 2.0f; break;
+    case 3: ::imGuiScale = 4.0f; break;
   }
   ImGui::End();
 }
@@ -464,7 +467,7 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
   // -- window
   static bool open = true;
   if (!ImGui::Begin("RenderInfo", &open)) { return; }
-  ImGui::SetWindowFontScale(::imguiScale);
+  ImGui::SetWindowFontScale(::imGuiScale);
 
   ImGui::Text("'%s'", renderInfo.modelFile.c_str());
 
@@ -487,7 +490,41 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     }
   }
 
-  ImGui::Text("Thread usage %lu", renderInfo.numThreads);
+  static std::array<int, 2> imageResolution = {{
+    static_cast<int>(renderInfo.imageResolution[0])
+  , static_cast<int>(renderInfo.imageResolution[1])
+  }};
+  if (ImGui::InputInt2("Image resolution", imageResolution.data())) {
+
+    // Only 4K support right now (accidentally typing large number sucks)
+    if (imageResolution[0] >= 4096) { imageResolution[0] = 4096; }
+    if (imageResolution[1] >= 4096) { imageResolution[1] = 4096; }
+
+    renderInfo.imageResolution[0] = static_cast<size_t>(imageResolution[0]);
+    renderInfo.imageResolution[1] = static_cast<size_t>(imageResolution[1]);
+
+    // have to reallocate everything now
+    AllocateGlResources(renderInfo);
+  }
+
+  static bool shareimGuiImageResolution = true;
+  ImGui::Checkbox("Sync imgui image resolution", &shareimGuiImageResolution);
+
+  if (!shareimGuiImageResolution) {
+    ImGui::InputInt2(
+      "Texture display resolution"
+    , ::imGuiImageResolution.data()
+    );
+  } else {
+    ::imGuiImageResolution[0] = static_cast<int>(renderInfo.imageResolution[0]);
+    ::imGuiImageResolution[1] = static_cast<int>(renderInfo.imageResolution[1]);
+  }
+
+  int tempNumThreads = static_cast<int>(renderInfo.numThreads);
+  if (ImGui::InputInt("# threads", &tempNumThreads)) {
+    renderInfo.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
+    omp_set_num_threads(renderInfo.numThreads);
+  }
 
   ImGui::End();
 }
@@ -496,7 +533,7 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 void UiSceneInfo() {
   static bool open = true;
   if (!ImGui::Begin("SceneInfo", &open)) { return; }
-  ImGui::SetWindowFontScale(::imguiScale);
+  ImGui::SetWindowFontScale(::imGuiScale);
 
   ImGui::Text(
     "(%f, %f, %f) -> (%f, %f, %f) scene bounds"
@@ -516,7 +553,7 @@ void UiImageOutput(mt::RenderInfo & renderInfo) {
 
   ImGui::Image(
     reinterpret_cast<ImTextureID>(::renderedTexture.handle)
-  , ImVec2(renderInfo.imageResolution[0], renderInfo.imageResolution[1])
+  , ImVec2(::imGuiImageResolution[0], ::imGuiImageResolution[1])
   );
 
   ImGui::End();

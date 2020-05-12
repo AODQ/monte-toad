@@ -31,8 +31,8 @@ void Dispatch(
   , max = glm::max(scene.bboxMax.x, glm::max(scene.bboxMax.y, scene.bboxMax.z));
 
   // allow viewing outside of min/max bounds
-  min -= glm::abs(min)*2.5f;
-  max += glm::abs(max)*2.5f;
+  min -= glm::abs(min)*1.5f;
+  max += glm::abs(max)*1.5f;
 
   ImGui::SliderFloat3("Origin", &renderInfo.cameraOrigin.x, min, max);
   ImGui::SliderFloat3("Target", &renderInfo.cameraTarget.x, min, max);
