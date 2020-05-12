@@ -16,7 +16,7 @@ target_compile_definitions(imgui PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD)
 
 find_package(OpenGL REQUIRED)
 
-target_link_libraries(imgui PUBLIC OpenGL::GL glad)
+target_link_libraries(imgui PUBLIC OpenGL::OpenGL glad)
 
 install(
   TARGETS imgui

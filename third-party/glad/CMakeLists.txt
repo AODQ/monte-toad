@@ -5,6 +5,6 @@ target_sources(glad PRIVATE src/glad.cpp)
 
 find_package(OpenGL REQUIRED)
 
-set_property(TARGET glad PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_target_properties(glad PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries(glad PUBLIC OpenGL::GL ${CMAKE_DL_LIBS})
+target_link_libraries(glad PUBLIC OpenGL::OpenGL ${CMAKE_DL_LIBS})

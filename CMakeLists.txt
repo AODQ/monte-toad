@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 cmake_policy(VERSION 3.0)
 
+# shut up the OpenGL legacy warning
+cmake_policy (SET CMP0072 NEW)
+
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)

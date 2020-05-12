@@ -22,8 +22,9 @@ target_compile_definitions(
 )
 
 find_package(glm REQUIRED FATAL_ERROR)
-find_package(assimp REQUIRED FATAL_ERROR)
+find_package(assimp REQUIRED)
 find_package(OpenMP)
+
 
 set_target_properties(monte-toad PROPERTIES COMPILE_FLAGS "-Wall")
 set_target_properties(monte-toad PROPERTIES POSITION_INDEPENDENT_CODE ON)

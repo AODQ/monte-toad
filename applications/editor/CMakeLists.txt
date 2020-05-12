@@ -20,7 +20,7 @@ target_link_libraries(
   monte-toad-editor
   PRIVATE
     monte-toad mt-plugin-host
-    cxxopts glfw OpenGL::GL glad imgui
+    cxxopts glfw OpenGL::OpenGL glad imgui
 )
 
 install(
