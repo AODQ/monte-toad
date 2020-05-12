@@ -30,7 +30,7 @@ std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> Dispatch(
       renderInfo.cameraTarget - renderInfo.cameraOrigin
     , uv
     , renderInfo.cameraUpAxis
-    , renderInfo.cameraFieldOfView
+    , glm::radians(180.0f - renderInfo.cameraFieldOfView)
     );
   return results;
 }
@@ -41,11 +41,11 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
   if (operation == CR_STEP) { return 0; }
 
   if (!ctx) {
-    spdlog::error("error loading depth integrator plugin, no context\n");
+    spdlog::error("error loading camera pinhole plugin, no context\n");
     return -1;
   }
   if (!ctx->userdata) {
-    spdlog::error("error loading depth integrator plugin, no userdata\n");
+    spdlog::error("error loading camera pinhole plugin, no userdata\n");
     return -1;
   }
 
@@ -54,13 +54,14 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
   switch (operation) {
     case CR_LOAD:
       camera.Dispatch = &::Dispatch;
+      camera.pluginType = mt::PluginType::Camera;
     break;
     case CR_UNLOAD: break;
     case CR_STEP: break;
     case CR_CLOSE: break;
   }
 
-  spdlog::info("depth integrator plugin successfully loaded");
+  spdlog::info("camera pinhole plugin successfully loaded");
 
   return 0;
 }

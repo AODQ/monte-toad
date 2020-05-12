@@ -2,19 +2,11 @@
 
 #include <string>
 
+#include <mt-plugin/enums.hpp>
+
 namespace mt { struct PluginInfo; }
 
 namespace mt {
-  enum class PluginType : size_t {
-    Integrator
-  , Kernel
-  , Material
-  , Camera
-  , Random
-  , UserInterface
-  , Size
-  };
-
   uint32_t LoadPlugin(
     mt::PluginInfo & pluginInfo
   , mt::PluginType pluginType, std::string const & filename
@@ -25,7 +17,12 @@ namespace mt {
   // checks if plugins need to be reloaded
   void UpdatePlugins();
 
+  // checks that plugin of type is valid
   bool Valid(mt::PluginInfo & pluginInfo, mt::PluginType pluginType);
+
+  // cleans plugin so that it can be recognized as invalid. Also frees userdata
+  // of the plugin if(f) the plugin is valid
+  void Clean(mt::PluginInfo & pluginInfo, mt::PluginType pluginType);
 }
 
 char const * ToString(mt::PluginType pluginType);

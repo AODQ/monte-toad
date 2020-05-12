@@ -36,7 +36,7 @@ void Dispatch(
 
   ImGui::SliderFloat3("Origin", &renderInfo.cameraOrigin.x, min, max);
   ImGui::SliderFloat3("Target", &renderInfo.cameraTarget.x, min, max);
-  ImGui::SliderFloat("FOV", &renderInfo.cameraFieldOfView, 0.0f, 4.0f);
+  ImGui::SliderFloat("FOV", &renderInfo.cameraFieldOfView, 0.0f, 140.0f);
 
   static std::chrono::high_resolution_clock timer;
   static std::chrono::time_point<std::chrono::high_resolution_clock> prevFrame;
@@ -74,6 +74,7 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
   switch (operation) {
     case CR_LOAD:
       userInterface.Dispatch = &::Dispatch;
+      userInterface.pluginType = mt::PluginType::UserInterface;
     break;
     case CR_UNLOAD: break;
     case CR_STEP: break;

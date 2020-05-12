@@ -148,58 +148,70 @@ void UiPluginLoadFile(
 , mt::PluginType pluginType
 , std::string & file
 ) {
-  std::string tempFilename =
+  std::string tempFile =
     ::FilePicker(" --file-filter=\"mt-plugin | *.mt-plugin\"");
 
   // only set to the plugin string if the filesize > 0 & path seems valid
   // also remove newline while we're at it
-  if (tempFilename.size() != 0 && tempFilename[0] == '/') {
-    file = tempFilename;
-    switch (mt::LoadPlugin(pluginInfo, pluginType, file)) {
-      case CR_NONE:
-        spdlog::info("Loaded '{}', no error");
-      break;
-      case CR_INITIAL_FAILURE:
-        spdlog::error("Could not load '{}', initial failure", file);
-      break;
-      case CR_SEGFAULT:
-        spdlog::error("Could not load '{}', Segfault", file);
-      break;
-      case CR_ILLEGAL:
-        spdlog::error("Could not load '{}', Illegal operation", file);
-      break;
-      case CR_ABORT:
-        spdlog::error("Could not load '{}', aborted, SIGBRT", file);
-      break;
-      case CR_MISALIGN:
-        spdlog::error("Could not load '{}', misalignment, SIGBUS", file);
-      break;
-      case CR_BOUNDS:
-        spdlog::error("Could not load '{}', bounds error", file);
-      break;
-      case CR_STACKOVERFLOW:
-        spdlog::error("Could not load '{}', stack overflow", file);
-      break;
-      case CR_STATE_INVALIDATED:
-        spdlog::error("Could not load '{}', static CR_STATE failure", file);
-      break;
-      case CR_BAD_IMAGE:
-        spdlog::error("Could not load '{}', plugin is not valid", file);
-      break;
-      case CR_OTHER:
-        spdlog::error("Could not load '{}', other signal", file);
-      break;
-      case CR_USER:
-        spdlog::error("Could not load '{}', user/mt plugin error", file);
-      break;
-      default:
-        spdlog::error("Could not load '{}', unknown failure", file);
-      break;
-    }
-    if (!mt::Valid(pluginInfo, pluginType))
-      { spdlog::error("Failed to load plugin, or plugin is incomplete"); }
-  } else {
+  if (tempFile.size() == 0 || tempFile[0] != '/') {
     spdlog::info("Did not load any plugin");
+    return;
+  }
+
+  // clean previous data, and also invalidate it in case the next plugin is
+  // invalid but does not write out invalid data
+  mt::Clean(pluginInfo, pluginType);
+
+  // load plugin & check for plugin-loading errors
+  switch (mt::LoadPlugin(pluginInfo, pluginType, tempFile)) {
+    case CR_NONE:
+      // only save file if loading was successful
+      file = tempFile;
+      spdlog::info("Loaded '{}'", tempFile);
+    break;
+    case CR_INITIAL_FAILURE:
+      spdlog::error("Could not load '{}', initial failure", tempFile);
+    break;
+    case CR_SEGFAULT:
+      spdlog::error("Could not load '{}', Segfault", tempFile);
+    break;
+    case CR_ILLEGAL:
+      spdlog::error("Could not load '{}', Illegal operation", tempFile);
+    break;
+    case CR_ABORT:
+      spdlog::error("Could not load '{}', aborted, SIGBRT", tempFile);
+    break;
+    case CR_MISALIGN:
+      spdlog::error("Could not load '{}', misalignment, SIGBUS", tempFile);
+    break;
+    case CR_BOUNDS:
+      spdlog::error("Could not load '{}', bounds error", tempFile);
+    break;
+    case CR_STACKOVERFLOW:
+      spdlog::error("Could not load '{}', stack overflow", tempFile);
+    break;
+    case CR_STATE_INVALIDATED:
+      spdlog::error("Could not load '{}', static CR_STATE failure", tempFile);
+    break;
+    case CR_BAD_IMAGE:
+      spdlog::error("Could not load '{}', plugin is not valid", tempFile);
+    break;
+    case CR_OTHER:
+      spdlog::error("Could not load '{}', other signal", tempFile);
+    break;
+    case CR_USER:
+      spdlog::error("Could not load '{}', user/mt plugin error", tempFile);
+    break;
+    default:
+      spdlog::error("Could not load '{}', unknown failure", tempFile);
+    break;
+  }
+
+  // check that the plugin loaded itself properly (ei members set properly)
+  if (!mt::Valid(pluginInfo, pluginType)) {
+    spdlog::error("Failed to load plugin, or plugin is incomplete");
+    mt::Clean(pluginInfo, pluginType);
+    file = "";
   }
 }
 
@@ -216,12 +228,18 @@ void UiPluginDisplayInfo(
         "Dispatch %p",
         reinterpret_cast<void*>(info.integrator.Dispatch)
       );
+      ImGui::Text("PluginType: %s", ToString(info.integrator.pluginType));
     break;
     case mt::PluginType::Kernel:
     break;
     case mt::PluginType::Material:
     break;
     case mt::PluginType::Camera:
+      ImGui::Text(
+        "Dispatch %p",
+        reinterpret_cast<void*>(info.camera.Dispatch)
+      );
+      ImGui::Text("PluginType: %s", ToString(info.camera.pluginType));
     break;
     case mt::PluginType::Random:
     break;
@@ -230,6 +248,7 @@ void UiPluginDisplayInfo(
         "Dispatch %p",
         reinterpret_cast<void*>(info.userInterface.Dispatch)
       );
+      ImGui::Text("PluginType: %s", ToString(info.userInterface.pluginType));
     break;
     default: break;
   }

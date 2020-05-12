@@ -48,6 +48,7 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
       integrator.realtime = true;
       integrator.useGpu = false;
       integrator.Dispatch = &Dispatch;
+      integrator.pluginType = mt::PluginType::Integrator;
     break;
     case CR_UNLOAD: break;
     case CR_STEP: break;

@@ -7,6 +7,8 @@
 
 #include <glm/glm.hpp>
 
+#include <mt-plugin/enums.hpp>
+
 #include <array>
 #include <filesystem>
 #include <string>
@@ -30,6 +32,8 @@ namespace mt {
 
     bool realtime = false; // renders either block-by-block or full-screen
     bool useGpu = false; // TODO , will give GPU texture handle to render to
+
+    mt::PluginType pluginType;
   };
 
   struct PluginInfoKernel {
@@ -46,6 +50,8 @@ namespace mt {
     , mt::RenderInfo const & renderInfo
     , mt::PluginInfo const & pluginInfo
     ) = nullptr;
+
+    mt::PluginType pluginType;
   };
 
   struct PluginInfoRandom {
@@ -55,6 +61,8 @@ namespace mt {
     float     (*SampleUniform1)() = nullptr;
     glm::vec2 (*SampleUniform2)() = nullptr;
     glm::vec3 (*SampleUniform3)() = nullptr;
+
+    mt::PluginType pluginType;
   };
 
   struct PluginInfoMaterial {
@@ -76,6 +84,8 @@ namespace mt {
       mt::Scene const & scene, mt::SurfaceInfo const & surface
     , glm::vec3 const & wi, glm::vec3 const & wo
     ) = nullptr;
+
+    mt::PluginType pluginType;
   };
 
   struct PluginInfoCamera {
@@ -84,6 +94,8 @@ namespace mt {
     , mt::RenderInfo const & renderInfo
     , glm::vec2 const & uv
     ) = nullptr;
+
+    mt::PluginType pluginType;
   };
 
   struct PluginInfoUserInterface {
@@ -92,6 +104,8 @@ namespace mt {
     , mt::RenderInfo & renderInfo
     , mt::PluginInfo & pluginInfo
     ) = nullptr;
+
+    mt::PluginType pluginType;
   };
 
   struct PluginInfo {
