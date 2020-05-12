@@ -4,6 +4,3 @@
 [submodule "third-party/bvh"]
 	path = third-party/bvh
 	url = https://github.com/madmann91/bvh
-[submodule "third-party/cr"]
-	path = third-party/cr
-	url = https://github.com/fungos/cr
