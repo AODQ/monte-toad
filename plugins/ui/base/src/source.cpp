@@ -9,10 +9,12 @@
 #include <chrono>
 
 namespace {
-void Dispatch(
+
+void UiPluginInfo(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
 , mt::PluginInfo & pluginInfo
+, mt::DiagnosticInfo &
 ) {
   if (!(ImGui::Begin("Plugin Info"))) { return; }
   ImGui::Text(
@@ -53,6 +55,132 @@ void Dispatch(
 
   ImGui::End();
 }
+
+void UiImageOutput(
+  mt::Scene & scene
+, mt::RenderInfo & renderInfo
+, mt::PluginInfo & pluginInfo
+, mt::DiagnosticInfo & diagnosticInfo
+) {
+  if (!(ImGui::Begin("Image Output"))) { return; }
+
+  static auto pixelInspectingCoord = glm::ivec2(-1);
+  static auto pixelInspectingColor = glm::vec3();
+
+  static std::array<int, 2> imGuiImageResolution = {{
+    static_cast<int>(renderInfo.imageResolution[0])
+  , static_cast<int>(renderInfo.imageResolution[1])
+  }};
+  static bool shareimGuiImageResolution = true;
+
+  // display image
+  ImGui::Image(
+    diagnosticInfo.textureHandle
+  , ImVec2(imGuiImageResolution[0], imGuiImageResolution[1])
+  );
+
+  // if image is clicked, approximate the clicked pixel, taking into account
+  // image resolution differences when displaying to imgui
+  if (ImGui::IsItemClicked()) {
+    auto const
+      imItemMin  = ImGui::GetItemRectMin()
+    , imItemMax  = ImGui::GetItemRectMax()
+    , imMousePos = ImGui::GetMousePos()
+    ;
+
+    auto const
+      itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
+    , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
+    , mousePos =
+        glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
+    ;
+
+    auto const trueResolution =
+      glm::vec2(renderInfo.imageResolution[0], renderInfo.imageResolution[1]);
+
+    auto const resolutionRatio =
+      trueResolution
+    / glm::vec2(imGuiImageResolution[0], imGuiImageResolution[1]);
+
+    auto const pixel = (mousePos - itemMin) * resolutionRatio;
+
+    pixelInspectingCoord =
+      glm::clamp(
+        glm::ivec2(glm::round(pixel))
+      , glm::ivec2(0)
+      , glm::ivec2(trueResolution)
+      );
+
+    pixelInspectingColor =
+      diagnosticInfo.currentFragmentBuffer[
+        pixelInspectingCoord.y * renderInfo.imageResolution[0]
+      + pixelInspectingCoord.x
+      ];
+  }
+
+  // -- display resolution information
+  ImGui::Checkbox("Sync imgui image resolution", &shareimGuiImageResolution);
+
+  if (!shareimGuiImageResolution) {
+    ImGui::InputInt2(
+      "Texture display resolution"
+    , imGuiImageResolution.data()
+    );
+  } else {
+    imGuiImageResolution[0] = static_cast<int>(renderInfo.imageResolution[0]);
+    imGuiImageResolution[1] = static_cast<int>(renderInfo.imageResolution[1]);
+  }
+
+  // -- display inspected pixel diagnostic information
+  if (ImGui::ArrowButton("##arrow", ImGuiDir_Right)) {
+    pixelInspectingCoord = glm::ivec2(-1);
+  }
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth(100.0f);
+  if (ImGui::InputInt2("Fragment Inspection", &pixelInspectingCoord.x)) {
+    pixelInspectingCoord.x =
+      glm::min(
+        static_cast<int>(renderInfo.imageResolution[0]), pixelInspectingCoord.x
+      );
+    pixelInspectingCoord.y =
+      glm::min(
+        static_cast<int>(renderInfo.imageResolution[1]), pixelInspectingCoord.y
+      );
+
+    if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) {
+      pixelInspectingColor =
+        diagnosticInfo.currentFragmentBuffer[
+          pixelInspectingCoord.y * renderInfo.imageResolution[0]
+        + pixelInspectingCoord.x
+        ];
+    }
+  }
+
+  ImGui::SameLine();
+  if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) {
+    ImGui::ColorButton(
+      ""
+    , ImVec4(
+        pixelInspectingColor.x, pixelInspectingColor.y, pixelInspectingColor.z
+      , 1.0f
+      )
+    );
+  }
+
+
+  ImGui::End();
+}
+
+void Dispatch(
+  mt::Scene & scene
+, mt::RenderInfo & renderInfo
+, mt::PluginInfo & pluginInfo
+, mt::DiagnosticInfo & diagnosticInfo
+) {
+  ::UiPluginInfo(scene, renderInfo, pluginInfo, diagnosticInfo);
+  ::UiImageOutput(scene, renderInfo, pluginInfo, diagnosticInfo);
+}
+
 } // -- end anon namespace
 
 CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {

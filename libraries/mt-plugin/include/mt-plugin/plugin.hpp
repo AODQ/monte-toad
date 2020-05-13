@@ -14,13 +14,13 @@
 #include <string>
 #include <tuple>
 
-namespace mt { struct Scene; }
+namespace mt { struct DiagnosticInfo; }
+namespace mt { struct PluginInfo; }
 namespace mt { struct RenderInfo; }
+namespace mt { struct Scene; }
 namespace mt { struct SurfaceInfo; }
 
 namespace mt {
-
-  struct PluginInfo;
 
   struct PluginInfoIntegrator {
     glm::vec3 (*Dispatch)(
@@ -103,6 +103,7 @@ namespace mt {
       mt::Scene & scene
     , mt::RenderInfo & renderInfo
     , mt::PluginInfo & pluginInfo
+    , mt::DiagnosticInfo & diagnosticInfo
     ) = nullptr;
 
     mt::PluginType pluginType;
@@ -134,5 +135,10 @@ namespace mt {
     size_t pathsPerSample = 1;
     float cameraFieldOfView = 90.0f;
     bool displayProgress = true;
+  };
+
+  struct DiagnosticInfo {
+    glm::vec4 * currentFragmentBuffer;
+    void * textureHandle;
   };
 }

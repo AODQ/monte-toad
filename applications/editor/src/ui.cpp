@@ -32,9 +32,8 @@ span<glm::vec4> mappedImageTransitionBuffer;
 GlTexture renderedTexture;
 GlProgram imageTransitionProgram;
 
-std::array<int, 2> imGuiImageResolution;
+mt::DiagnosticInfo diagnosticInfo;
 
-float imGuiScale = 1.0f;
 int displayWidth, displayHeight;
 
 bool rendering = false;
@@ -91,6 +90,7 @@ void AllocateGlResources(mt::RenderInfo const & renderInfo) {
   , imageByteLength =
       imagePixelLength * sizeof(glm::vec4);
 
+  // -- construct transition buffer
   ::imageTransitionBuffer.Construct();
   glNamedBufferStorage(
     ::imageTransitionBuffer.handle
@@ -114,7 +114,9 @@ void AllocateGlResources(mt::RenderInfo const & renderInfo) {
       ),
       imagePixelLength
     );
+  ::diagnosticInfo.currentFragmentBuffer = ::mappedImageTransitionBuffer.data();
 
+  // -- construct texture
   ::renderedTexture.Construct(GL_TEXTURE_2D);
   glTextureStorage2D(
     ::renderedTexture.handle
@@ -135,6 +137,10 @@ void AllocateGlResources(mt::RenderInfo const & renderInfo) {
     0, ::renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8
   );
 
+  ::diagnosticInfo.textureHandle =
+    reinterpret_cast<void*>(::renderedTexture.handle);
+
+  // -- construct program
   std::string const imageTransitionSource =
     "#version 460 core\n"
     "layout(local_size_x = 8, local_size_y = 8, local_size_x = 1) in;\n"
@@ -343,7 +349,6 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
 void UiLog() {
   static bool open = true;
   if (!ImGui::Begin("Console Log", &open)) { return; }
-  ImGui::SetWindowFontScale(::imGuiScale);
 
   // print out every message to terminal; have to determine colors and labels as
   // well for each warning level
@@ -382,27 +387,6 @@ void UiLog() {
     ImGui::SetScrollHere(1.0f);
   }
 
-  ImGui::End();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void UiConfig() {
-  static bool open = true;
-  if (!ImGui::Begin("UiConfig", &open)) { return; }
-  ImGui::SetWindowFontScale(::imGuiScale);
-
-  static int32_t selectedScale = 1;
-  ImGui::RadioButton("Scale 0.5x", &selectedScale, 0);
-  ImGui::RadioButton("Scale 1.0x", &selectedScale, 1);
-  ImGui::RadioButton("Scale 2.0x", &selectedScale, 2);
-  ImGui::RadioButton("Scale 4.0x", &selectedScale, 3);
-
-  switch (selectedScale) {
-    case 0: ::imGuiScale = 0.5f; break;
-    case 1: ::imGuiScale = 1.0f; break;
-    case 2: ::imGuiScale = 2.0f; break;
-    case 3: ::imGuiScale = 4.0f; break;
-  }
   ImGui::End();
 }
 
@@ -468,7 +452,6 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
   // -- window
   static bool open = true;
   if (!ImGui::Begin("RenderInfo", &open)) { return; }
-  ImGui::SetWindowFontScale(::imGuiScale);
 
   ImGui::Text("'%s'", renderInfo.modelFile.c_str());
 
@@ -526,8 +509,7 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
         previousImageResolution[1] = imageResolution[1];
       }
 
-      if (isSelected)
-        { ImGui::SetItemDefaultFocus(); }
+      if (isSelected) { ImGui::SetItemDefaultFocus(); }
     }
     ImGui::EndCombo();
   }
@@ -558,19 +540,6 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     AllocateGlResources(renderInfo);
   }
 
-  static bool shareimGuiImageResolution = true;
-  ImGui::Checkbox("Sync imgui image resolution", &shareimGuiImageResolution);
-
-  if (!shareimGuiImageResolution) {
-    ImGui::InputInt2(
-      "Texture display resolution"
-    , ::imGuiImageResolution.data()
-    );
-  } else {
-    ::imGuiImageResolution[0] = static_cast<int>(renderInfo.imageResolution[0]);
-    ::imGuiImageResolution[1] = static_cast<int>(renderInfo.imageResolution[1]);
-  }
-
   int tempNumThreads = static_cast<int>(renderInfo.numThreads);
   if (ImGui::InputInt("# threads", &tempNumThreads)) {
     renderInfo.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
@@ -584,7 +553,6 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 void UiSceneInfo() {
   static bool open = true;
   if (!ImGui::Begin("SceneInfo", &open)) { return; }
-  ImGui::SetWindowFontScale(::imGuiScale);
 
   ImGui::Text(
     "(%f, %f, %f) -> (%f, %f, %f) scene bounds"
@@ -593,19 +561,6 @@ void UiSceneInfo() {
   );
   ImGui::Text("%lu textures", ::scene.textures.size());
   ImGui::Text("%lu meshes", ::scene.meshes.size());
-
-  ImGui::End();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void UiImageOutput(mt::RenderInfo & renderInfo) {
-  static bool open = true;
-  if (!ImGui::Begin("ImageOutput", &open)) { return; }
-
-  ImGui::Image(
-    reinterpret_cast<ImTextureID>(::renderedTexture.handle)
-  , ImVec2(::imGuiImageResolution[0], ::imGuiImageResolution[1])
-  );
 
   ImGui::End();
 }
@@ -686,8 +641,6 @@ void UiEntry(
   ImGui::PopStyleVar(3);
 
   ImGui::BeginMenuBar();
-  ::UiConfig();
-  ::UiImageOutput(renderInfo);
   ::UiLog();
   ::UiPlugin(pluginInfo);
   ::UiRenderInfo(renderInfo, pluginInfo);
@@ -696,7 +649,7 @@ void UiEntry(
   if (pluginInfo.userInterface.Dispatch) {
     pluginInfo
       .userInterface
-      .Dispatch(scene, renderInfo, pluginInfo);
+      .Dispatch(scene, renderInfo, pluginInfo, ::diagnosticInfo);
   }
 
   ImGui::EndMenuBar();
