@@ -38,16 +38,8 @@ std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> Dispatch(
 
 CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
   // return immediately if an update, this won't do anything
-  if (operation == CR_STEP) { return 0; }
-
-  if (!ctx) {
-    spdlog::error("error loading camera pinhole plugin, no context\n");
-    return -1;
-  }
-  if (!ctx->userdata) {
-    spdlog::error("error loading camera pinhole plugin, no userdata\n");
-    return -1;
-  }
+  if (operation == CR_STEP || operation == CR_UNLOAD) { return 0; }
+  if (!ctx || !ctx->userdata) { return 0; }
 
   auto & camera = *reinterpret_cast<mt::PluginInfoCamera*>(ctx->userdata);
 
