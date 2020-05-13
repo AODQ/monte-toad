@@ -58,13 +58,14 @@ mt::RenderInfo ParseRenderInfo(cxxopts::ParseResult const & result) {
     if (value) { self.cameraUpAxis = glm::vec3(0.0f, 0.0f, -1.0f); }
   }
 
-  { // camera origin
+  { // camera direction (from target)
     auto value = result["camera-target"].as<std::vector<float>>();
     if (value.size() != 3) {
       spdlog::error("Camera target must be in format X,Y,Z");
       value = {{ 0.0f, 0.0f, 0.0f }};
     }
-    self.cameraTarget = glm::vec3(value[0], value[1], value[2]);
+    self.cameraDirection =
+      glm::vec3(value[0], value[1], value[2]) - self.cameraOrigin;
   }
 
   { // debug print

@@ -24,7 +24,7 @@
 #include <string>
 
 namespace {
-GLFWwindow* window;
+GLFWwindow * window;
 mt::Scene scene;
 
 GlBuffer imageTransitionBuffer;
@@ -75,6 +75,25 @@ public:
 };
 
 std::shared_ptr<GuiSink> imGuiSink;
+
+void AttemptRenderingOn(mt::PluginInfo const & pluginInfo) {
+  // check that it's possible to render
+  if (!mt::Valid(pluginInfo, mt::PluginType::Camera)) {
+    spdlog::error("Need camera plugin in order to render");
+    rendering = false;
+  }
+  if (!mt::Valid(pluginInfo, mt::PluginType::Integrator)) {
+    spdlog::error("Need integrator plugin in order to render");
+    rendering = false;
+  }
+  if (
+      ::scene.meshes.size() == 0
+   || ::scene.accelStructure->triangles.size() == 0
+  ) {
+    spdlog::error("Can't render without loading a scene");
+    ::rendering = false;
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 void AllocateGlResources(mt::RenderInfo const & renderInfo) {
@@ -455,23 +474,8 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
   ImGui::Text("'%s'", renderInfo.modelFile.c_str());
 
-  if (ImGui::Checkbox("Rendering", &::rendering) && rendering) {
-    // check that it's possible to render
-    if (!mt::Valid(pluginInfo, mt::PluginType::Camera)) {
-      spdlog::error("Need camera plugin in order to render");
-      rendering = false;
-    }
-    if (!mt::Valid(pluginInfo, mt::PluginType::Integrator)) {
-      spdlog::error("Need integrator plugin in order to render");
-      rendering = false;
-    }
-    if (
-        scene.meshes.size() == 0
-     || scene.accelStructure->triangles.size() == 0
-    ) {
-      spdlog::error("Can't render without loading a scene");
-      rendering = false;
-    }
+  if (ImGui::Checkbox("Rendering", &::rendering) && ::rendering) {
+    ::AttemptRenderingOn(pluginInfo);
   }
 
   enum struct AspectRatio : int {
@@ -736,8 +740,11 @@ bool ui::Initialize(mt::RenderInfo const & renderInfo) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ui::Run(mt::RenderInfo & renderInfo , mt::PluginInfo & pluginInfo) {
+void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
+
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  renderInfo.glfwWindow = reinterpret_cast<void*>(window);
+
   while (!glfwWindowShouldClose(::window)) {
     glfwPollEvents();
 

@@ -1,7 +1,10 @@
+#include <monte-toad/enum.hpp>
 #include <monte-toad/scene.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <cr/cr.h>
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 #include <glm/glm.hpp>
 #include <imgui/imgui.hpp>
 #include <spdlog/spdlog.h>
@@ -9,6 +12,85 @@
 #include <chrono>
 
 namespace {
+
+float msTime = 0.0f;
+float mouseSensitivity = 1.0f;
+
+void UiCameraControls(
+  mt::RenderInfo & renderInfo
+) {
+  /* if (ImGui::IsAnyItemActive()) { return; } */
+
+  /* glm::vec3 dir = */ 
+
+  // clamp to prevent odd ms time (like if scene were to load)
+  msTime = glm::clamp(msTime, 0.0f, 155.5f);
+
+  auto const cameraRight =
+    glm::normalize(
+      glm::cross(renderInfo.cameraDirection, renderInfo.cameraUpAxis)
+    );
+  auto const & cameraForward = renderInfo.cameraDirection;
+  auto const & cameraUp = renderInfo.cameraUpAxis;
+
+  auto window = reinterpret_cast<GLFWwindow *>(renderInfo.glfwWindow);
+
+  if (glfwGetKey(window, GLFW_KEY_A)) {
+    renderInfo.cameraOrigin -= msTime * cameraRight;
+  }
+
+  if (glfwGetKey(window, GLFW_KEY_D)) {
+    renderInfo.cameraOrigin += msTime * cameraRight;
+  }
+
+  if (glfwGetKey(window, GLFW_KEY_W)) {
+    renderInfo.cameraOrigin += msTime * cameraForward;
+  }
+
+  if (glfwGetKey(window, GLFW_KEY_S)) {
+    renderInfo.cameraOrigin -= msTime * cameraForward;
+  }
+
+  if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+    renderInfo.cameraOrigin -= msTime * cameraUp;
+  }
+
+  if (
+      glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)
+   && glfwGetKey(window, GLFW_KEY_SPACE)
+  ) {
+    renderInfo.cameraOrigin += msTime * 2.0f * cameraUp;
+  }
+
+  static double prevX = -1.0, prevY = -1.0;
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+
+    // hide as mouse will spaz around screen being teleported
+    ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+
+    if (prevX == -1.0) {
+      glfwGetCursorPos(window, &prevX, &prevY);
+    }
+
+    double deltaX, deltaY;
+    glfwGetCursorPos(window, &deltaX, &deltaY);
+
+    glm::vec2 delta = glm::vec2(deltaX - prevX, deltaY - prevY);
+
+    renderInfo.cameraDirection +=
+      (delta.x * cameraRight + delta.y * cameraUp)
+    * ::msTime * 0.00005f * ::mouseSensitivity
+    ;
+    renderInfo.cameraDirection = glm::normalize(renderInfo.cameraDirection);
+
+    if (std::isnan(renderInfo.cameraDirection.x)) {
+      renderInfo.cameraDirection = glm::vec3(1.0f, 0.0f, 0.0f);
+    }
+
+    glfwSetCursorPos(window, prevX, prevY);
+
+  } else { prevX = -1.0; }
+}
 
 void UiSceneInfo(mt::Scene & scene) {
   static bool open = true;
@@ -55,21 +137,27 @@ void UiPluginInfo(
   max += glm::abs(max)*1.5f;
 
   ImGui::SliderFloat3("Origin", &renderInfo.cameraOrigin.x, min, max);
-  ImGui::SliderFloat3("Target", &renderInfo.cameraTarget.x, min, max);
+  if (
+    ImGui::SliderFloat3(
+      "Direction", &renderInfo.cameraDirection.x, -1.0f, +1.0f
+    )
+  ) {
+    renderInfo.cameraDirection = glm::normalize(renderInfo.cameraDirection);
+  }
+  ImGui::SliderFloat("Mouse Sensitivity", &::mouseSensitivity, 0.1f, 10.0f);
   ImGui::SliderFloat("FOV", &renderInfo.cameraFieldOfView, 0.0f, 140.0f);
 
   static std::chrono::high_resolution_clock timer;
   static std::chrono::time_point<std::chrono::high_resolution_clock> prevFrame;
   auto curFrame = timer.now();
 
-  auto delta =
+  ::msTime =
     std::chrono::duration_cast<std::chrono::duration<float, std::micro>>
-      (curFrame - prevFrame).count();
+      (curFrame - prevFrame).count() / 1000.0f;
 
-  ImGui::Text("%.2f ms / frame", delta / 1000.0f);
+  ImGui::Text("%.2f ms / frame", ::msTime);
 
   prevFrame = curFrame;
-
 
   ImGui::End();
 }
@@ -196,6 +284,7 @@ void Dispatch(
 , mt::PluginInfo & pluginInfo
 , mt::DiagnosticInfo & diagnosticInfo
 ) {
+  ::UiCameraControls(renderInfo);
   ::UiSceneInfo(scene);
   ::UiPluginInfo(scene, renderInfo, pluginInfo, diagnosticInfo);
   ::UiImageOutput(scene, renderInfo, pluginInfo, diagnosticInfo);

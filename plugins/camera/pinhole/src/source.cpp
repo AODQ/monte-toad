@@ -27,7 +27,7 @@ std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> Dispatch(
   std::get<0>(results) = renderInfo.cameraOrigin;
   std::get<1>(results) =
     ::LookAt(
-      renderInfo.cameraTarget - renderInfo.cameraOrigin
+      renderInfo.cameraDirection
     , uv
     , renderInfo.cameraUpAxis
     , glm::radians(180.0f - renderInfo.cameraFieldOfView)

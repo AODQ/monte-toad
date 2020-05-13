@@ -68,7 +68,7 @@ void mt::UpdatePlugins() {
 }
 
 //------------------------------------------------------------------------------
-bool mt::Valid(mt::PluginInfo & pluginInfo, mt::PluginType pluginType) {
+bool mt::Valid(mt::PluginInfo const & pluginInfo, mt::PluginType pluginType) {
   switch (pluginType) {
     case mt::PluginType::Integrator:
       return

@@ -11,4 +11,16 @@ namespace mt {
   , Size
   , Invalid
   };
+
+  enum class InputKey : size_t {
+    eA
+  , eW
+  , eS
+  , eD
+  , eQ
+  , eE
+  , eSpace
+  , eShift
+  , size
+  };
 }

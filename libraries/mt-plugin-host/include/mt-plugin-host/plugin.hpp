@@ -18,7 +18,7 @@ namespace mt {
   void UpdatePlugins();
 
   // checks that plugin of type is valid
-  bool Valid(mt::PluginInfo & pluginInfo, mt::PluginType pluginType);
+  bool Valid(mt::PluginInfo const & pluginInfo, mt::PluginType pluginType);
 
   // cleans plugin so that it can be recognized as invalid. Also frees userdata
   // of the plugin if(f) the plugin is valid

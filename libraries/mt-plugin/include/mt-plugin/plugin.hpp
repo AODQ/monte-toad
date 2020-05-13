@@ -125,7 +125,7 @@ namespace mt {
 
     bool viewImageOnCompletion;
     glm::vec3 cameraOrigin { 1.0f, 0.0f, 0.0f };
-    glm::vec3 cameraTarget { 0.0f, 0.0f, 0.0f };
+    glm::vec3 cameraDirection { 0.0f, 0.0f, 0.0f };
     glm::vec3 cameraUpAxis { 0.0f, -1.0f, 0.0f };
     std::array<uint32_t, 2> imageResolution {{ 640, 480 }};
     bool bvhUse = true;
@@ -135,6 +135,8 @@ namespace mt {
     size_t pathsPerSample = 1;
     float cameraFieldOfView = 90.0f;
     bool displayProgress = true;
+
+    void * glfwWindow;
   };
 
   struct DiagnosticInfo {

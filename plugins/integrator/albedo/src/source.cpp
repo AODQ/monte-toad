@@ -38,7 +38,7 @@ glm::vec3 Dispatch(
   float distance = std::get<1>(results).length;
   distance /= glm::length(scene.bboxMax - scene.bboxMin);
 
-  return glm::vec3(glm::exp(-distance)) * diffuse;
+  return glm::vec3(glm::exp(-distance * 2.0f)) * diffuse;
 }
 }
 
