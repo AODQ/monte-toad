@@ -550,22 +550,6 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void UiSceneInfo() {
-  static bool open = true;
-  if (!ImGui::Begin("SceneInfo", &open)) { return; }
-
-  ImGui::Text(
-    "(%f, %f, %f) -> (%f, %f, %f) scene bounds"
-  , ::scene.bboxMin.x, ::scene.bboxMin.y, ::scene.bboxMin.z
-  , ::scene.bboxMax.x, ::scene.bboxMax.y, ::scene.bboxMax.z
-  );
-  ImGui::Text("%lu textures", ::scene.textures.size());
-  ImGui::Text("%lu meshes", ::scene.meshes.size());
-
-  ImGui::End();
-}
-
-////////////////////////////////////////////////////////////////////////////////
 void DispatchRender(
   mt::RenderInfo & renderInfo
 , mt::PluginInfo & pluginInfo
@@ -644,7 +628,6 @@ void UiEntry(
   ::UiLog();
   ::UiPlugin(pluginInfo);
   ::UiRenderInfo(renderInfo, pluginInfo);
-  ::UiSceneInfo();
 
   if (pluginInfo.userInterface.Dispatch) {
     pluginInfo

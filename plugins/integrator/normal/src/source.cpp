@@ -1,8 +1,9 @@
 #include <cr/cr.h>
 
-#include <monte-toad/scene.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
+#include <monte-toad/scene.hpp>
+#include <monte-toad/texture.hpp>
 
 #include <mt-plugin/plugin.hpp>
 

@@ -10,6 +10,31 @@
 
 namespace {
 
+void UiSceneInfo(mt::Scene & scene) {
+  static bool open = true;
+  if (!ImGui::Begin("Scene Info", &open)) { return; }
+
+  ImGui::Text(
+    "   (%.2f, %.2f, %.2f)\n-> (%.2f, %.2f, %.2f) scene bounds"
+  , scene.bboxMin.x, scene.bboxMin.y, scene.bboxMin.z
+  , scene.bboxMax.x, scene.bboxMax.y, scene.bboxMax.z
+  );
+
+  auto textureString = fmt::format("{} textures", scene.textures.size());
+  if (ImGui::TreeNode(textureString.c_str())) {
+    for (auto const & texture : scene.textures) {
+      ImGui::Text(
+        "'%s' %lux%lu", texture.filename.c_str(), texture.width, texture.height
+      );
+    }
+  }
+
+  // TODO mesh display
+  ImGui::Text("%lu meshes", scene.meshes.size());
+
+  ImGui::End();
+}
+
 void UiPluginInfo(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
@@ -17,13 +42,6 @@ void UiPluginInfo(
 , mt::DiagnosticInfo &
 ) {
   if (!(ImGui::Begin("Plugin Info"))) { return; }
-  ImGui::Text(
-    "Image Resolution (%u, %u)"
-  , renderInfo.imageResolution[0], renderInfo.imageResolution[1]
-  );
-
-  ImGui::Checkbox("use BVH", &renderInfo.bvhUse);
-  ImGui::Checkbox("optimize BVH", &renderInfo.bvhOptimize);
 
   ImGui::Text("samples per pixel %lu", renderInfo.samplesPerPixel);
   ImGui::Text("paths per sample %lu", renderInfo.pathsPerSample);
@@ -138,15 +156,6 @@ void UiImageOutput(
   ImGui::SameLine();
   ImGui::SetNextItemWidth(100.0f);
   if (ImGui::InputInt2("Fragment Inspection", &pixelInspectingCoord.x)) {
-    pixelInspectingCoord.x =
-      glm::min(
-        static_cast<int>(renderInfo.imageResolution[0]), pixelInspectingCoord.x
-      );
-    pixelInspectingCoord.y =
-      glm::min(
-        static_cast<int>(renderInfo.imageResolution[1]), pixelInspectingCoord.y
-      );
-
     if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) {
       pixelInspectingColor =
         diagnosticInfo.currentFragmentBuffer[
@@ -158,6 +167,17 @@ void UiImageOutput(
 
   ImGui::SameLine();
   if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) {
+
+    // just ensure that image resolution is correct
+    pixelInspectingCoord.x =
+      glm::min(
+        static_cast<int>(renderInfo.imageResolution[0]), pixelInspectingCoord.x
+      );
+    pixelInspectingCoord.y =
+      glm::min(
+        static_cast<int>(renderInfo.imageResolution[1]), pixelInspectingCoord.y
+      );
+
     ImGui::ColorButton(
       ""
     , ImVec4(
@@ -166,7 +186,6 @@ void UiImageOutput(
       )
     );
   }
-
 
   ImGui::End();
 }
@@ -177,6 +196,7 @@ void Dispatch(
 , mt::PluginInfo & pluginInfo
 , mt::DiagnosticInfo & diagnosticInfo
 ) {
+  ::UiSceneInfo(scene);
   ::UiPluginInfo(scene, renderInfo, pluginInfo, diagnosticInfo);
   ::UiImageOutput(scene, renderInfo, pluginInfo, diagnosticInfo);
 }

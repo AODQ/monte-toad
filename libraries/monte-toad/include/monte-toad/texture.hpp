@@ -7,7 +7,6 @@
 #include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
-// TODO merge io/Buffer into this to allow writing back
 struct Texture {
   uint64_t width, height;
   std::vector<glm::vec4> data;
@@ -29,6 +28,7 @@ struct CubemapTexture {
   static CubemapTexture Construct(std::string const & baseFilename);
 };
 
+// TODO namespace
 glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords);
 glm::vec4 SampleBilinear(Texture const & texture, glm::vec2 uvCoords);
 glm::vec4 Sample(CubemapTexture const & texture, glm::vec3 dir);
