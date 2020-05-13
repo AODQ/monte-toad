@@ -4,6 +4,7 @@
 
 #include <monte-toad/engine.hpp>
 #include <monte-toad/imagebuffer.hpp>
+#include <monte-toad/enum.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/scene.hpp>
 #include <monte-toad/span.hpp>
@@ -490,18 +491,68 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     }
   }
 
+  enum struct AspectRatio : int {
+    e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size
+  };
+
+  std::array<float, Idx(AspectRatio::size)> constexpr ratioConversion = {{
+    1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f
+  , 1.0f
+  }};
+
+  std::array<char const *, Idx(AspectRatio::size)> constexpr ratioLabels = {{
+    "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None"
+  }};
+
+  static AspectRatio aspectRatio = AspectRatio::e4_3;
+  static char const * aspectRatioLabel = ratioLabels[Idx(aspectRatio)];
   static std::array<int, 2> imageResolution = {{
     static_cast<int>(renderInfo.imageResolution[0])
   , static_cast<int>(renderInfo.imageResolution[1])
   }};
-  if (ImGui::InputInt2("Image resolution", imageResolution.data())) {
+  static std::array<int, 2> previousImageResolution = {{
+    imageResolution[0], imageResolution[1]
+  }};
 
+  if (ImGui::BeginCombo("Aspect Ratio", aspectRatioLabel)) {
+    for (size_t i = 0; i < ratioLabels.size(); ++ i) {
+      bool isSelected = Idx(aspectRatio) == static_cast<int>(i);
+      if (ImGui::Selectable(ratioLabels[i], isSelected)) {
+        aspectRatio = static_cast<AspectRatio>(i);
+        aspectRatioLabel = ratioLabels[i];
+
+        // update image resolution
+        imageResolution[1] = imageResolution[0] / ratioConversion[i];
+        previousImageResolution[1] = imageResolution[1];
+      }
+
+      if (isSelected)
+        { ImGui::SetItemDefaultFocus(); }
+    }
+    ImGui::EndCombo();
+  }
+
+  if (ImGui::InputInt2("Image resolution", imageResolution.data())) {
     // Only 4K support right now (accidentally typing large number sucks)
     if (imageResolution[0] >= 4096) { imageResolution[0] = 4096; }
     if (imageResolution[1] >= 4096) { imageResolution[1] = 4096; }
 
+    // apply aspect ratio if requested
+    if (aspectRatio != AspectRatio::eNone) {
+      if (previousImageResolution[0] != imageResolution[0]) {
+        imageResolution[1] =
+          imageResolution[0] / ratioConversion[Idx(aspectRatio)];
+      } else {
+        imageResolution[0] =
+          imageResolution[1] * ratioConversion[Idx(aspectRatio)];
+      }
+    }
+
     renderInfo.imageResolution[0] = static_cast<size_t>(imageResolution[0]);
     renderInfo.imageResolution[1] = static_cast<size_t>(imageResolution[1]);
+
+    previousImageResolution[0] = imageResolution[0];
+    previousImageResolution[1] = imageResolution[1];
 
     // have to reallocate everything now
     AllocateGlResources(renderInfo);
