@@ -1,3 +1,4 @@
 add_subdirectory(albedo)
 add_subdirectory(depth)
+add_subdirectory(forward-pathtracer)
 add_subdirectory(normal)

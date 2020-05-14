@@ -1,17 +1,14 @@
+#include <cr/cr.h>
+
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
 #include <monte-toad/scene.hpp>
 #include <monte-toad/surfaceinfo.hpp>
 #include <monte-toad/texture.hpp>
+
 #include <mt-plugin/plugin.hpp>
 
-#include <cr/cr.h>
-#include <imgui/imgui.hpp>
-
 namespace {
-
-bool CR_STATE applyFogging = true;
-
 glm::vec3 Dispatch(
   glm::vec2 const & uv, glm::vec2 const & resolution
 , mt::Scene const & scene
@@ -35,32 +32,31 @@ glm::vec3 Dispatch(
       triangle->n0, triangle->n1, triangle->n2
     , surface.barycentricUv
     );
+  auto surfaceOrigin = origin + wi*surface.distance;
   auto color =
     pluginInfo.material.BsdfFs(
       scene, surface, wi, glm::reflect(wi, surface.normal)
     );
 
-  // do fogging just for some visual characteristics if requested
-  if (applyFogging) {
-    float distance = std::get<1>(results).length;
-    distance /= glm::length(scene.bboxMax - scene.bboxMin);
-    color *= glm::exp(-distance * 2.0f);
-  }
+  auto [emissionTri, emissionBarycentricUv] = EmissionSourceTriangle(scene, 0u);
+  if (!emissionTri) { return glm::vec3(1.0f, 0.0f, 0.0f); }
+  auto emissionOrigin =
+    (emissionTri->v0 + emissionTri->v1 + emissionTri->v2) * 0.3333333f;
+    /* BarycentricInterpolation( */
+    /*   emissionTri->v0, emissionTri->v1, emissionTri->v2, emissionBarycentricUv */
+    /* ); */
 
-  return color;
+  auto emissionWo = glm::normalize(emissionOrigin - surfaceOrigin);
+
+  if (glm::dot(emissionWo, surface.normal) <= 0.0f) { return glm::vec3(0.0f); }
+
+  auto [tempTri, tempInt] =
+    mt::Raycast(scene, surfaceOrigin, emissionWo, true, triangle);
+
+  if (tempTri && tempTri->meshIdx == emissionTri->meshIdx) { return color; }
+
+  return color * 0.1f;
 }
-
-void UiUpdate(
-  mt::Scene & scene
-, mt::RenderInfo & render
-, mt::PluginInfo & plugin
-, mt::DiagnosticInfo & diagnosticInfo
-) {
-  ImGui::Begin("Integrator");
-  ImGui::Checkbox("apply fog", &applyFogging);
-  ImGui::End();
-}
-
 }
 
 CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
@@ -76,7 +72,6 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
       integrator.realtime = true;
       integrator.useGpu = false;
       integrator.Dispatch = &Dispatch;
-      integrator.UiUpdate = &UiUpdate;
       integrator.pluginType = mt::PluginType::Integrator;
     break;
     case CR_UNLOAD: break;
@@ -84,7 +79,7 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
     case CR_CLOSE: break;
   }
 
-  spdlog::info("albedo integrator plugin successfully loaded");
+  spdlog::info("forward pt integrator plugin successfully loaded");
 
   return 0;
 }

@@ -158,16 +158,11 @@ int main(int argc, char** argv) {
 
   omp_set_num_threads(renderInfo.numThreads);
 
-  ui::Initialize(renderInfo);
+  mt::PluginInfo plugin;
 
-  mt::PluginInfo pluginInfo;
+  ui::Initialize(renderInfo, plugin);
 
-  ui::Run(renderInfo, pluginInfo);
-
-  // clean plugins
-  for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i)
-    { mt::Clean(pluginInfo, static_cast<mt::PluginType>(i)); }
-  mt::FreePlugins();
+  ui::Run(renderInfo, plugin);
 
   return 0;
 }

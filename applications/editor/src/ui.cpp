@@ -86,12 +86,29 @@ void AttemptRenderingOn(mt::PluginInfo const & pluginInfo) {
     spdlog::error("Need integrator plugin in order to render");
     rendering = false;
   }
+  if (!mt::Valid(pluginInfo, mt::PluginType::Material)) {
+    spdlog::error("Need material plugin in order to render");
+    rendering = false;
+  }
   if (
       ::scene.meshes.size() == 0
    || ::scene.accelStructure->triangles.size() == 0
   ) {
     spdlog::error("Can't render without loading a scene");
     ::rendering = false;
+  }
+}
+
+void LoadScene(mt::RenderInfo const & render, mt::PluginInfo & plugin) {
+  ::scene =
+    mt::Scene::Construct(
+      render.modelFile
+    , render.environmentMapFile
+    , render.bvhOptimize
+    );
+
+  if (mt::Valid(plugin, mt::PluginType::Material)) {
+    plugin.material.Load(::scene);
   }
 }
 
@@ -227,7 +244,7 @@ void UiPluginLoadFile(
 
   // clean previous data, and also invalidate it in case the next plugin is
   // invalid but does not write out invalid data
-  mt::Clean(pluginInfo, pluginType);
+  mt::Clean(::scene, pluginInfo, pluginType);
 
   // load plugin & check for plugin-loading errors
   switch (mt::LoadPlugin(pluginInfo, pluginType, tempFile)) {
@@ -277,9 +294,21 @@ void UiPluginLoadFile(
   // check that the plugin loaded itself properly (ei members set properly)
   if (!mt::Valid(pluginInfo, pluginType)) {
     spdlog::error("Failed to load plugin, or plugin is incomplete");
-    mt::Clean(pluginInfo, pluginType);
+    mt::Clean(::scene, pluginInfo, pluginType);
     file = "";
     rendering = false;
+    return;
+  }
+
+  // load plugin
+  switch (pluginType) {
+    default: break;
+    case mt::PluginType::Material:
+      pluginInfo.material.Load(scene);
+    break;
+    case mt::PluginType::Random:
+      pluginInfo.random.Initialize();
+    break;
   }
 }
 
@@ -421,12 +450,7 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
         );
       if (tempFilename != "") {
         renderInfo.modelFile = tempFilename;
-        scene =
-          mt::Scene::Construct(
-            renderInfo.modelFile
-          , renderInfo.environmentMapFile
-          , renderInfo.bvhOptimize
-          );
+        LoadScene(renderInfo, pluginInfo);
       }
     }
 
@@ -438,12 +462,7 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
         );
       if (tempFilename != "") {
         renderInfo.environmentMapFile = tempFilename;
-        scene =
-          mt::Scene::Construct(
-            renderInfo.modelFile
-          , renderInfo.environmentMapFile
-          , renderInfo.bvhOptimize
-          );
+        LoadScene(renderInfo, pluginInfo);
       }
     }
 
@@ -476,6 +495,10 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
   if (ImGui::Checkbox("Rendering", &::rendering) && ::rendering) {
     ::AttemptRenderingOn(pluginInfo);
+  }
+
+  if (ImGui::Button("Reload scene")) {
+    LoadScene(renderInfo, pluginInfo);
   }
 
   enum struct AspectRatio : int {
@@ -595,8 +618,8 @@ void DispatchRender(
 ////////////////////////////////////////////////////////////////////////////////
 void UiEntry(
   mt::Scene & scene
-, mt::RenderInfo & renderInfo
-, mt::PluginInfo & pluginInfo
+, mt::RenderInfo & render
+, mt::PluginInfo & plugin
 ) {
   ImGui::SetNextWindowPos(ImVec2(0, 0));
   ImGui::SetNextWindowSize(ImVec2(::displayWidth, ::displayHeight));
@@ -630,14 +653,26 @@ void UiEntry(
 
   ImGui::BeginMenuBar();
   ::UiLog();
-  ::UiPlugin(pluginInfo);
-  ::UiRenderInfo(renderInfo, pluginInfo);
+  ::UiPlugin(plugin);
+  ::UiRenderInfo(render, plugin);
 
-  if (pluginInfo.userInterface.Dispatch) {
-    pluginInfo
-      .userInterface
-      .Dispatch(scene, renderInfo, pluginInfo, ::diagnosticInfo);
-  }
+  if (plugin.userInterface.Dispatch)
+    { plugin.userInterface.Dispatch(scene, render, plugin, ::diagnosticInfo); }
+
+  if (plugin.integrator.UiUpdate)
+    { plugin.integrator.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+
+  if (plugin.kernel.UiUpdate)
+    { plugin.kernel.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+
+  if (plugin.material.UiUpdate)
+    { plugin.material.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+
+  if (plugin.camera.UiUpdate)
+    { plugin.camera.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+
+  if (plugin.random.UiUpdate)
+    { plugin.random.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
 
   ImGui::EndMenuBar();
 
@@ -652,7 +687,7 @@ void ui::InitializeLogger() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool ui::Initialize(mt::RenderInfo const & renderInfo) {
+bool ui::Initialize(mt::RenderInfo const & render, mt::PluginInfo & plugin){
   if (!glfwInit()) { return false; }
 
   // opengl 4.6
@@ -723,18 +758,13 @@ bool ui::Initialize(mt::RenderInfo const & renderInfo) {
     ImGui_ImplOpenGL3_Init("#version 460 core");
   }
 
-  if (renderInfo.modelFile != "")
+  if (render.modelFile != "")
   { // -- load scene
-    scene =
-      mt::Scene::Construct(
-        renderInfo.modelFile
-      , renderInfo.environmentMapFile
-      , renderInfo.bvhOptimize
-      );
+    LoadScene(render, plugin);
   }
 
   // load up opengl resources
-  ::AllocateGlResources(renderInfo);
+  ::AllocateGlResources(render);
 
   return true;
 }
@@ -785,4 +815,9 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
   glfwDestroyWindow(::window);
   glfwTerminate();
+
+  // clean plugins
+  for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i)
+    { mt::Clean(::scene, pluginInfo, static_cast<mt::PluginType>(i)); }
+  mt::FreePlugins();
 }

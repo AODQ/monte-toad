@@ -5,7 +5,7 @@ target_link_libraries(
   integrator-albedo
   PRIVATE
     mt-plugin monte-toad
-    cr
+    cr imgui
 )
 
 set_target_properties(integrator-albedo PROPERTIES COMPILE_FLAGS "-Wall")

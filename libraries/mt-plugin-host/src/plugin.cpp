@@ -44,6 +44,8 @@ uint32_t mt::LoadPlugin(
 
   if (!cr_plugin_open(ctx, file.c_str())) { return CR_USER; }
 
+  cr_set_temporary_path(ctx, "/tmp/");
+
   if (ctx.failure != CR_NONE) { return ctx.failure; }
 
   cr_plugin_update(ctx);
@@ -86,7 +88,6 @@ bool mt::Valid(mt::PluginInfo const & pluginInfo, mt::PluginType pluginType) {
           pluginInfo.material.BsdfFs     != nullptr
        && pluginInfo.material.BsdfPdf    != nullptr
        && pluginInfo.material.BsdfSample != nullptr
-       && pluginInfo.material.Clean      != nullptr
        && pluginInfo.material.Load       != nullptr
        && pluginInfo.material.pluginType == pluginType
       ;
@@ -114,28 +115,32 @@ bool mt::Valid(mt::PluginInfo const & pluginInfo, mt::PluginType pluginType) {
 }
 
 //------------------------------------------------------------------------------
-void mt::Clean(mt::PluginInfo & pluginInfo, mt::PluginType pluginType) {
+void mt::Clean(
+  mt::Scene & scene
+, mt::PluginInfo & pluginInfo
+, mt::PluginType pluginType
+) {
   // cleanup the plugin since it is invalid
   switch (pluginType) {
     case mt::PluginType::Integrator:
       pluginInfo.integrator.Dispatch = nullptr;
+      pluginInfo.integrator.UiUpdate = nullptr;
       pluginInfo.integrator.pluginType = mt::PluginType::Invalid;
     break;
     case mt::PluginType::Kernel:
       pluginInfo.kernel.Denoise = nullptr;
       pluginInfo.kernel.Tonemap = nullptr;
+      pluginInfo.kernel.UiUpdate = nullptr;
       pluginInfo.kernel.pluginType = mt::PluginType::Invalid;
     break;
     case mt::PluginType::Material:
-      if (mt::Valid(pluginInfo, pluginType)) {
-        pluginInfo.material.Clean();
-      }
       pluginInfo.material.BsdfFs     = nullptr;
       pluginInfo.material.BsdfPdf    = nullptr;
       pluginInfo.material.BsdfSample = nullptr;
-      pluginInfo.material.Clean      = nullptr;
       pluginInfo.material.Load       = nullptr;
+      pluginInfo.material.UiUpdate   = nullptr;
       pluginInfo.material.pluginType = mt::PluginType::Invalid;
+    break;
     case mt::PluginType::Camera:
       pluginInfo.camera.Dispatch = nullptr;
       pluginInfo.camera.pluginType = mt::PluginType::Invalid;
@@ -149,6 +154,7 @@ void mt::Clean(mt::PluginInfo & pluginInfo, mt::PluginType pluginType) {
       pluginInfo.random.SampleUniform1 = nullptr;
       pluginInfo.random.SampleUniform2 = nullptr;
       pluginInfo.random.SampleUniform3 = nullptr;
+      pluginInfo.random.UiUpdate       = nullptr;
       pluginInfo.random.pluginType = mt::PluginType::Invalid;
     break;
     case mt::PluginType::UserInterface:

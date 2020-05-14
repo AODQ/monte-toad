@@ -14,17 +14,11 @@
 namespace {
 
 float msTime = 0.0f;
-float mouseSensitivity = 1.0f;
+float CR_STATE mouseSensitivity = 1.0f;
 
-void UiCameraControls(
-  mt::RenderInfo & renderInfo
-) {
-  /* if (ImGui::IsAnyItemActive()) { return; } */
-
-  /* glm::vec3 dir = */ 
-
+void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
   // clamp to prevent odd ms time (like if scene were to load)
-  msTime = glm::clamp(msTime, 0.0f, 155.5f);
+  msTime = glm::clamp(msTime, 1.0f, 10055.5f);
 
   auto const cameraRight =
     glm::normalize(
@@ -33,36 +27,39 @@ void UiCameraControls(
   auto const & cameraForward = renderInfo.cameraDirection;
   auto const & cameraUp = renderInfo.cameraUpAxis;
 
+  auto const cameraVelocity =
+    glm::length(scene.bboxMax - scene.bboxMin) * 0.001f;
+
   auto window = reinterpret_cast<GLFWwindow *>(renderInfo.glfwWindow);
 
   if (glfwGetKey(window, GLFW_KEY_A)) {
-    renderInfo.cameraOrigin -= msTime * cameraRight;
+    renderInfo.cameraOrigin -= msTime * cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_D)) {
-    renderInfo.cameraOrigin += msTime * cameraRight;
+    renderInfo.cameraOrigin += msTime * cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_W)) {
-    renderInfo.cameraOrigin += msTime * cameraForward;
+    renderInfo.cameraOrigin += msTime * cameraForward * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_S)) {
-    renderInfo.cameraOrigin -= msTime * cameraForward;
+    renderInfo.cameraOrigin -= msTime * cameraForward * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-    renderInfo.cameraOrigin -= msTime * cameraUp;
+    renderInfo.cameraOrigin -= msTime * cameraUp * cameraVelocity;
   }
 
   if (
       glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)
    && glfwGetKey(window, GLFW_KEY_SPACE)
   ) {
-    renderInfo.cameraOrigin += msTime * 2.0f * cameraUp;
+    renderInfo.cameraOrigin += msTime * 2.0f * cameraUp * cameraVelocity;
   }
 
-  static double prevX = -1.0, prevY = -1.0;
+  static CR_STATE double prevX = -1.0, prevY = -1.0;
   if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
 
     // hide as mouse will spaz around screen being teleported
@@ -79,7 +76,7 @@ void UiCameraControls(
 
     renderInfo.cameraDirection +=
       (delta.x * cameraRight + delta.y * cameraUp)
-    * ::msTime * 0.00005f * ::mouseSensitivity
+    * ::msTime * 0.00025f * ::mouseSensitivity
     ;
     renderInfo.cameraDirection = glm::normalize(renderInfo.cameraDirection);
 
@@ -93,7 +90,7 @@ void UiCameraControls(
 }
 
 void UiSceneInfo(mt::Scene & scene) {
-  static bool open = true;
+  static CR_STATE bool open = true;
   if (!ImGui::Begin("Scene Info", &open)) { return; }
 
   ImGui::Text(
@@ -170,14 +167,14 @@ void UiImageOutput(
 ) {
   if (!(ImGui::Begin("Image Output"))) { return; }
 
-  static auto pixelInspectingCoord = glm::ivec2(-1);
-  static auto pixelInspectingColor = glm::vec3();
+  static CR_STATE auto pixelInspectingCoord = glm::ivec2(-1);
+  static CR_STATE auto pixelInspectingColor = glm::vec3();
 
-  static std::array<int, 2> imGuiImageResolution = {{
+  static CR_STATE std::array<int, 2> imGuiImageResolution = {{
     static_cast<int>(renderInfo.imageResolution[0])
   , static_cast<int>(renderInfo.imageResolution[1])
   }};
-  static bool shareimGuiImageResolution = true;
+  static CR_STATE bool shareimGuiImageResolution = true;
 
   // display image
   ImGui::Image(
@@ -284,7 +281,7 @@ void Dispatch(
 , mt::PluginInfo & pluginInfo
 , mt::DiagnosticInfo & diagnosticInfo
 ) {
-  ::UiCameraControls(renderInfo);
+  ::UiCameraControls(scene, renderInfo);
   ::UiSceneInfo(scene);
   ::UiPluginInfo(scene, renderInfo, pluginInfo, diagnosticInfo);
   ::UiImageOutput(scene, renderInfo, pluginInfo, diagnosticInfo);

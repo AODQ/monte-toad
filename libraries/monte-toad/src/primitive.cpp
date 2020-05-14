@@ -15,9 +15,9 @@
 #include <bvh/utilities.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
-std::optional<BvhIntersection> RayTriangleIntersection(
+std::optional<mt::BvhIntersection> mt::RayTriangleIntersection(
   bvh::Ray<float> const & ray
-, BvhTriangle const & triangle
+, Triangle const & triangle
 , CullFace cullFace
 , float epsilon
 ) {
@@ -52,10 +52,10 @@ std::optional<BvhIntersection> RayTriangleIntersection(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-BvhTriangle::BvhTriangle() {}
+mt::Triangle::Triangle() {}
 
 ////////////////////////////////////////////////////////////////////////////////
-BvhTriangle::BvhTriangle(
+mt::Triangle::Triangle(
     uint16_t meshIdx_
   , glm::vec3 a_, glm::vec3 b_, glm::vec3 c_
   , glm::vec3 n0_, glm::vec3 n1_, glm::vec3 n2_
@@ -69,7 +69,7 @@ BvhTriangle::BvhTriangle(
 
 ////////////////////////////////////////////////////////////////////////////////
 std::pair<bvh::BoundingBox<float>, bvh::BoundingBox<float>>
-BvhTriangle::split(
+mt::Triangle::split(
   size_t axis
 , float position
 ) const {
@@ -109,7 +109,7 @@ BvhTriangle::split(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bvh::BoundingBox<float> BvhTriangle::bounding_box() const {
+bvh::BoundingBox<float> mt::Triangle::bounding_box() const {
   auto bbox = bvh::BoundingBox<float>(ToBvh(this->v0));
   bbox.extend(ToBvh(this->v1));
   bbox.extend(ToBvh(this->v2));
@@ -117,35 +117,35 @@ bvh::BoundingBox<float> BvhTriangle::bounding_box() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bvh::Vector3<float> BvhTriangle::center() const {
+bvh::Vector3<float> mt::Triangle::center() const {
   return ToBvh(Center());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec3 BvhTriangle::Center() const {
+glm::vec3 mt::Triangle::Center() const {
   return (this->v0 + this->v1 + this->v2) * (1.0f/3.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-float BvhTriangle::area() const {
+float mt::Triangle::area() const {
   auto const edge0 = this->v0 - this->v1;
   auto const edge1 = this->v2 - this->v0;
   return glm::length(glm::cross(edge0, edge1)) * 0.5f;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::optional<BvhIntersection> BvhTriangle::intersect(
+std::optional<mt::BvhIntersection> mt::Triangle::intersect(
   bvh::Ray<float> const & ray
 ) const {
   return RayTriangleIntersection(ray, *this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-BvhTriangle::~BvhTriangle() {}
+mt::Triangle::~Triangle() {}
 
 ////////////////////////////////////////////////////////////////////////////////
-std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
-  std::vector<BvhTriangle> && trianglesMv
+std::unique_ptr<mt::AccelerationStructure> mt::AccelerationStructure::Construct(
+  std::vector<Triangle> && trianglesMv
 , bool optimize
 ) {
   auto self = std::make_unique<AccelerationStructure>();
@@ -187,7 +187,7 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
   std::memcpy(
     reinterpret_cast<void*>(triangles.data()),
     reinterpret_cast<void*>(shuffledTriangles.get()),
-    referenceCount * sizeof(BvhTriangle)
+    referenceCount * sizeof(Triangle)
   );
 
   return self;
@@ -195,16 +195,16 @@ std::unique_ptr<AccelerationStructure> AccelerationStructure::Construct(
 
 namespace {
   struct Intersector {
-    using Result = BvhTriangle::IntersectionType;
+    using Result = mt::Triangle::IntersectionType;
 
     bvh::Bvh<float> const * boundingVolume;
-    span<BvhTriangle const> triangles;
-    BvhTriangle const * ignoredTriangle;
+    span<mt::Triangle const> triangles;
+    mt::Triangle const * ignoredTriangle;
 
     Intersector(
       bvh::Bvh<float> const & boundingVolume_
-    , span<BvhTriangle const> triangles_
-    , BvhTriangle const * ignoredTriangle_
+    , span<mt::Triangle const> triangles_
+    , mt::Triangle const * ignoredTriangle_
     )
       : boundingVolume(&boundingVolume_)
       , triangles(triangles_)
@@ -226,10 +226,10 @@ namespace {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::optional<BvhIntersection>
-IntersectClosest(
+std::optional<mt::BvhIntersection>
+mt::IntersectClosest(
   AccelerationStructure const & self
-, glm::vec3 ori, glm::vec3 dir, BvhTriangle const * ignoredTriangle
+, glm::vec3 ori, glm::vec3 dir, Triangle const * ignoredTriangle
 ) {
   Intersector intersector(
     self.boundingVolume, make_span(self.triangles), ignoredTriangle

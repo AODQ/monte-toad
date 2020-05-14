@@ -6,7 +6,7 @@ namespace mt { struct RenderInfo; }
 namespace ui {
   void InitializeLogger();
 
-  bool Initialize(mt::RenderInfo const & renderInfo);
+  bool Initialize(mt::RenderInfo const & render, mt::PluginInfo & plugin);
 
-  void Run(mt::RenderInfo & renderInfo , mt::PluginInfo & pluginInfo);
+  void Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo);
 }

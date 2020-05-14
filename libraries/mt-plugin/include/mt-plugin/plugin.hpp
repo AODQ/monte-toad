@@ -10,9 +10,11 @@
 #include <mt-plugin/enums.hpp>
 
 #include <array>
-#include <filesystem>
 #include <string>
+#include <functional>
 #include <tuple>
+
+// TODO implement functional instead of ptrs
 
 namespace mt { struct DiagnosticInfo; }
 namespace mt { struct PluginInfo; }
@@ -28,6 +30,13 @@ namespace mt {
     , mt::Scene const & scene
     , mt::RenderInfo const & renderInfo
     , mt::PluginInfo const & pluginInfo
+    ) = nullptr;
+
+    void (*UiUpdate)(
+      mt::Scene & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo & plugin
+    , mt::DiagnosticInfo & diagnosticInfo
     ) = nullptr;
 
     bool realtime = false; // renders either block-by-block or full-screen
@@ -51,6 +60,13 @@ namespace mt {
     , mt::PluginInfo const & pluginInfo
     ) = nullptr;
 
+    void (*UiUpdate)(
+      mt::Scene & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo & plugin
+    , mt::DiagnosticInfo & diagnosticInfo
+    ) = nullptr;
+
     mt::PluginType pluginType;
   };
 
@@ -62,12 +78,18 @@ namespace mt {
     glm::vec2 (*SampleUniform2)() = nullptr;
     glm::vec3 (*SampleUniform3)() = nullptr;
 
+    void (*UiUpdate)(
+      mt::Scene & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo & plugin
+    , mt::DiagnosticInfo & diagnosticInfo
+    ) = nullptr;
+
     mt::PluginType pluginType;
   };
 
   struct PluginInfoMaterial {
-    void (*Load)(std::filesystem::path const & filepath) = nullptr;
-    void (*Clean)() = nullptr;
+    void (*Load)(mt::Scene &) = nullptr;
 
     std::tuple<glm::vec3 /*wo*/, float /*pdf*/> (*BsdfSample)(
       mt::PluginInfoRandom & random
@@ -85,6 +107,13 @@ namespace mt {
     , glm::vec3 const & wi, glm::vec3 const & wo
     ) = nullptr;
 
+    void (*UiUpdate)(
+      mt::Scene & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo & plugin
+    , mt::DiagnosticInfo & diagnosticInfo
+    ) = nullptr;
+
     mt::PluginType pluginType;
   };
 
@@ -95,14 +124,21 @@ namespace mt {
     , glm::vec2 const & uv
     ) = nullptr;
 
+    void (*UiUpdate)(
+      mt::Scene & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo & plugin
+    , mt::DiagnosticInfo & diagnosticInfo
+    ) = nullptr;
+
     mt::PluginType pluginType;
   };
 
   struct PluginInfoUserInterface {
     void (*Dispatch)(
       mt::Scene & scene
-    , mt::RenderInfo & renderInfo
-    , mt::PluginInfo & pluginInfo
+    , mt::RenderInfo & render
+    , mt::PluginInfo & plugin
     , mt::DiagnosticInfo & diagnosticInfo
     ) = nullptr;
 

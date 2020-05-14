@@ -5,12 +5,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <assimp/pbrmaterial.h>
 #include <glm/ext.hpp>
 
 namespace {
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<BvhTriangle> LoadAssetIntoScene(
+std::vector<mt::Triangle> LoadAssetIntoScene(
   mt::Scene & model
 , std::string const & filename
 ) {
@@ -43,20 +42,12 @@ std::vector<BvhTriangle> LoadAssetIntoScene(
     return {};
   }
 
-  std::vector<BvhTriangle> triangles;
+  std::vector<mt::Triangle> triangles;
 
   for (size_t meshIt = 0; meshIt < asset->mNumMeshes; ++ meshIt) {
     auto const & mesh = *asset->mMeshes[meshIt];
 
-    { // -- process mesh
-      mt::Mesh modelMesh;
-
-      modelMesh.material =
-        mt::Material::Construct(*asset->mMaterials[mesh.mMaterialIndex], model);
-
-      model.meshes.emplace_back(std::move(modelMesh));
-    }
-    uint16_t modelMeshIt = static_cast<uint16_t>(model.meshes.size()) - 1;
+    model.meshes.push_back({});
 
     for (size_t face = 0; face < mesh.mNumFaces; ++ face)
     for (size_t idx  = 0; idx < mesh.mFaces[face].mNumIndices/3; ++ idx) {
@@ -92,8 +83,8 @@ std::vector<BvhTriangle> LoadAssetIntoScene(
       // add to scene
       triangles
         .emplace_back(
-          BvhTriangle (
-            modelMeshIt
+          mt::Triangle (
+            meshIt
           , glm::vec3{v0.x, v0.y, v0.z}
           , glm::vec3{v1.x, v1.y, v1.z}
           , glm::vec3{v2.x, v2.y, v2.z}
@@ -127,127 +118,127 @@ std::vector<BvhTriangle> LoadAssetIntoScene(
   return triangles;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-void GetProperty(
-  aiMaterial const & aiMaterial
-, float & member
-, std::string const & property, int type, int idx // generated from AI_MATKEY_*
-) {
-  if (
-    ai_real value;
-    aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS
-  ) {
-    member = value;
-  }
-}
+/* //////////////////////////////////////////////////////////////////////////////// */
+/* void GetProperty( */
+/*   aiMaterial const & aiMaterial */
+/* , float & member */
+/* , std::string const & property, int type, int idx // generated from AI_MATKEY_* */
+/* ) { */
+/*   if ( */
+/*     ai_real value; */
+/*     aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS */
+/*   ) { */
+/*     member = value; */
+/*   } */
+/* } */
 
-////////////////////////////////////////////////////////////////////////////////
-void GetProperty(
-  aiMaterial const & aiMaterial
-, glm::vec3 & member
-, std::string const & property, int type, int idx // generated from AI_MATKEY_*
-) {
-  if (
-    aiColor3D value;
-    aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS
-  ) {
-    member = glm::vec3(value.r, value.g, value.b);
-  }
-}
+/* //////////////////////////////////////////////////////////////////////////////// */
+/* void GetProperty( */
+/*   aiMaterial const & aiMaterial */
+/* , glm::vec3 & member */
+/* , std::string const & property, int type, int idx // generated from AI_MATKEY_* */
+/* ) { */
+/*   if ( */
+/*     aiColor3D value; */
+/*     aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS */
+/*   ) { */
+/*     member = glm::vec3(value.r, value.g, value.b); */
+/*   } */
+/* } */
 
-////////////////////////////////////////////////////////////////////////////////
-void GetProperty(
-  aiMaterial const & aiMaterial
-, std::string & member
-, std::string const & property, int type, int idx // generated from AI_MATKEY_*
-) {
-  if (
-    aiString value;
-    aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS
-  ) {
-    member = std::string{value.C_Str()};
-  }
-}
+/* //////////////////////////////////////////////////////////////////////////////// */
+/* void GetProperty( */
+/*   aiMaterial const & aiMaterial */
+/* , std::string & member */
+/* , std::string const & property, int type, int idx // generated from AI_MATKEY_* */
+/* ) { */
+/*   if ( */
+/*     aiString value; */
+/*     aiMaterial.Get(property.c_str(), type, idx, value) == aiReturn_SUCCESS */
+/*   ) { */
+/*     member = std::string{value.C_Str()}; */
+/*   } */
+/* } */
 
 } // -- end namespace
 
-mt::Material mt::Material::Construct(
-  aiMaterial const & aiMaterial
-, mt::Scene & scene
-) {
-  mt::Material self;
+/* mt::Material mt::Material::Construct( */
+/*   aiMaterial const & aiMaterial */
+/* , mt::Scene & scene */
+/* ) { */
+/*   mt::Material self; */
 
-  auto fixFilename = [&basePath=scene.basePath](aiString const & file) {
-    auto filename = std::string{file.C_Str()};
-    // Have to fix incoming file paths as they may be encoded using
-    // windows file path "/", and std::filesystem will not handle this.
-    std::replace(filename.begin(), filename.end(), '\\', '/');
-    return (basePath / filename).string();
-  };
+/*   auto fixFilename = [&basePath=scene.basePath](aiString const & file) { */
+/*     auto filename = std::string{file.C_Str()}; */
+/*     // Have to fix incoming file paths as they may be encoded using */
+/*     // windows file path "/", and std::filesystem will not handle this. */
+/*     std::replace(filename.begin(), filename.end(), '\\', '/'); */
+/*     return (basePath / filename).string(); */
+/*   }; */
 
-  GetProperty(aiMaterial, self.name, AI_MATKEY_NAME);
+/*   GetProperty(aiMaterial, self.name, AI_MATKEY_NAME); */
 
-  // -- attempt first to load global properties (ei for obj)
-  GetProperty(aiMaterial, self.colorDiffuse,      AI_MATKEY_COLOR_DIFFUSE);
-  GetProperty(aiMaterial, self.colorSpecular,     AI_MATKEY_COLOR_SPECULAR);
-  GetProperty(aiMaterial, self.colorAmbient,      AI_MATKEY_COLOR_AMBIENT);
-  GetProperty(aiMaterial, self.colorEmissive,     AI_MATKEY_COLOR_EMISSIVE);
-  GetProperty(aiMaterial, self.colorTransparent,  AI_MATKEY_COLOR_TRANSPARENT);
-  GetProperty(aiMaterial, self.transparency,      AI_MATKEY_OPACITY);
-  GetProperty(aiMaterial, self.shininess,         AI_MATKEY_SHININESS);
-  GetProperty(aiMaterial, self.shininessStrength, AI_MATKEY_SHININESS_STRENGTH);
-  GetProperty(aiMaterial, self.indexOfRefraction, AI_MATKEY_REFRACTI);
+/*   // -- attempt first to load global properties (ei for obj) */
+/*   GetProperty(aiMaterial, self.colorDiffuse,      AI_MATKEY_COLOR_DIFFUSE); */
+/*   GetProperty(aiMaterial, self.colorSpecular,     AI_MATKEY_COLOR_SPECULAR); */
+/*   GetProperty(aiMaterial, self.colorAmbient,      AI_MATKEY_COLOR_AMBIENT); */
+/*   GetProperty(aiMaterial, self.colorEmissive,     AI_MATKEY_COLOR_EMISSIVE); */
+/*   GetProperty(aiMaterial, self.colorTransparent,  AI_MATKEY_COLOR_TRANSPARENT); */
+/*   GetProperty(aiMaterial, self.transparency,      AI_MATKEY_OPACITY); */
+/*   GetProperty(aiMaterial, self.shininess,         AI_MATKEY_SHININESS); */
+/*   GetProperty(aiMaterial, self.shininessStrength, AI_MATKEY_SHININESS_STRENGTH); */
+/*   GetProperty(aiMaterial, self.indexOfRefraction, AI_MATKEY_REFRACTI); */
 
-  self.emissive = self.emissive | (glm::length(self.colorEmissive) > 0.0f);
-  self.specular = glm::length(self.colorSpecular) > 0.0f;
-  self.transparency = 1.0f - self.transparency;
+/*   self.emissive = self.emissive | (glm::length(self.colorEmissive) > 0.0f); */
+/*   self.specular = glm::length(self.colorSpecular) > 0.0f; */
+/*   self.transparency = 1.0f - self.transparency; */
 
-  // until multi-layer material support exists
-  if (self.transparency > 0.0f) self.specular = false;
+/*   // until multi-layer material support exists */
+/*   if (self.transparency > 0.0f) self.specular = false; */
 
-  // load baseColor texture
-  if (
-    aiString textureFile;
-    aiMaterial.GetTexture(
-      /* AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE */
-      /* AI_MATKEY_TEXTURE_DIFFUSE */
-      aiTextureType_DIFFUSE, 0
-    , &textureFile
-    ) == aiReturn_SUCCESS
-  ) {
-    auto filename = fixFilename(textureFile);
+/*   // load baseColor texture */
+/*   if ( */
+/*     aiString textureFile; */
+/*     aiMaterial.GetTexture( */
+/*       /1* AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE *1/ */
+/*       /1* AI_MATKEY_TEXTURE_DIFFUSE *1/ */
+/*       aiTextureType_DIFFUSE, 0 */
+/*     , &textureFile */
+/*     ) == aiReturn_SUCCESS */
+/*   ) { */
+/*     auto filename = fixFilename(textureFile); */
 
-    // try to find cached texture
-    for (size_t i = 0; i < scene.textures.size(); ++ i) {
-      if (scene.textures[i].filename == filename) {
-        self.baseColorTextureIdx = i;
-        break;
-      }
-    }
+/*     // try to find cached texture */
+/*     for (size_t i = 0; i < scene.textures.size(); ++ i) { */
+/*       if (scene.textures[i].filename == filename) { */
+/*         self.baseColorTextureIdx = i; */
+/*         break; */
+/*       } */
+/*     } */
 
-    // if not cached, create texture
-    if (self.baseColorTextureIdx == static_cast<size_t>(-1)) {
-      // TODO support embedded textures
-      scene.textures.emplace_back(Texture::Construct(filename));
-      self.baseColorTextureIdx = scene.textures.size() - 1;
-    }
-  }
+/*     // if not cached, create texture */
+/*     if (self.baseColorTextureIdx == static_cast<size_t>(-1)) { */
+/*       // TODO support embedded textures */
+/*       scene.textures.emplace_back(Texture::Construct(filename)); */
+/*       self.baseColorTextureIdx = scene.textures.size() - 1; */
+/*     } */
+/*   } */
 
-  spdlog::debug("Loaded material {}", self.name);
-  spdlog::debug("\t colorDiffuse:      {}", self.colorDiffuse     );
-  spdlog::debug("\t colorSpecular:     {}", self.colorSpecular    );
-  spdlog::debug("\t colorAmbient:      {}", self.colorAmbient     );
-  spdlog::debug("\t colorEmissive:     {}", self.colorEmissive    );
-  spdlog::debug("\t colorTransparent:  {}", self.colorTransparent );
-  spdlog::debug("\t shininess:         {}", self.shininess        );
-  spdlog::debug("\t shininessStrength: {}", self.shininessStrength);
-  spdlog::debug("\t emissive:          {}", self.emissive         );
-  spdlog::debug("\t specular:          {}", self.specular         );
-  spdlog::debug("\t transparency:      {}", self.transparency     );
-  spdlog::debug("\t indexOfRefraction: {}", self.indexOfRefraction);
+/*   spdlog::debug("Loaded material {}", self.name); */
+/*   spdlog::debug("\t colorDiffuse:      {}", self.colorDiffuse     ); */
+/*   spdlog::debug("\t colorSpecular:     {}", self.colorSpecular    ); */
+/*   spdlog::debug("\t colorAmbient:      {}", self.colorAmbient     ); */
+/*   spdlog::debug("\t colorEmissive:     {}", self.colorEmissive    ); */
+/*   spdlog::debug("\t colorTransparent:  {}", self.colorTransparent ); */
+/*   spdlog::debug("\t shininess:         {}", self.shininess        ); */
+/*   spdlog::debug("\t shininessStrength: {}", self.shininessStrength); */
+/*   spdlog::debug("\t emissive:          {}", self.emissive         ); */
+/*   spdlog::debug("\t specular:          {}", self.specular         ); */
+/*   spdlog::debug("\t transparency:      {}", self.transparency     ); */
+/*   spdlog::debug("\t indexOfRefraction: {}", self.indexOfRefraction); */
 
-  return self;
-}
+/*   return self; */
+/* } */
 
 ////////////////////////////////////////////////////////////////////////////////
 mt::Scene mt::Scene::Construct(
@@ -270,26 +261,18 @@ mt::Scene mt::Scene::Construct(
     scene.environmentTexture = Texture::Construct(environmentMapFilename);
   }
 
-  { // -- parse emission source
-    for (size_t i = 0; i < scene.accelStructure->triangles.size(); ++ i) {
-      auto & tri = scene.accelStructure->triangles[i];
-      if (scene.meshes[tri.meshIdx].material.emissive)
-        { scene.emissionSource.triangles.emplace_back(i); }
-    }
-  }
-
   return scene;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::tuple<BvhTriangle const *, BvhIntersection> mt::Raycast(
+std::tuple<mt::Triangle const *, mt::BvhIntersection> mt::Raycast(
   mt::Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
-, bool useBvh, BvhTriangle const * ignoredTriangle
+, bool useBvh, mt::Triangle const * ignoredTriangle
 ) {
   if (!useBvh) {
     float dist = std::numeric_limits<float>::max();
-    BvhTriangle const * closestTri = nullptr;
+    Triangle const * closestTri = nullptr;
     BvhIntersection intersection;
 
     for (auto const & tri : scene.accelStructure->triangles) {
@@ -312,7 +295,7 @@ std::tuple<BvhTriangle const *, BvhIntersection> mt::Raycast(
 #include <monte-toad/math.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
-std::tuple<BvhTriangle const *, glm::vec2> mt::EmissionSourceTriangle(
+std::tuple<mt::Triangle const *, glm::vec2> mt::EmissionSourceTriangle(
   mt::Scene const & scene
 /* , GenericNoiseGenerator & noiseType */
 , size_t idx

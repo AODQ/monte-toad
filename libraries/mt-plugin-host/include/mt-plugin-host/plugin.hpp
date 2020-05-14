@@ -5,6 +5,7 @@
 #include <mt-plugin/enums.hpp>
 
 namespace mt { struct PluginInfo; }
+namespace mt { struct Scene; }
 
 namespace mt {
   uint32_t LoadPlugin(
@@ -22,7 +23,11 @@ namespace mt {
 
   // cleans plugin so that it can be recognized as invalid. Also frees userdata
   // of the plugin if(f) the plugin is valid
-  void Clean(mt::PluginInfo & pluginInfo, mt::PluginType pluginType);
+  void Clean(
+    mt::Scene & scene
+  , mt::PluginInfo & pluginInfo
+  , mt::PluginType pluginType
+  );
 }
 
 char const * ToString(mt::PluginType pluginType);
