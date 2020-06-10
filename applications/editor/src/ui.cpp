@@ -275,52 +275,52 @@ void UiRenderInfo(
 ) {
   // -- menubar
   // TODO DTOADQ this causes crash
-  /* if (ImGui::BeginMenu("File")) { */
-  /*   if (ImGui::MenuItem("Load Scene")) { */
-  /*     auto tempFilename = */
-  /*       fileutil::FilePicker( */
-  /*         " --file-filter=\"3D models |" */
-  /*         " *.obj *.gltf *.fbx *.stl *.ply *.blend *.dae\"" */
-  /*       ); */
-  /*     if (tempFilename != "") { */
-  /*       renderInfo.modelFile = tempFilename; */
-  /*       LoadScene(renderInfo, pluginInfo); */
-  /*     } */
-  /*   } */
+  if (ImGui::BeginMenu("File")) {
+    if (ImGui::MenuItem("Load Scene")) {
+      auto tempFilename =
+        fileutil::FilePicker(
+          " --file-filter=\"3D models |"
+          " *.obj *.gltf *.fbx *.stl *.ply *.blend *.dae\""
+        );
+      if (tempFilename != "") {
+        renderInfo.modelFile = tempFilename;
+        LoadScene(renderInfo, pluginInfo);
+      }
+    }
 
-  /*   if (ImGui::MenuItem("Load Environment File")) { */
-  /*     auto tempFilename = */
-  /*       fileutil::FilePicker( */
-  /*         " --file-filter=\"image files | " */
-  /*         " .jpeg .jpg .png .tga .bmp .psd .gif .hdr .pic .ppm .pgm\"" */
-  /*       ); */
-  /*     if (tempFilename != "") { */
-  /*       renderInfo.environmentMapFile = tempFilename; */
-  /*       LoadScene(renderInfo, pluginInfo); */
-  /*     } */
-  /*   } */
+    if (ImGui::MenuItem("Load Environment File")) {
+      auto tempFilename =
+        fileutil::FilePicker(
+          " --file-filter=\"image files | "
+          " .jpeg .jpg .png .tga .bmp .psd .gif .hdr .pic .ppm .pgm\""
+        );
+      if (tempFilename != "") {
+        renderInfo.environmentMapFile = tempFilename;
+        LoadScene(renderInfo, pluginInfo);
+      }
+    }
 
-  /*   // TODO */
-  /*   /1* if (ImGui::MenuItem("Save Image")) { *1/ */
-  /*   /1*   auto filenameFlag = *1/ */
-  /*   /1*     renderInfo.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; *1/ */
-  /*   /1*   auto tempFilename = *1/ */
-  /*   /1*     fileutil::FilePicker( *1/ */
-  /*   /1*       " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag *1/ */
-  /*   /1*     ); *1/ */
-  /*   /1*   if (tempFilename != "") { *1/ */
-  /*   /1*     renderInfo.outputFile = tempFilename; *1/ */
-  /*   /1*     mt::SaveImage( *1/ */
-  /*   /1*       mappedImageTransitionBuffer *1/ */
-  /*   /1*     , renderInfo.imageResolution[0], renderInfo.imageResolution[1] *1/ */
-  /*   /1*     , renderInfo.outputFile *1/ */
-  /*   /1*     , false *1/ */
-  /*   /1*     ); *1/ */
-  /*   /1*   } *1/ */
-  /*   /1* } *1/ */
-  /* } */
+    // TODO
+    /* if (ImGui::MenuItem("Save Image")) { */
+    /*   auto filenameFlag = */
+    /*     renderInfo.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; */
+    /*   auto tempFilename = */
+    /*     fileutil::FilePicker( */
+    /*       " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag */
+    /*     ); */
+    /*   if (tempFilename != "") { */
+    /*     renderInfo.outputFile = tempFilename; */
+    /*     mt::SaveImage( */
+    /*       mappedImageTransitionBuffer */
+    /*     , renderInfo.imageResolution[0], renderInfo.imageResolution[1] */
+    /*     , renderInfo.outputFile */
+    /*     , false */
+    /*     ); */
+    /*   } */
+    /* } */
 
-  /* ImGui::EndMenu(); */
+    ImGui::EndMenu();
+  }
 
   // -- window
   ImGui::Begin("RenderInfo");
