@@ -1,9 +1,11 @@
 /*
 */
 
+#include "fileutil.hpp"
 #include "ui.hpp"
 
 #include <monte-toad/log.hpp>
+#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
@@ -21,52 +23,35 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 mt::RenderInfo ParseRenderInfo(cxxopts::ParseResult const & result) {
   mt::RenderInfo self;
-  self.modelFile             = result["file"]            .as<std::string>();
   self.outputFile            = result["output"]          .as<std::string>();
-  self.environmentMapFile    = result["environment-map"] .as<std::string>();
   self.viewImageOnCompletion = result["view"]            .as<bool>();
-  self.cameraFieldOfView     = result["fov"]             .as<float>();
   self.displayProgress       = !result["noprogress"]     .as<bool>();
   self.numThreads            = result["num-threads"]     .as<uint16_t>();
-  self.bvhUse                = !result["no-bvh"]         .as<bool>();
-  self.bvhOptimize           = !result["no-optimize-bvh"].as<bool>();
-  self.samplesPerPixel       = result["spp"]             .as<uint32_t>();
-  self.pathsPerSample        = result["pps"]             .as<uint32_t>();
 
-  { // resolution
-    auto value = result["resolution"].as<std::vector<uint32_t>>();
-    if (value.size() != 2) {
-      spdlog::error("Resolution must be in format Width,Height");
-      value = { 640, 480 };
-    }
-    self.imageResolution[0] = value[0];
-    self.imageResolution[1] = value[1];
-  }
+  /* { // camera origin */
+  /*   auto value = result["camera-origin"].as<std::vector<float>>(); */
+  /*   if (value.size() != 3) { */
+  /*     spdlog::error("Camera origin must be in format X,Y,Z"); */
+  /*     value = {{ 1.0f, 0.0f, 0.0f }}; */
+  /*   } */
+  /*   self.cameraOrigin = glm::vec3(value[0], value[1], value[2]); */
+  /* } */
 
-  { // camera origin
-    auto value = result["camera-origin"].as<std::vector<float>>();
-    if (value.size() != 3) {
-      spdlog::error("Camera origin must be in format X,Y,Z");
-      value = {{ 1.0f, 0.0f, 0.0f }};
-    }
-    self.cameraOrigin = glm::vec3(value[0], value[1], value[2]);
-  }
+  /* { // camera up axis */
+  /*   auto value = result["up-axis"].as<bool>(); */
+  /*   // only change from default if flag is set */
+  /*   if (value) { self.cameraUpAxis = glm::vec3(0.0f, 0.0f, -1.0f); } */
+  /* } */
 
-  { // camera up axis
-    auto value = result["up-axis"].as<bool>();
-    // only change from default if flag is set
-    if (value) { self.cameraUpAxis = glm::vec3(0.0f, 0.0f, -1.0f); }
-  }
-
-  { // camera direction (from target)
-    auto value = result["camera-target"].as<std::vector<float>>();
-    if (value.size() != 3) {
-      spdlog::error("Camera target must be in format X,Y,Z");
-      value = {{ 0.0f, 0.0f, 0.0f }};
-    }
-    self.cameraDirection =
-      glm::vec3(value[0], value[1], value[2]) - self.cameraOrigin;
-  }
+  /* { // camera direction (from target) */
+  /*   auto value = result["camera-target"].as<std::vector<float>>(); */
+  /*   if (value.size() != 3) { */
+  /*     spdlog::error("Camera target must be in format X,Y,Z"); */
+  /*     value = {{ 0.0f, 0.0f, 0.0f }}; */
+  /*   } */
+  /*   self.cameraDirection = */
+  /*     glm::vec3(value[0], value[1], value[2]) - self.cameraOrigin; */
+  /* } */
 
   { // debug print
     auto value = result["debug"].as<bool>();
@@ -144,7 +129,8 @@ int main(int argc, char** argv) {
     )
   ;
 
-  mt::RenderInfo renderInfo;
+  // -- load up renderinfo from command line
+  mt::RenderInfo render;
   { // -- parse options
     auto result = options.parse(argc, argv);
 
@@ -153,16 +139,20 @@ int main(int argc, char** argv) {
       return 0;
     }
 
-    renderInfo = ParseRenderInfo(result);
+    render = ParseRenderInfo(result);
   }
 
-  omp_set_num_threads(renderInfo.numThreads);
+  omp_set_num_threads(render.numThreads);
 
+  // -- load up renderinfo & plugin from config file
   mt::PluginInfo plugin;
+  fileutil::LoadEditorConfig(render, plugin);
 
-  ui::Initialize(renderInfo, plugin);
+  ui::Initialize(render, plugin);
 
-  ui::Run(renderInfo, plugin);
+  ui::Run(render, plugin);
+
+  printf("Exitting\n");
 
   return 0;
 }

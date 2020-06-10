@@ -10,47 +10,57 @@
 #include <mt-plugin/enums.hpp>
 
 #include <array>
-#include <string>
 #include <functional>
+#include <string>
 #include <tuple>
+#include <vector>
 
 // TODO implement functional instead of ptrs
 
-namespace mt { struct DiagnosticInfo; }
 namespace mt { struct PluginInfo; }
 namespace mt { struct RenderInfo; }
 namespace mt { struct Scene; }
+namespace mt { struct IntegratorData; }
 namespace mt { struct SurfaceInfo; }
+namespace mt { struct Triangle; }
 
 namespace mt {
 
+  struct PixelInfo {
+    glm::vec3 color;
+    bool valid;
+  };
+
   struct PluginInfoIntegrator {
-    glm::vec3 (*Dispatch)(
-      glm::vec2 const & uv, glm::vec2 const & resolution
+    PixelInfo (*Dispatch)(
+      glm::vec2 const & uv
     , mt::Scene const & scene
     , mt::RenderInfo const & renderInfo
     , mt::PluginInfo const & pluginInfo
+    , mt::IntegratorData const & integratorData
     ) = nullptr;
 
     void (*UiUpdate)(
       mt::Scene & scene
     , mt::RenderInfo & render
-    , mt::PluginInfo & plugin
-    , mt::DiagnosticInfo & diagnosticInfo
+    , mt::PluginInfo const & plugin
+    , mt::IntegratorData & integratorData
     ) = nullptr;
 
     bool realtime = false; // renders either block-by-block or full-screen
     bool useGpu = false; // TODO , will give GPU texture handle to render to
 
     mt::PluginType pluginType;
+    char const * pluginLabel;
   };
 
   struct PluginInfoKernel {
     glm::vec3 (*Tonemap)(
-      glm::vec2 const & uv, glm::vec2 const & resolution
+      glm::vec2 const & uv
     , glm::vec3 color
     , mt::RenderInfo const & renderInfo
     , mt::PluginInfo const & pluginInfo
+    , mt::IntegratorData const & integratorData
     ) = nullptr;
 
     glm::vec3 (*Denoise)(
@@ -63,11 +73,11 @@ namespace mt {
     void (*UiUpdate)(
       mt::Scene & scene
     , mt::RenderInfo & render
-    , mt::PluginInfo & plugin
-    , mt::DiagnosticInfo & diagnosticInfo
+    , mt::PluginInfo const & plugin
     ) = nullptr;
 
     mt::PluginType pluginType;
+    char const * pluginLabel;
   };
 
   struct PluginInfoRandom {
@@ -81,102 +91,79 @@ namespace mt {
     void (*UiUpdate)(
       mt::Scene & scene
     , mt::RenderInfo & render
-    , mt::PluginInfo & plugin
-    , mt::DiagnosticInfo & diagnosticInfo
+    , mt::PluginInfo const & plugin
     ) = nullptr;
 
     mt::PluginType pluginType;
+    char const * pluginLabel;
   };
 
   struct PluginInfoMaterial {
     void (*Load)(mt::Scene &) = nullptr;
 
     std::tuple<glm::vec3 /*wo*/, float /*pdf*/> (*BsdfSample)(
-      mt::PluginInfoRandom & random
+      mt::PluginInfoRandom const & random
     , mt::SurfaceInfo const & surface
-    , glm::vec3 const & wi
     ) = nullptr;
 
     float (*BsdfPdf)(
       mt::SurfaceInfo const & surface
-    , glm::vec3 const & wi, glm::vec3 const & wo
+    , glm::vec3 const & wo
     ) = nullptr;
 
     glm::vec3 (*BsdfFs)(
-      mt::Scene const & scene, mt::SurfaceInfo const & surface
-    , glm::vec3 const & wi, glm::vec3 const & wo
+      mt::Scene const & scene
+    , mt::SurfaceInfo const & surface
+    , glm::vec3 const & wo
     ) = nullptr;
+
+    bool (*IsEmitter)(mt::Scene const & scene, mt::Triangle const & triangle);
 
     void (*UiUpdate)(
       mt::Scene & scene
     , mt::RenderInfo & render
-    , mt::PluginInfo & plugin
-    , mt::DiagnosticInfo & diagnosticInfo
+    , mt::PluginInfo const & plugin
     ) = nullptr;
 
     mt::PluginType pluginType;
+    char const * pluginLabel;
   };
 
   struct PluginInfoCamera {
     std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> (*Dispatch)(
       mt::PluginInfoRandom const & random
     , mt::RenderInfo const & renderInfo
-    , glm::vec2 const & uv
+    , glm::u16vec2 imageResolution
+    , glm::vec2 uv
     ) = nullptr;
 
     void (*UiUpdate)(
       mt::Scene & scene
     , mt::RenderInfo & render
-    , mt::PluginInfo & plugin
-    , mt::DiagnosticInfo & diagnosticInfo
+    , mt::PluginInfo const & plugin
     ) = nullptr;
 
     mt::PluginType pluginType;
+    char const * pluginLabel;
   };
 
   struct PluginInfoUserInterface {
     void (*Dispatch)(
       mt::Scene & scene
     , mt::RenderInfo & render
-    , mt::PluginInfo & plugin
-    , mt::DiagnosticInfo & diagnosticInfo
+    , mt::PluginInfo const & plugin
     ) = nullptr;
 
     mt::PluginType pluginType;
+    char const * pluginLabel;
   };
 
   struct PluginInfo {
-    PluginInfoIntegrator integrator;
+    std::vector<PluginInfoIntegrator> integrators;
     PluginInfoKernel kernel; // optional
     PluginInfoMaterial material;
     PluginInfoCamera camera; // optional
     PluginInfoRandom random;
     PluginInfoUserInterface userInterface; //optional
-  };
-
-  struct RenderInfo {
-    std::string modelFile;
-    std::string outputFile;
-    std::string environmentMapFile;
-
-    bool viewImageOnCompletion;
-    glm::vec3 cameraOrigin { 1.0f, 0.0f, 0.0f };
-    glm::vec3 cameraDirection { 0.0f, 0.0f, 0.0f };
-    glm::vec3 cameraUpAxis { 0.0f, -1.0f, 0.0f };
-    std::array<uint32_t, 2> imageResolution {{ 640, 480 }};
-    bool bvhUse = true;
-    bool bvhOptimize = true;
-    size_t numThreads = 0;
-    size_t samplesPerPixel = 1;
-    size_t pathsPerSample = 1;
-    float cameraFieldOfView = 90.0f;
-    bool displayProgress = true;
-
-    void * glfwWindow;
-  };
-
-  struct DiagnosticInfo {
-    glm::vec4 * currentFragmentBuffer;
-    void * textureHandle;
   };
 }

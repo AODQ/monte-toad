@@ -16,13 +16,14 @@ namespace {
 uint32_t mt::LoadPlugin(
   mt::PluginInfo & pluginInfo
 , PluginType pluginType, std::string const & file
+, size_t idx
 ) {
   auto & ctx = ::plugins[static_cast<size_t>(pluginType)];
 
   // assign userdata to the respective pluginInfo parameter.
   switch (pluginType) {
     case PluginType::Integrator:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.integrator);
+      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.integrators[idx]);
     break;
     case PluginType::Kernel:
       ctx.userdata = reinterpret_cast<void*>(&pluginInfo.kernel);
@@ -70,31 +71,40 @@ void mt::UpdatePlugins() {
 }
 
 //------------------------------------------------------------------------------
-bool mt::Valid(mt::PluginInfo const & pluginInfo, mt::PluginType pluginType) {
+bool mt::Valid(
+  mt::PluginInfo const & pluginInfo
+, mt::PluginType pluginType
+, size_t idx
+) {
   switch (pluginType) {
     case mt::PluginType::Integrator:
       return
-          pluginInfo.integrator.Dispatch != nullptr
-       && pluginInfo.integrator.pluginType == pluginType
+          pluginInfo.integrators[idx].Dispatch != nullptr
+       && pluginInfo.integrators[idx].pluginType == pluginType
+       && pluginInfo.integrators[idx].pluginLabel != nullptr
        ;
     case mt::PluginType::Kernel:
       return
           pluginInfo.kernel.Denoise != nullptr
        && pluginInfo.kernel.Tonemap != nullptr
        && pluginInfo.kernel.pluginType == pluginType
+       && pluginInfo.kernel.pluginLabel != nullptr
       ;
     case mt::PluginType::Material:
       return
           pluginInfo.material.BsdfFs     != nullptr
        && pluginInfo.material.BsdfPdf    != nullptr
        && pluginInfo.material.BsdfSample != nullptr
+       && pluginInfo.material.IsEmitter  != nullptr
        && pluginInfo.material.Load       != nullptr
        && pluginInfo.material.pluginType == pluginType
+       && pluginInfo.material.pluginLabel != nullptr
       ;
     case mt::PluginType::Camera:
       return
           pluginInfo.camera.Dispatch != nullptr
        && pluginInfo.camera.pluginType == pluginType
+       && pluginInfo.camera.pluginLabel != nullptr
        ;
     case mt::PluginType::Random:
       return
@@ -104,11 +114,13 @@ bool mt::Valid(mt::PluginInfo const & pluginInfo, mt::PluginType pluginType) {
        && pluginInfo.random.SampleUniform2 != nullptr
        && pluginInfo.random.SampleUniform3 != nullptr
        && pluginInfo.random.pluginType == pluginType
+       && pluginInfo.random.pluginLabel != nullptr
       ;
     case mt::PluginType::UserInterface:
       return
           pluginInfo.userInterface.Dispatch != nullptr
        && pluginInfo.userInterface.pluginType == pluginType
+       && pluginInfo.userInterface.pluginLabel != nullptr
       ;
     default: return false;
   }
@@ -116,34 +128,39 @@ bool mt::Valid(mt::PluginInfo const & pluginInfo, mt::PluginType pluginType) {
 
 //------------------------------------------------------------------------------
 void mt::Clean(
-  mt::Scene & scene
-, mt::PluginInfo & pluginInfo
+  mt::PluginInfo & pluginInfo
 , mt::PluginType pluginType
+, size_t idx
 ) {
   // cleanup the plugin since it is invalid
   switch (pluginType) {
     case mt::PluginType::Integrator:
-      pluginInfo.integrator.Dispatch = nullptr;
-      pluginInfo.integrator.UiUpdate = nullptr;
-      pluginInfo.integrator.pluginType = mt::PluginType::Invalid;
+      pluginInfo.integrators[idx].Dispatch = nullptr;
+      pluginInfo.integrators[idx].UiUpdate = nullptr;
+      pluginInfo.integrators[idx].pluginType = mt::PluginType::Invalid;
+      pluginInfo.integrators[idx].pluginLabel = nullptr;
     break;
     case mt::PluginType::Kernel:
       pluginInfo.kernel.Denoise = nullptr;
       pluginInfo.kernel.Tonemap = nullptr;
       pluginInfo.kernel.UiUpdate = nullptr;
       pluginInfo.kernel.pluginType = mt::PluginType::Invalid;
+      pluginInfo.kernel.pluginLabel = nullptr;
     break;
     case mt::PluginType::Material:
       pluginInfo.material.BsdfFs     = nullptr;
       pluginInfo.material.BsdfPdf    = nullptr;
       pluginInfo.material.BsdfSample = nullptr;
+      pluginInfo.material.IsEmitter  = nullptr;
       pluginInfo.material.Load       = nullptr;
       pluginInfo.material.UiUpdate   = nullptr;
       pluginInfo.material.pluginType = mt::PluginType::Invalid;
+      pluginInfo.material.pluginLabel = nullptr;
     break;
     case mt::PluginType::Camera:
       pluginInfo.camera.Dispatch = nullptr;
       pluginInfo.camera.pluginType = mt::PluginType::Invalid;
+      pluginInfo.camera.pluginLabel = nullptr;
     break;
     case mt::PluginType::Random:
       if (mt::Valid(pluginInfo, pluginType)) {
@@ -156,10 +173,12 @@ void mt::Clean(
       pluginInfo.random.SampleUniform3 = nullptr;
       pluginInfo.random.UiUpdate       = nullptr;
       pluginInfo.random.pluginType = mt::PluginType::Invalid;
+      pluginInfo.random.pluginLabel = nullptr;
     break;
     case mt::PluginType::UserInterface:
       pluginInfo.userInterface.Dispatch = nullptr;
       pluginInfo.userInterface.pluginType = mt::PluginType::Invalid;
+      pluginInfo.userInterface.pluginLabel = nullptr;
     break;
     default: return;
   }

@@ -1,11 +1,12 @@
 #include "ui.hpp"
 
-#include "glutil.hpp"
+#include "fileutil.hpp"
 
-#include <monte-toad/engine.hpp>
-#include <monte-toad/imagebuffer.hpp>
 #include <monte-toad/enum.hpp>
+#include <monte-toad/glutil.hpp>
+#include <monte-toad/imagebuffer.hpp>
 #include <monte-toad/log.hpp>
+#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <monte-toad/span.hpp>
 #include <mt-plugin-host/plugin.hpp>
@@ -27,16 +28,9 @@ namespace {
 GLFWwindow * window;
 mt::Scene scene;
 
-GlBuffer imageTransitionBuffer;
-span<glm::vec4> mappedImageTransitionBuffer;
-GlTexture renderedTexture;
-GlProgram imageTransitionProgram;
-
-mt::DiagnosticInfo diagnosticInfo;
+mt::GlProgram imageTransitionProgram;
 
 int displayWidth, displayHeight;
-
-bool rendering = false;
 
 struct GuiLogMessage {
   GuiLogMessage() = default;
@@ -76,36 +70,14 @@ public:
 
 std::shared_ptr<GuiSink> imGuiSink;
 
-void AttemptRenderingOn(mt::PluginInfo const & pluginInfo) {
-  // check that it's possible to render
-  if (!mt::Valid(pluginInfo, mt::PluginType::Camera)) {
-    spdlog::error("Need camera plugin in order to render");
-    rendering = false;
-  }
-  if (!mt::Valid(pluginInfo, mt::PluginType::Integrator)) {
-    spdlog::error("Need integrator plugin in order to render");
-    rendering = false;
-  }
-  if (!mt::Valid(pluginInfo, mt::PluginType::Material)) {
-    spdlog::error("Need material plugin in order to render");
-    rendering = false;
-  }
-  if (
-      ::scene.meshes.size() == 0
-   || ::scene.accelStructure->triangles.size() == 0
-  ) {
-    spdlog::error("Can't render without loading a scene");
-    ::rendering = false;
-  }
-}
-
-void LoadScene(mt::RenderInfo const & render, mt::PluginInfo & plugin) {
+void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
   ::scene =
     mt::Scene::Construct(
       render.modelFile
     , render.environmentMapFile
-    , render.bvhOptimize
     );
+
+  render.cameraOrigin = glm::vec3(0.0f);
 
   if (mt::Valid(plugin, mt::PluginType::Material)) {
     plugin.material.Load(::scene);
@@ -113,68 +85,9 @@ void LoadScene(mt::RenderInfo const & render, mt::PluginInfo & plugin) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void AllocateGlResources(mt::RenderInfo const & renderInfo) {
-  // free resources beforehand in case buffers are being reallocated, ei for
-  // texture resize
-  ::imageTransitionBuffer.Free();
-  ::renderedTexture.Free();
-  ::imageTransitionProgram.Free();
-
-  size_t const
-    imagePixelLength =
-      renderInfo.imageResolution[0] * renderInfo.imageResolution[1]
-  , imageByteLength =
-      imagePixelLength * sizeof(glm::vec4);
-
-  // -- construct transition buffer
-  ::imageTransitionBuffer.Construct();
-  glNamedBufferStorage(
-    ::imageTransitionBuffer.handle
-  , imageByteLength
-  , nullptr
-  , GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT
-  );
-
-  ::mappedImageTransitionBuffer =
-    span<glm::vec4>(
-      reinterpret_cast<glm::vec4*>(
-        glMapNamedBufferRange(
-          ::imageTransitionBuffer.handle
-        , 0, imageByteLength
-        ,   GL_MAP_WRITE_BIT
-          | GL_MAP_PERSISTENT_BIT
-          | GL_MAP_INVALIDATE_RANGE_BIT
-          | GL_MAP_INVALIDATE_BUFFER_BIT
-          | GL_MAP_FLUSH_EXPLICIT_BIT
-        )
-      ),
-      imagePixelLength
-    );
-  ::diagnosticInfo.currentFragmentBuffer = ::mappedImageTransitionBuffer.data();
-
-  // -- construct texture
-  ::renderedTexture.Construct(GL_TEXTURE_2D);
-  glTextureStorage2D(
-    ::renderedTexture.handle
-  , 1, GL_RGBA8
-  , renderInfo.imageResolution[0], renderInfo.imageResolution[1]
-  );
-  { // -- set parameters
-    auto const & handle = ::renderedTexture.handle;
-    glTextureParameteri(handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTextureParameteri(handle, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameteri(handle, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(handle, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  }
-
-  glBindTextureUnit(0, ::renderedTexture.handle);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ::imageTransitionBuffer.handle);
-  glBindImageTexture(
-    0, ::renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8
-  );
-
-  ::diagnosticInfo.textureHandle =
-    reinterpret_cast<void*>(::renderedTexture.handle);
+void AllocateGlResources(mt::RenderInfo & renderInfo) {
+  for (auto & integrator : renderInfo.integratorData)
+    { integrator.AllocateGlResources(renderInfo); }
 
   // -- construct program
   std::string const imageTransitionSource =
@@ -202,38 +115,14 @@ void AllocateGlResources(mt::RenderInfo const & renderInfo) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::string FilePicker(std::string const & flags) {
-  std::string tempFilename = "";
-  #ifdef __unix__
-    { // use zenity in UNIX for now
-      FILE * file =
-        popen(
-          ( std::string{"zenity --title \"plugin\" --file-selection"}
-          + std::string{" "} + flags
-          ).c_str()
-        , "r"
-        );
-      std::array<char, 2048> filename;
-      fgets(filename.data(), 2048, file);
-      tempFilename = std::string{filename.data()};
-      pclose(file);
-    }
-    if (tempFilename[0] != '/') { return ""; }
-    // remove newline
-    if (tempFilename.size() > 0 && tempFilename.back() == '\n')
-      { tempFilename.pop_back(); }
-  #endif
-  return tempFilename;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 void UiPluginLoadFile(
   mt::PluginInfo & pluginInfo
+, mt::RenderInfo & render
 , mt::PluginType pluginType
 , std::string & file
 ) {
   std::string tempFile =
-    ::FilePicker(" --file-filter=\"mt-plugin | *.mt-plugin\"");
+    fileutil::FilePicker(" --file-filter=\"mt-plugin | *.mt-plugin\"");
 
   // only set to the plugin string if the filesize > 0 & path seems valid
   // also remove newline while we're at it
@@ -242,111 +131,40 @@ void UiPluginLoadFile(
     return;
   }
 
-  // clean previous data, and also invalidate it in case the next plugin is
-  // invalid but does not write out invalid data
-  mt::Clean(::scene, pluginInfo, pluginType);
-
-  // load plugin & check for plugin-loading errors
-  switch (mt::LoadPlugin(pluginInfo, pluginType, tempFile)) {
-    case CR_NONE:
-      // only save file if loading was successful
-      file = tempFile;
-      spdlog::info("Loaded '{}'", tempFile);
-    break;
-    case CR_INITIAL_FAILURE:
-      spdlog::error("Could not load '{}', initial failure", tempFile);
-    break;
-    case CR_SEGFAULT:
-      spdlog::error("Could not load '{}', Segfault", tempFile);
-    break;
-    case CR_ILLEGAL:
-      spdlog::error("Could not load '{}', Illegal operation", tempFile);
-    break;
-    case CR_ABORT:
-      spdlog::error("Could not load '{}', aborted, SIGBRT", tempFile);
-    break;
-    case CR_MISALIGN:
-      spdlog::error("Could not load '{}', misalignment, SIGBUS", tempFile);
-    break;
-    case CR_BOUNDS:
-      spdlog::error("Could not load '{}', bounds error", tempFile);
-    break;
-    case CR_STACKOVERFLOW:
-      spdlog::error("Could not load '{}', stack overflow", tempFile);
-    break;
-    case CR_STATE_INVALIDATED:
-      spdlog::error("Could not load '{}', static CR_STATE failure", tempFile);
-    break;
-    case CR_BAD_IMAGE:
-      spdlog::error("Could not load '{}', plugin is not valid", tempFile);
-    break;
-    case CR_OTHER:
-      spdlog::error("Could not load '{}', other signal", tempFile);
-    break;
-    case CR_USER:
-      spdlog::error("Could not load '{}', user/mt plugin error", tempFile);
-    break;
-    default:
-      spdlog::error("Could not load '{}', unknown failure", tempFile);
-    break;
-  }
-
-  // check that the plugin loaded itself properly (ei members set properly)
-  if (!mt::Valid(pluginInfo, pluginType)) {
-    spdlog::error("Failed to load plugin, or plugin is incomplete");
-    mt::Clean(::scene, pluginInfo, pluginType);
-    file = "";
-    rendering = false;
-    return;
-  }
-
-  // load plugin
-  switch (pluginType) {
-    default: break;
-    case mt::PluginType::Material:
-      pluginInfo.material.Load(scene);
-    break;
-    case mt::PluginType::Random:
-      pluginInfo.random.Initialize();
-    break;
+  if (fileutil::LoadPlugin(pluginInfo, render, tempFile, pluginType)) {
+    // load plugin w/ scene etc
+    switch (pluginType) {
+      default: break;
+      case mt::PluginType::Integrator:
+        render.integratorData.back().AllocateGlResources(render);
+      break;
+      case mt::PluginType::Material:
+        pluginInfo.material.Load(scene);
+      break;
+      case mt::PluginType::Random:
+        pluginInfo.random.Initialize();
+      break;
+    }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void UiPluginDisplayInfo(
-  mt::PluginInfo & info
+  mt::PluginInfo const & plugin
 , mt::PluginType pluginType
+, size_t idx = 0
 ) {
   switch (pluginType) {
-    case mt::PluginType::Integrator:
-      ImGui::Text("Realtime: %s", info.integrator.realtime ? "Yes" : "No");
-      ImGui::Text("UseGpu: %s", info.integrator.useGpu ? "Yes" : "No");
-      ImGui::Text(
-        "Dispatch %p",
-        reinterpret_cast<void*>(info.integrator.Dispatch)
-      );
-      ImGui::Text("PluginType: %s", ToString(info.integrator.pluginType));
-    break;
-    case mt::PluginType::Kernel:
-    break;
-    case mt::PluginType::Material:
-    break;
-    case mt::PluginType::Camera:
-      ImGui::Text(
-        "Dispatch %p",
-        reinterpret_cast<void*>(info.camera.Dispatch)
-      );
-      ImGui::Text("PluginType: %s", ToString(info.camera.pluginType));
-    break;
-    case mt::PluginType::Random:
-    break;
-    case mt::PluginType::UserInterface:
-      ImGui::Text(
-        "Dispatch %p",
-        reinterpret_cast<void*>(info.userInterface.Dispatch)
-      );
-      ImGui::Text("PluginType: %s", ToString(info.userInterface.pluginType));
-    break;
+    case mt::PluginType::Integrator: {
+      auto & integrator = plugin.integrators[idx];
+      ImGui::Text("Realtime: %s", integrator.realtime ? "Yes" : "No");
+      ImGui::Text("UseGpu: %s", integrator.useGpu ? "Yes" : "No");
+    } break;
+    case mt::PluginType::Kernel: break;
+    case mt::PluginType::Material: break;
+    case mt::PluginType::Camera: break;
+    case mt::PluginType::Random: break;
+    case mt::PluginType::UserInterface: break;
     default: break;
   }
 }
@@ -356,41 +174,54 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
   static bool open = true;
   if (!ImGui::Begin("Plugins", &open)) { return; }
 
-  static std::array<std::string, static_cast<size_t>(mt::PluginType::Size)>
-    pluginNames;
-
-  // try to iterate plugin name information in a way that it doesn't have to be
-  // manually maintained
-  for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i) {
-    auto pluginType = static_cast<mt::PluginType>(i);
-    auto & pluginName = pluginNames[i];
-    auto pluginPath = std::filesystem::path(pluginName);
-
-    std::string const infoStr =
-      std::string{ToString(pluginType)}
-    + "(" + pluginPath.filename().string() + ")";
-
-    std::string const buttonStr = "Load##" + std::string{ToString(pluginType)};
-
-    auto treeNodeResult = ImGui::TreeNode(infoStr.c_str());
-
-    if (!mt::Valid(pluginInfo, pluginType)) {
+  auto DisplayPluginUi = [&](mt::PluginType pluginType, size_t idx = 0) {
+    ImGui::Text("%s (%lu)", ToString(pluginType), idx);
+    if (!mt::Valid(pluginInfo, pluginType, idx)) {
       ImGui::SameLine();
       ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Not loaded");
     }
-
-    if (treeNodeResult) {
-      UiPluginDisplayInfo(pluginInfo, pluginType);
-      ImGui::TreePop();
-    }
-
-    if (ImGui::Button(buttonStr.c_str()))
-      { UiPluginLoadFile(pluginInfo, pluginType, pluginName); }
-
     ImGui::Separator();
-  }
+  };
+
+  for (size_t idx = 0; idx < pluginInfo.integrators.size(); ++ idx)
+    { DisplayPluginUi(mt::PluginType::Integrator, idx); }
+
+  DisplayPluginUi(mt::PluginType::Kernel);
+  DisplayPluginUi(mt::PluginType::Material);
+  DisplayPluginUi(mt::PluginType::Camera);
+  DisplayPluginUi(mt::PluginType::Random);
+  DisplayPluginUi(mt::PluginType::UserInterface);
 
   ImGui::End();
+
+  /* // try to iterate plugin name information in a way that it doesn't have to be */
+  /* // manually maintained */
+  /* for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i) { */
+  /*   auto pluginType = static_cast<mt::PluginType>(i); */
+
+  /*   std::string const infoStr = */
+  /*     std::string{ToString(pluginType)} */
+  /*   + "(" + pluginPath.filename().string() + ")"; */
+
+  /*   std::string const buttonStr = "Load##" + std::string{ToString(pluginType)}; */
+
+  /*   auto treeNodeResult = ImGui::TreeNode(infoStr.c_str()); */
+
+  /*   if (!mt::Valid(pluginInfo, pluginType)) { */
+  /*     ImGui::SameLine(); */
+  /*     ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Not loaded"); */
+  /*   } */
+
+  /*   if (treeNodeResult) { */
+  /*     UiPluginDisplayInfo(pluginInfo, pluginType); */
+  /*     ImGui::TreePop(); */
+  /*   } */
+
+  /*   if (ImGui::Button(buttonStr.c_str())) */
+  /*     { UiPluginLoadFile(pluginInfo, pluginType, pluginName); } */
+
+  /*   ImGui::Separator(); */
+  /* } */
 }
 
 //------------------------------------------------------------------------------
@@ -439,12 +270,15 @@ void UiLog() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
+void UiRenderInfo(
+  mt::RenderInfo & renderInfo
+, mt::PluginInfo & pluginInfo
+) {
   // -- menubar
   if (ImGui::BeginMenu("File")) {
     if (ImGui::MenuItem("Load Scene")) {
       auto tempFilename =
-        ::FilePicker(
+        fileutil::FilePicker(
           " --file-filter=\"3D models |"
           " *.obj *.gltf *.fbx *.stl *.ply *.blend *.dae\""
         );
@@ -456,7 +290,7 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
     if (ImGui::MenuItem("Load Environment File")) {
       auto tempFilename =
-        ::FilePicker(
+        fileutil::FilePicker(
           " --file-filter=\"image files | "
           " .jpeg .jpg .png .tga .bmp .psd .gif .hdr .pic .ppm .pgm\""
         );
@@ -466,23 +300,24 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
       }
     }
 
-    if (ImGui::MenuItem("Save Image")) {
-      auto filenameFlag =
-        renderInfo.outputFile == "" ? "" : "--filename " + renderInfo.outputFile;
-      auto tempFilename =
-        ::FilePicker(
-          " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag
-        );
-      if (tempFilename != "") {
-        renderInfo.outputFile = tempFilename;
-        mt::SaveImage(
-          mappedImageTransitionBuffer
-        , renderInfo.imageResolution[0], renderInfo.imageResolution[1]
-        , renderInfo.outputFile
-        , false
-        );
-      }
-    }
+    // TODO
+    /* if (ImGui::MenuItem("Save Image")) { */
+    /*   auto filenameFlag = */
+    /*     renderInfo.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; */
+    /*   auto tempFilename = */
+    /*     fileutil::FilePicker( */
+    /*       " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag */
+    /*     ); */
+    /*   if (tempFilename != "") { */
+    /*     renderInfo.outputFile = tempFilename; */
+    /*     mt::SaveImage( */
+    /*       mappedImageTransitionBuffer */
+    /*     , renderInfo.imageResolution[0], renderInfo.imageResolution[1] */
+    /*     , renderInfo.outputFile */
+    /*     , false */
+    /*     ); */
+    /*   } */
+    /* } */
 
     ImGui::EndMenu();
   }
@@ -493,79 +328,88 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
   ImGui::Text("'%s'", renderInfo.modelFile.c_str());
 
-  if (ImGui::Checkbox("Rendering", &::rendering) && ::rendering) {
-    ::AttemptRenderingOn(pluginInfo);
-  }
+  /* if ( */
+  /*     ImGui::Checkbox("Rendering", &renderInfo.rendering) */
+  /*  && renderInfo.rendering */
+  /* ) { */
+  /*   ::AttemptRenderingOn(renderInfo, pluginInfo); */
+  /* } */
+
+  /* ImGui::Checkbox("Realtime", &renderInfo.renderingRealtime); */
 
   if (ImGui::Button("Reload scene")) {
     LoadScene(renderInfo, pluginInfo);
   }
 
-  enum struct AspectRatio : int {
-    e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size
-  };
+  /* enum struct AspectRatio : int { */
+  /*   e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size */
+  /* }; */
 
-  std::array<float, Idx(AspectRatio::size)> constexpr ratioConversion = {{
-    1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f
-  , 1.0f
-  }};
+  /* std::array<float, Idx(AspectRatio::size)> constexpr ratioConversion = {{ */
+  /*   1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f */
+  /* , 1.0f */
+  /* }}; */
 
-  std::array<char const *, Idx(AspectRatio::size)> constexpr ratioLabels = {{
-    "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None"
-  }};
+  /* std::array<char const *, Idx(AspectRatio::size)> constexpr ratioLabels = {{ */
+  /*   "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None" */
+  /* }}; */
 
-  static AspectRatio aspectRatio = AspectRatio::e4_3;
-  static char const * aspectRatioLabel = ratioLabels[Idx(aspectRatio)];
-  static std::array<int, 2> imageResolution = {{
-    static_cast<int>(renderInfo.imageResolution[0])
-  , static_cast<int>(renderInfo.imageResolution[1])
-  }};
-  static std::array<int, 2> previousImageResolution = {{
-    imageResolution[0], imageResolution[1]
-  }};
+  /* static AspectRatio aspectRatio = AspectRatio::e4_3; */
+  /* static char const * aspectRatioLabel = ratioLabels[Idx(aspectRatio)]; */
+  /* static std::array<int, 2> imageResolution = {{ */
+  /*   static_cast<int>(renderInfo.imageResolution[0]) */
+  /* , static_cast<int>(renderInfo.imageResolution[1]) */
+  /* }}; */
+  /* static std::array<int, 2> previousImageResolution = {{ */
+  /*   imageResolution[0], imageResolution[1] */
+  /* }}; */
 
-  if (ImGui::BeginCombo("Aspect Ratio", aspectRatioLabel)) {
-    for (size_t i = 0; i < ratioLabels.size(); ++ i) {
-      bool isSelected = Idx(aspectRatio) == static_cast<int>(i);
-      if (ImGui::Selectable(ratioLabels[i], isSelected)) {
-        aspectRatio = static_cast<AspectRatio>(i);
-        aspectRatioLabel = ratioLabels[i];
+  /* if (ImGui::BeginCombo("Aspect Ratio", aspectRatioLabel)) { */
+  /*   for (size_t i = 0; i < ratioLabels.size(); ++ i) { */
+  /*     bool isSelected = Idx(aspectRatio) == static_cast<int>(i); */
+  /*     if (ImGui::Selectable(ratioLabels[i], isSelected)) { */
+  /*       aspectRatio = static_cast<AspectRatio>(i); */
+  /*       aspectRatioLabel = ratioLabels[i]; */
 
-        // update image resolution
-        imageResolution[1] = imageResolution[0] / ratioConversion[i];
-        previousImageResolution[1] = imageResolution[1];
-      }
+  /*       // update image resolution */
+  /*       imageResolution[1] = imageResolution[0] / ratioConversion[i]; */
+  /*       previousImageResolution[1] = imageResolution[1]; */
+  /*     } */
 
-      if (isSelected) { ImGui::SetItemDefaultFocus(); }
-    }
-    ImGui::EndCombo();
-  }
+  /*     if (isSelected) { ImGui::SetItemDefaultFocus(); } */
+  /*   } */
+  /*   ImGui::EndCombo(); */
+  /* } */
 
-  if (ImGui::InputInt2("Image resolution", imageResolution.data())) {
-    // Only 4K support right now (accidentally typing large number sucks)
-    if (imageResolution[0] >= 4096) { imageResolution[0] = 4096; }
-    if (imageResolution[1] >= 4096) { imageResolution[1] = 4096; }
+  /* if (ImGui::InputInt2("Image resolution", imageResolution.data())) { */
+  /*   // Only 4K support right now (accidentally typing large number sucks) */
+  /*   if (imageResolution[0] >= 4096) { imageResolution[0] = 4096; } */
+  /*   if (imageResolution[1] >= 4096) { imageResolution[1] = 4096; } */
 
-    // apply aspect ratio if requested
-    if (aspectRatio != AspectRatio::eNone) {
-      if (previousImageResolution[0] != imageResolution[0]) {
-        imageResolution[1] =
-          imageResolution[0] / ratioConversion[Idx(aspectRatio)];
-      } else {
-        imageResolution[0] =
-          imageResolution[1] * ratioConversion[Idx(aspectRatio)];
-      }
-    }
+  /*   renderInfo.rendering = false; */
 
-    renderInfo.imageResolution[0] = static_cast<size_t>(imageResolution[0]);
-    renderInfo.imageResolution[1] = static_cast<size_t>(imageResolution[1]);
+  /*   ::ClearImageBuffer(); */
 
-    previousImageResolution[0] = imageResolution[0];
-    previousImageResolution[1] = imageResolution[1];
+  /*   // apply aspect ratio if requested */
+  /*   if (aspectRatio != AspectRatio::eNone) { */
+  /*     if (previousImageResolution[0] != imageResolution[0]) { */
+  /*       imageResolution[1] = */
+  /*         imageResolution[0] / ratioConversion[Idx(aspectRatio)]; */
+  /*     } else { */
+  /*       imageResolution[0] = */
+  /*         imageResolution[1] * ratioConversion[Idx(aspectRatio)]; */
+  /*     } */
+  /*   } */
 
-    // have to reallocate everything now
-    AllocateGlResources(renderInfo);
-  }
+  /*   renderInfo.imageResolution[0] = static_cast<size_t>(imageResolution[0]); */
+  /*   renderInfo.imageResolution[1] = static_cast<size_t>(imageResolution[1]); */
+
+  /*   previousImageResolution[0] = imageResolution[0]; */
+  /*   previousImageResolution[1] = imageResolution[1]; */
+
+  /*   // have to reallocate everything now */
+  /*   AllocateGlResources(renderInfo); */
+  /* } */
 
   int tempNumThreads = static_cast<int>(renderInfo.numThreads);
   if (ImGui::InputInt("# threads", &tempNumThreads)) {
@@ -577,42 +421,22 @@ void UiRenderInfo(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void DispatchRender(
-  mt::RenderInfo & renderInfo
-, mt::PluginInfo & pluginInfo
-) {
-  if (!rendering) { return; }
+void DispatchRender(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
+  // make sure plugin is valid
+  if (plugin.integrators.size() == 0) { return; }
 
-  // make sure plugin info is valid
-  if (pluginInfo.integrator.Dispatch == nullptr) { return; }
-
-  mt::DispatchEngineBlockRegion(
-    ::scene
-  , ::mappedImageTransitionBuffer
-  , renderInfo
-  , pluginInfo
-  , 0, ::mappedImageTransitionBuffer.size()
-  , false
-  );
-
-  glFlushMappedNamedBufferRange(
-    ::imageTransitionBuffer.handle
-  , 0, sizeof(glm::vec4) * ::mappedImageTransitionBuffer.size()
-  );
-
-  // TODO perform compute shader
-  glBindTextureUnit(0, ::renderedTexture.handle);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ::imageTransitionBuffer.handle);
-  glBindImageTexture(
-    0, ::renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8
-  );
   glUseProgram(::imageTransitionProgram.handle);
 
-  glDispatchCompute(
-    renderInfo.imageResolution[0] / 8,
-    renderInfo.imageResolution[1] / 8,
-    1
-  );
+  // iterate through all integrators and run either their low or high quality
+  // dispatches
+  for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
+    auto & integratorData = render.integratorData[idx];
+
+    if (integratorData.DispatchRender(::scene, render, plugin, idx)) {
+      integratorData.FlushTransitionBuffer();
+      integratorData.DispatchImageCopy();
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -657,22 +481,26 @@ void UiEntry(
   ::UiRenderInfo(render, plugin);
 
   if (plugin.userInterface.Dispatch)
-    { plugin.userInterface.Dispatch(scene, render, plugin, ::diagnosticInfo); }
+    { plugin.userInterface.Dispatch(scene, render, plugin); }
 
-  if (plugin.integrator.UiUpdate)
-    { plugin.integrator.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+  for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
+    auto & integrator = plugin.integrators[idx];
+    if (integrator.UiUpdate) {
+      integrator.UiUpdate(scene, render, plugin, render.integratorData[idx]);
+    }
+  }
 
   if (plugin.kernel.UiUpdate)
-    { plugin.kernel.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+    { plugin.kernel.UiUpdate(scene, render, plugin); }
 
   if (plugin.material.UiUpdate)
-    { plugin.material.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+    { plugin.material.UiUpdate(scene, render, plugin); }
 
   if (plugin.camera.UiUpdate)
-    { plugin.camera.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+    { plugin.camera.UiUpdate(scene, render, plugin); }
 
   if (plugin.random.UiUpdate)
-    { plugin.random.UiUpdate(scene, render, plugin, ::diagnosticInfo); }
+    { plugin.random.UiUpdate(scene, render, plugin); }
 
   ImGui::EndMenuBar();
 
@@ -687,7 +515,10 @@ void ui::InitializeLogger() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool ui::Initialize(mt::RenderInfo const & render, mt::PluginInfo & plugin){
+bool ui::Initialize(
+  mt::RenderInfo & render
+, mt::PluginInfo & plugin
+) {
   if (!glfwInit()) { return false; }
 
   // opengl 4.6
@@ -742,7 +573,8 @@ bool ui::Initialize(mt::RenderInfo const & render, mt::PluginInfo & plugin){
     ImGui::CreateContext();
     ImGuiIO & io = ImGui::GetIO();
     io.ConfigFlags =
-      ImGuiConfigFlags_NavEnableKeyboard
+      0
+    /* ImGuiConfigFlags_NavEnableKeyboard */ // conflicts with editor keyboard
     | ImGuiConfigFlags_DockingEnable
     /* | ImGuiConfigFlags_ViewportsEnable */
     ;
@@ -818,6 +650,6 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
   // clean plugins
   for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i)
-    { mt::Clean(::scene, pluginInfo, static_cast<mt::PluginType>(i)); }
+    { mt::Clean(pluginInfo, static_cast<mt::PluginType>(i), i); }
   mt::FreePlugins();
 }

@@ -1,7 +1,8 @@
 #include <cr/cr.h>
 
-#include <monte-toad/scene.hpp>
 #include <monte-toad/log.hpp>
+#include <monte-toad/renderinfo.hpp>
+#include <monte-toad/scene.hpp>
 
 #include <mt-plugin/plugin.hpp>
 
@@ -20,17 +21,24 @@ glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up, float fovRadians) {
 
 std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> Dispatch(
   mt::PluginInfoRandom const & random
-, mt::RenderInfo const & renderInfo
-, glm::vec2 const & uv
+, mt::RenderInfo const & render
+, glm::u16vec2 imageResolution
+, glm::vec2 uv
 ) {
+  // anti aliasing
+  uv +=
+      (glm::vec2(-0.5f) + random.SampleUniform2())
+    / glm::vec2(imageResolution[0], imageResolution[1])
+  ;
+
   std::tuple<glm::vec3, glm::vec3> results;
-  std::get<0>(results) = renderInfo.cameraOrigin;
+  std::get<0>(results) = render.cameraOrigin;
   std::get<1>(results) =
     ::LookAt(
-      renderInfo.cameraDirection
+      render.cameraDirection
     , uv
-    , renderInfo.cameraUpAxis
-    , glm::radians(180.0f - renderInfo.cameraFieldOfView)
+    , render.cameraUpAxis
+    , glm::radians(180.0f - render.cameraFieldOfView)
     );
   return results;
 }
@@ -47,6 +55,7 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
     case CR_LOAD:
       camera.Dispatch = &::Dispatch;
       camera.pluginType = mt::PluginType::Camera;
+      camera.pluginLabel = "pinhole camera";
     break;
     case CR_UNLOAD: break;
     case CR_STEP: break;

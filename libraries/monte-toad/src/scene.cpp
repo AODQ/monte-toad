@@ -244,7 +244,6 @@ std::vector<mt::Triangle> LoadAssetIntoScene(
 mt::Scene mt::Scene::Construct(
   std::string const & filename
 , std::string const & environmentMapFilename
-, bool optimizeBvh
 ) {
   mt::Scene scene;
   scene.bboxMin = glm::vec3(std::numeric_limits<float>::max());
@@ -254,67 +253,58 @@ mt::Scene mt::Scene::Construct(
   scene.accelStructure =
     AccelerationStructure::Construct(
       std::move(LoadAssetIntoScene(scene, filename))
-    , optimizeBvh
     );
 
-  if(environmentMapFilename != "") {
-    scene.environmentTexture = Texture::Construct(environmentMapFilename);
-  }
+  /* if(environmentMapFilename != "") { */
+  /*   scene.environmentTexture = Texture::Construct(environmentMapFilename); */
+  /* } */
 
   return scene;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::tuple<mt::Triangle const *, mt::BvhIntersection> mt::Raycast(
+mt::SurfaceInfo mt::Raycast(
   mt::Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
-, bool useBvh, mt::Triangle const * ignoredTriangle
+, mt::Triangle const * ignoredTriangle
 ) {
-  if (!useBvh) {
-    float dist = std::numeric_limits<float>::max();
-    Triangle const * closestTri = nullptr;
-    BvhIntersection intersection;
+  auto hit = IntersectClosest(*scene.accelStructure, ori, dir, ignoredTriangle);
 
-    for (auto const & tri : scene.accelStructure->triangles) {
-      if (&tri == ignoredTriangle) { continue; }
-      auto i = RayTriangleIntersection(bvh::Ray(ToBvh(ori), ToBvh(dir)), tri);
-      if (i && i->distance() < dist) {
-        dist = i->distance();
-        intersection = *i;
-        closestTri = &tri;
-      }
-    }
-    return { closestTri, intersection };
+  if (!hit.has_value()) {
+    return mt::SurfaceInfo::Construct(ori, dir);
   }
 
-  auto hit = IntersectClosest(*scene.accelStructure, ori, dir, ignoredTriangle);
-  if (!hit.has_value()) { return { nullptr, {} }; }
-  return { scene.accelStructure->triangles.data() + hit->triangleIdx, *hit };
+  return
+    mt::SurfaceInfo::Construct(
+      scene
+    , scene.accelStructure->triangles.data() + hit->triangleIdx
+    , *hit
+    , ori + dir*hit->length, dir
+    );
 }
 
 #include <monte-toad/math.hpp>
+#include <mt-plugin/plugin.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
 std::tuple<mt::Triangle const *, glm::vec2> mt::EmissionSourceTriangle(
   mt::Scene const & scene
-/* , GenericNoiseGenerator & noiseType */
-, size_t idx
+, mt::PluginInfoRandom const & random
 ) {
   if (scene.emissionSource.triangles.size() == 0)
     { return std::make_pair(nullptr, glm::vec2()); }
+
   // this needs to take into account triangle surface area as that plays heavily
   // into which ones need to be sampled
   auto const & tri =
     scene.accelStructure->triangles[
       scene.emissionSource.triangles[
-        0
-        /* SampleUniform1(noiseType) * scene.emissionSource.triangles.size() */
+        random.SampleUniform1() * scene.emissionSource.triangles.size()
       ]
     ];
-  return std::make_pair(&tri, glm::vec2(0.5f)); // TODO
 
-  //// generate random barycentric coords
-  //glm::vec2 u = SampleUniform2(noiseType);
-  //u.y *= (1.0f - u.x);
-  //return std::make_pair(&tri, u);
+  // generate random barycentric coords
+  glm::vec2 u = random.SampleUniform2();
+  u.y *= (1.0f - u.x);
+  return std::make_pair(&tri, u);
 }

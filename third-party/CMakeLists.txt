@@ -5,6 +5,9 @@ add_subdirectory(bvh)
 add_subdirectory(glad)
 add_subdirectory(imgui)
 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(json)
+
 ## STB
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE stb/include)

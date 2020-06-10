@@ -1,5 +1,8 @@
+#include <cr/cr.h>
+
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
+#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <monte-toad/surfaceinfo.hpp>
 #include <monte-toad/texture.hpp>
@@ -12,52 +15,45 @@ namespace {
 
 bool CR_STATE applyFogging = true;
 
-glm::vec3 Dispatch(
-  glm::vec2 const & uv, glm::vec2 const & resolution
+mt::PixelInfo Dispatch(
+  glm::vec2 const & uv
 , mt::Scene const & scene
 , mt::RenderInfo const & renderInfo
 , mt::PluginInfo const & pluginInfo
+, mt::IntegratorData const & integratorData
 ) {
   auto [origin, wi] =
-    pluginInfo.camera.Dispatch(pluginInfo.random, renderInfo, uv);
-
-  auto results = mt::Raycast(scene, origin, wi, true, nullptr);
-  auto const * triangle = std::get<0>(results);
-  if (!triangle) { return glm::vec3(0.0f); }
-
-  mt::SurfaceInfo surface;
-  surface.triangle = triangle;
-
-  surface.distance = std::get<1>(results).distance();
-  surface.barycentricUv = std::get<1>(results).barycentricUv;
-  surface.normal =
-    BarycentricInterpolation(
-      triangle->n0, triangle->n1, triangle->n2
-    , surface.barycentricUv
+    pluginInfo.camera.Dispatch(
+      pluginInfo.random, renderInfo, integratorData.imageResolution, uv
     );
+
+  auto surface = mt::Raycast(scene, origin, wi, nullptr);
+  if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
+
   auto color =
     pluginInfo.material.BsdfFs(
-      scene, surface, wi, glm::reflect(wi, surface.normal)
+      scene, surface, glm::reflect(wi, surface.normal)
     );
 
   // do fogging just for some visual characteristics if requested
   if (applyFogging) {
-    float distance = std::get<1>(results).length;
+    float distance = surface.distance;
     distance /= glm::length(scene.bboxMax - scene.bboxMin);
     color *= glm::exp(-distance * 2.0f);
   }
 
-  return color;
+  return mt::PixelInfo{color, true};
 }
 
 void UiUpdate(
   mt::Scene & scene
 , mt::RenderInfo & render
-, mt::PluginInfo & plugin
-, mt::DiagnosticInfo & diagnosticInfo
+, mt::PluginInfo const & plugin
+, mt::IntegratorData & integratorData
 ) {
-  ImGui::Begin("Integrator");
-  ImGui::Checkbox("apply fog", &applyFogging);
+  ImGui::Begin("albedo raycaster (config)");
+  if (ImGui::Checkbox("apply fog", &applyFogging))
+    { integratorData.Clear(); }
   ImGui::End();
 }
 
@@ -78,6 +74,7 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
       integrator.Dispatch = &Dispatch;
       integrator.UiUpdate = &UiUpdate;
       integrator.pluginType = mt::PluginType::Integrator;
+      integrator.pluginLabel = "albedo raycaster";
     break;
     case CR_UNLOAD: break;
     case CR_STEP: break;

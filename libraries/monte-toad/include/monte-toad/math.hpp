@@ -2,7 +2,10 @@
 
 #include <glm/glm.hpp>
 
+// TODO remove bvh vector from this header
 #include <bvh/vector.hpp>
+
+#include <tuple>
 
 namespace glm {
 constexpr static float Pi     = 3.141592653589793f;
@@ -20,11 +23,3 @@ bool GreaterThan(glm::vec3 a, glm::vec3 b);
 
 bvh::Vector3<float> ToBvh(glm::vec3 vertex);
 glm::vec3 ToGlm(bvh::Vector3<float> vertex);
-
-template <typename U>
-U BarycentricInterpolation(
-  U const & v0, U const & v1, U const & v2
-, glm::vec2 const & uv
-) {
-  return v0 + uv.x*(v1 - v0) + uv.y*(v2 - v0);
-}

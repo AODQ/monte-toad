@@ -1,17 +1,23 @@
+#include <cr/cr.h>
+
+#include <monte-toad/geometry.hpp>
 #include <monte-toad/log.hpp>
+#include <monte-toad/math.hpp>
+#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <monte-toad/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
-#include <cr/cr.h>
 #include <imgui/imgui.hpp>
 
 namespace {
 
 struct MaterialInfo {
-  glm::vec3 diffuse = glm::vec3(0.0f);
+  glm::vec3 diffuse = glm::vec3(0.5f);
   float roughness = 1.0f;
   float emission = 0.0f;
+  float transmittive = 0.0f;
+  float indexOfRefraction = 1.0f;
 };
 
 void UpdateSceneEmission(mt::Scene & scene) {
@@ -37,49 +43,97 @@ void Load(mt::Scene & scene) {
   UpdateSceneEmission(scene);
 }
 
-std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
-  mt::PluginInfoRandom & random
-, mt::SurfaceInfo const & surface
-, glm::vec3 const & wi
-) {
-  glm::vec3 wo; float pdf;
-
-  wo = glm::normalize(glm::vec3(1.0f));
-  pdf = 1.0f;
-
-  return { wo, pdf };
+float BsdfPdf(mt::SurfaceInfo const & surface, glm::vec3 const & wo) {
+  auto const & material = std::any_cast<MaterialInfo const &>(surface.material);
+  if (material.transmittive > 0.0f) { return 0.0f; }
+  return glm::InvPi * glm::dot(wo, surface.normal);
 }
 
-float BsdfPdf(
-  mt::SurfaceInfo const & surface
-, glm::vec3 const & wi, glm::vec3 const & wo
+std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
+  mt::PluginInfoRandom const & random
+, mt::SurfaceInfo const & surface
 ) {
-  return 1.0f;
+  glm::vec3 wo;
+
+  auto const & material = std::any_cast<MaterialInfo const &>(surface.material);
+
+  if (material.transmittive > 0.0f) {
+
+    glm::vec3 normal = surface.normal;
+
+    // flip normal if surface is incorrect for refraction
+    if (glm::dot(surface.incomingAngle, surface.normal) > 0.0f) {
+      normal = -surface.normal;
+    }
+
+    return
+      {
+        glm::normalize(
+          glm::refract(
+            surface.incomingAngle
+          , normal
+          , surface.exitting
+            ? material.indexOfRefraction
+            : 1.0f/material.indexOfRefraction
+          )
+        ),
+        0.0f
+      };
+  }
+
+  glm::vec2 u = random.SampleUniform2();
+
+  wo =
+    ReorientHemisphere(
+      glm::normalize(Cartesian(glm::sqrt(u.y), glm::Tau*u.x))
+    , surface.normal
+    );
+
+  return { wo, BsdfPdf(surface, wo) };
+}
+
+bool IsEmitter(mt::Scene const & scene, mt::Triangle const & triangle) {
+  return
+    std::any_cast<MaterialInfo const &>(
+      scene.meshes[triangle.meshIdx].userdata
+    ).emission > 0.0f;
 }
 
 glm::vec3 BsdfFs(
-  mt::Scene const & scene, mt::SurfaceInfo const & surface
-, glm::vec3 const & wi, glm::vec3 const & wo
+  mt::Scene const & scene, mt::SurfaceInfo const & surface, glm::vec3 const & wo
 ) {
-  auto const & material =
-    std::any_cast<MaterialInfo const &>(
-      scene.meshes[surface.triangle->meshIdx].userdata
-    );
+  auto const & material = std::any_cast<MaterialInfo const &>(surface.material);
 
-  return material.diffuse;
+  if (material.emission > 0.0f) { return material.emission * material.diffuse; }
+
+  if (material.transmittive > 0.0f) {
+    return material.diffuse;
+  }
+
+  return material.diffuse * dot(surface.normal, wo) * glm::InvPi;
 }
+
+static CR_STATE bool mtlOpen = false;
+static CR_STATE size_t currentMtlIdx = static_cast<size_t>(-1);
 
 void UiUpdate(
   mt::Scene & scene
 , mt::RenderInfo & render
-, mt::PluginInfo & plugin
-, mt::DiagnosticInfo & diagnosticInfo
+, mt::PluginInfo const & plugin
 ) {
-  static bool mtlOpen = false;
-  static size_t currentMtlIdx = static_cast<size_t>(-1);
-
   ImGui::Begin("Material");
 
+  ImGui::Text("Emitters %lu", scene.emissionSource.triangles.size());
+
+  ImGui::Separator();
+  ImGui::Text("-- materials --");
+  if (ImGui::Button("-")) {
+    currentMtlIdx = (currentMtlIdx-1) % scene.meshes.size();
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("+")) {
+    currentMtlIdx = (currentMtlIdx+1) % scene.meshes.size();
+  }
   for (size_t it = 0; it < scene.meshes.size(); ++ it) {
     if (ImGui::Button(fmt::format("Mtl {}", it).c_str())) {
       currentMtlIdx = it;
@@ -87,24 +141,55 @@ void UiUpdate(
     }
   }
 
+  // TODO
+  /* if (render.imagePixelClicked) { */
+  /*   auto uv = */
+  /*     glm::vec2(render.imagePixel) */
+  /*   / glm::vec2(render.imageResolution[0], render.imageResolution[1]); */
+
+  /*   uv = (uv - glm::vec2(0.5f)) * 2.0f; */
+  /*   uv.y *= */
+  /*     render.imageResolution[1] / static_cast<float>(render.imageResolution[0]); */
+
+  /*   auto [origin, wi] = plugin.camera.Dispatch(plugin.random, render, uv); */
+
+  /*   auto surface = mt::Raycast(scene, origin, wi, nullptr); */
+
+  /*   currentMtlIdx = */
+  /*     static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1); */
+  /* } */
+
   ImGui::End();
 
   // in case different scene loads or something else weird happens
   if (currentMtlIdx >= scene.meshes.size())
     { currentMtlIdx = static_cast<size_t>(-1); }
 
-  if (
-      mtlOpen && currentMtlIdx != static_cast<size_t>(-1)
-   && ImGui::Begin("Material Editor", &mtlOpen)
-   ) {
+  ImGui::Begin("Material Editor", &mtlOpen);
+
+  if (mtlOpen && currentMtlIdx != static_cast<size_t>(-1)) {
     auto & material =
       std::any_cast<MaterialInfo &>(scene.meshes[currentMtlIdx].userdata);
-    ImGui::ColorPicker3("diffuse", &material.diffuse.x);
-    ImGui::SliderFloat("roughness", &material.roughness, 0.0f, 1.0f);
-    if (ImGui::SliderFloat("emission", &material.emission, 0.0f, 100.0f)) {
+    ImGui::Text("Mtl %lu", currentMtlIdx);
+    if (ImGui::ColorPicker3("diffuse", &material.diffuse.x)) {
+      render.ClearImageBuffers();
+    }
+    if (ImGui::SliderFloat("roughness", &material.roughness, 0.0f, 1.0f)) {
+      render.ClearImageBuffers();
+    }
+    if (ImGui::InputFloat("emission", &material.emission)) {
       UpdateSceneEmission(scene);
+      render.ClearImageBuffers();
+    }
+    if (
+        ImGui::InputFloat("transmittive", &material.transmittive)
+     || ImGui::InputFloat("ior", &material.indexOfRefraction)
+    ) {
+      render.ClearImageBuffers();
     }
   }
+
+  ImGui::End();
 }
 
 }
@@ -124,9 +209,10 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
       userInterface.BsdfSample = &::BsdfSample;
       userInterface.BsdfPdf = &::BsdfPdf;
       userInterface.BsdfFs = &::BsdfFs;
+      userInterface.IsEmitter = &::IsEmitter;
       userInterface.UiUpdate = &::UiUpdate;
       userInterface.pluginType = mt::PluginType::Material;
-      spdlog::info("wave-front mtl plugin successfully loaded");
+      userInterface.pluginLabel = "wavefront material";
     break;
     case CR_UNLOAD: break;
     case CR_CLOSE: break;

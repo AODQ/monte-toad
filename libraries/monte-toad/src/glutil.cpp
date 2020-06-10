@@ -1,71 +1,73 @@
-#include "glutil.hpp"
-
+#include <monte-toad/glutil.hpp>
 #include <monte-toad/log.hpp>
 
 #include <glad/glad.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
-GlBuffer::GlBuffer(GlBuffer && other) 
+mt::GlBuffer::GlBuffer(GlBuffer && other) 
   : handle(other.handle)
 {
   other.handle = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-GlBuffer::~GlBuffer() {
+mt::GlBuffer::~GlBuffer() {
   this->Free();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void GlBuffer::Construct() {
+void mt::GlBuffer::Construct() {
+  if (this->handle != 0) { this->Free(); }
   glCreateBuffers(1, &this->handle);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void GlBuffer::Free() {
+void mt::GlBuffer::Free() {
   if (this->handle != 0) { glDeleteBuffers(1, &this->handle); }
   this->handle = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-GlTexture::GlTexture(GlTexture && other) 
+mt::GlTexture::GlTexture(GlTexture && other) 
   : handle(other.handle)
 {
   other.handle = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-GlTexture::~GlTexture() {
+mt::GlTexture::~GlTexture() {
   this->Free();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void GlTexture::Construct(uint32_t target) {
+void mt::GlTexture::Construct(uint32_t target) {
+  if (this->handle != 0) { this->Free(); }
   glCreateTextures(target, 1, &this->handle);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void GlTexture::Free() {
+void mt::GlTexture::Free() {
   if (this->handle != 0) { glDeleteTextures(1, &this->handle); }
   this->handle = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-GlProgram::GlProgram(GlProgram && other) 
+mt::GlProgram::GlProgram(GlProgram && other) 
   : handle(other.handle)
 {
   other.handle = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-GlProgram::~GlProgram() {
+mt::GlProgram::~GlProgram() {
   this->Free();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void GlProgram::Construct(
+void mt::GlProgram::Construct(
   std::vector<std::tuple<std::string, uint32_t>> const & sources
 ) {
+  if (this->handle != 0) { this->Free(); }
   this->handle = glCreateProgram();
   { // compile program
     std::vector<uint32_t> shaders;
@@ -97,7 +99,7 @@ void GlProgram::Construct(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void GlProgram::Free() {
+void mt::GlProgram::Free() {
   if (this->handle != 0) { glDeleteProgram(this->handle); }
   this->handle = 0;
 }

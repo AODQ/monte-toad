@@ -1,6 +1,7 @@
 #pragma once
 
-#include "span.hpp"
+#include <monte-toad/enum.hpp>
+#include <monte-toad/span.hpp>
 
 #include <glm/glm.hpp>
 
@@ -14,10 +15,11 @@ namespace mt {
   // Dispatches engine over the block region specified by [min, max).
   void DispatchEngineBlockRegion(
     mt::Scene const & scene
-  , span<glm::vec4> imageBuffer
-  , mt::RenderInfo & renderInfo
-  , mt::PluginInfo & pluginInfo
-  , size_t const min, size_t const max
-  , bool headless
+  , mt::RenderInfo & render
+  , mt::PluginInfo const & pluginInfo
+
+  , size_t integratorIdx
+  , size_t const minX, size_t const minY
+  , size_t const maxX, size_t const maxY
   );
 }

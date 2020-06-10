@@ -1,7 +1,10 @@
 #pragma once
 
+#include <cstdint>
+#include <cstddef>
+
 namespace mt {
-  enum class PluginType : size_t {
+  enum struct PluginType : size_t {
     Integrator
   , Kernel
   , Material
@@ -12,7 +15,7 @@ namespace mt {
   , Invalid
   };
 
-  enum class InputKey : size_t {
+  enum struct InputKey : size_t {
     eA
   , eW
   , eS

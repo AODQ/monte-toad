@@ -1,12 +1,14 @@
+#include <cr/cr.h>
+
 #include <monte-toad/enum.hpp>
+#include <monte-toad/imgui.hpp>
+#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <mt-plugin/plugin.hpp>
 
-#include <cr/cr.h>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 #include <glm/glm.hpp>
-#include <imgui/imgui.hpp>
 #include <spdlog/spdlog.h>
 
 #include <chrono>
@@ -15,6 +17,7 @@ namespace {
 
 float msTime = 0.0f;
 float CR_STATE mouseSensitivity = 1.0f;
+float CR_STATE cameraRelativeVelocity = 1.0f;
 
 void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
   // clamp to prevent odd ms time (like if scene were to load)
@@ -28,28 +31,36 @@ void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
   auto const & cameraUp = renderInfo.cameraUpAxis;
 
   auto const cameraVelocity =
-    glm::length(scene.bboxMax - scene.bboxMin) * 0.001f;
+    glm::length(scene.bboxMax - scene.bboxMin)
+  * 0.001f * cameraRelativeVelocity;
 
   auto window = reinterpret_cast<GLFWwindow *>(renderInfo.glfwWindow);
 
+  bool cameraHasMoved = false;
+
   if (glfwGetKey(window, GLFW_KEY_A)) {
     renderInfo.cameraOrigin -= msTime * cameraRight * cameraVelocity;
+    cameraHasMoved = true;
   }
 
   if (glfwGetKey(window, GLFW_KEY_D)) {
     renderInfo.cameraOrigin += msTime * cameraRight * cameraVelocity;
+    cameraHasMoved = true;
   }
 
   if (glfwGetKey(window, GLFW_KEY_W)) {
     renderInfo.cameraOrigin += msTime * cameraForward * cameraVelocity;
+    cameraHasMoved = true;
   }
 
   if (glfwGetKey(window, GLFW_KEY_S)) {
     renderInfo.cameraOrigin -= msTime * cameraForward * cameraVelocity;
+    cameraHasMoved = true;
   }
 
   if (glfwGetKey(window, GLFW_KEY_SPACE)) {
     renderInfo.cameraOrigin -= msTime * cameraUp * cameraVelocity;
+    cameraHasMoved = true;
   }
 
   if (
@@ -57,6 +68,7 @@ void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
    && glfwGetKey(window, GLFW_KEY_SPACE)
   ) {
     renderInfo.cameraOrigin += msTime * 2.0f * cameraUp * cameraVelocity;
+    cameraHasMoved = true;
   }
 
   static CR_STATE double prevX = -1.0, prevY = -1.0;
@@ -86,44 +98,29 @@ void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
 
     glfwSetCursorPos(window, prevX, prevY);
 
+    cameraHasMoved = true;
+
   } else { prevX = -1.0; }
-}
 
-void UiSceneInfo(mt::Scene & scene) {
-  static CR_STATE bool open = true;
-  if (!ImGui::Begin("Scene Info", &open)) { return; }
-
-  ImGui::Text(
-    "   (%.2f, %.2f, %.2f)\n-> (%.2f, %.2f, %.2f) scene bounds"
-  , scene.bboxMin.x, scene.bboxMin.y, scene.bboxMin.z
-  , scene.bboxMax.x, scene.bboxMax.y, scene.bboxMax.z
-  );
-
-  auto textureString = fmt::format("{} textures", scene.textures.size());
-  if (ImGui::TreeNode(textureString.c_str())) {
-    for (auto const & texture : scene.textures) {
-      ImGui::Text(
-        "'%s' %lux%lu", texture.filename.c_str(), texture.width, texture.height
-      );
-    }
-  }
-
-  // TODO mesh display
-  ImGui::Text("%lu meshes", scene.meshes.size());
-
-  ImGui::End();
+  if (cameraHasMoved) { renderInfo.ClearImageBuffers(); }
 }
 
 void UiPluginInfo(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
-, mt::PluginInfo & pluginInfo
-, mt::DiagnosticInfo &
+, mt::PluginInfo const & pluginInfo
 ) {
   if (!(ImGui::Begin("Plugin Info"))) { return; }
 
-  ImGui::Text("samples per pixel %lu", renderInfo.samplesPerPixel);
-  ImGui::Text("paths per sample %lu", renderInfo.pathsPerSample);
+  // TODO
+  /* ImGui::Text("samples per pixel %lu", renderInfo.samplesPerPixel); */
+
+  /* { */
+  /*   int pps = static_cast<int>(renderInfo.pathsPerSample); */
+  /*   ImGui::InputInt("paths per sample", &pps); */
+  /*   pps = glm::clamp(pps, 0, 64); */
+  /*   renderInfo.pathsPerSample = static_cast<size_t>(pps); */
+  /* } */
 
   float
     min = glm::min(scene.bboxMin.x, glm::min(scene.bboxMin.y, scene.bboxMin.z))
@@ -133,16 +130,31 @@ void UiPluginInfo(
   min -= glm::abs(min)*1.5f;
   max += glm::abs(max)*1.5f;
 
-  ImGui::SliderFloat3("Origin", &renderInfo.cameraOrigin.x, min, max);
+  if (ImGui::SliderFloat3("Origin", &renderInfo.cameraOrigin.x, min, max)) {
+    renderInfo.ClearImageBuffers();
+  }
+
+  if (ImGui::InputFloat3("Camera up axis", &renderInfo.cameraUpAxis.x)) {
+    renderInfo.ClearImageBuffers();
+  }
+  if (ImGui::Button("Normalize camera up")) {
+    renderInfo.cameraUpAxis = glm::normalize(renderInfo.cameraUpAxis);
+    renderInfo.ClearImageBuffers();
+  }
+
   if (
     ImGui::SliderFloat3(
       "Direction", &renderInfo.cameraDirection.x, -1.0f, +1.0f
     )
   ) {
     renderInfo.cameraDirection = glm::normalize(renderInfo.cameraDirection);
+    renderInfo.ClearImageBuffers();
   }
-  ImGui::SliderFloat("Mouse Sensitivity", &::mouseSensitivity, 0.1f, 10.0f);
-  ImGui::SliderFloat("FOV", &renderInfo.cameraFieldOfView, 0.0f, 140.0f);
+  ImGui::SliderFloat("Mouse Sensitivity", &::mouseSensitivity, 0.1f, 3.0f);
+  ImGui::SliderFloat("Camera Velocity", &::cameraRelativeVelocity, 0.1f, 2.0f);
+  if (ImGui::SliderFloat("FOV", &renderInfo.cameraFieldOfView, 0.0f, 140.0f)) {
+    renderInfo.ClearImageBuffers();
+  }
 
   static std::chrono::high_resolution_clock timer;
   static std::chrono::time_point<std::chrono::high_resolution_clock> prevFrame;
@@ -162,129 +174,198 @@ void UiPluginInfo(
 void UiImageOutput(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
-, mt::PluginInfo & pluginInfo
-, mt::DiagnosticInfo & diagnosticInfo
+, mt::PluginInfo const & pluginInfo
 ) {
-  if (!(ImGui::Begin("Image Output"))) { return; }
 
-  static CR_STATE auto pixelInspectingCoord = glm::ivec2(-1);
-  static CR_STATE auto pixelInspectingColor = glm::vec3();
+  for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
+    auto & data       = renderInfo.integratorData[i];
+    auto & integrator = pluginInfo.integrators[i];
 
-  static CR_STATE std::array<int, 2> imGuiImageResolution = {{
-    static_cast<int>(renderInfo.imageResolution[0])
-  , static_cast<int>(renderInfo.imageResolution[1])
-  }};
-  static CR_STATE bool shareimGuiImageResolution = true;
+    std::string label =
+      std::string{integrator.pluginLabel} + std::string{" (config)"};
 
-  // display image
-  ImGui::Image(
-    diagnosticInfo.textureHandle
-  , ImVec2(imGuiImageResolution[0], imGuiImageResolution[1])
-  );
+    if (!ImGui::Begin(label.c_str()))
+      { continue; }
 
-  // if image is clicked, approximate the clicked pixel, taking into account
-  // image resolution differences when displaying to imgui
-  if (ImGui::IsItemClicked()) {
-    auto const
-      imItemMin  = ImGui::GetItemRectMin()
-    , imItemMax  = ImGui::GetItemRectMax()
-    , imMousePos = ImGui::GetMousePos()
-    ;
+    std::array<char const *, Idx(mt::RenderingState::Size)> stateStrings = {{
+      "Off", "On Change", "On Always"
+    }};
 
-    auto const
-      itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
-    , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
-    , mousePos =
-        glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
-    ;
+    int value = static_cast<int>(data.renderingState);
 
-    auto const trueResolution =
-      glm::vec2(renderInfo.imageResolution[0], renderInfo.imageResolution[1]);
-
-    auto const resolutionRatio =
-      trueResolution
-    / glm::vec2(imGuiImageResolution[0], imGuiImageResolution[1]);
-
-    auto const pixel = (mousePos - itemMin) * resolutionRatio;
-
-    pixelInspectingCoord =
-      glm::clamp(
-        glm::ivec2(glm::round(pixel))
-      , glm::ivec2(0)
-      , glm::ivec2(trueResolution)
-      );
-
-    pixelInspectingColor =
-      diagnosticInfo.currentFragmentBuffer[
-        pixelInspectingCoord.y * renderInfo.imageResolution[0]
-      + pixelInspectingCoord.x
-      ];
-  }
-
-  // -- display resolution information
-  ImGui::Checkbox("Sync imgui image resolution", &shareimGuiImageResolution);
-
-  if (!shareimGuiImageResolution) {
-    ImGui::InputInt2(
-      "Texture display resolution"
-    , imGuiImageResolution.data()
-    );
-  } else {
-    imGuiImageResolution[0] = static_cast<int>(renderInfo.imageResolution[0]);
-    imGuiImageResolution[1] = static_cast<int>(renderInfo.imageResolution[1]);
-  }
-
-  // -- display inspected pixel diagnostic information
-  if (ImGui::ArrowButton("##arrow", ImGuiDir_Right)) {
-    pixelInspectingCoord = glm::ivec2(-1);
-  }
-  ImGui::SameLine();
-  ImGui::SetNextItemWidth(100.0f);
-  if (ImGui::InputInt2("Fragment Inspection", &pixelInspectingCoord.x)) {
-    if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) {
-      pixelInspectingColor =
-        diagnosticInfo.currentFragmentBuffer[
-          pixelInspectingCoord.y * renderInfo.imageResolution[0]
-        + pixelInspectingCoord.x
-        ];
+    if (ImGui::BeginCombo("State", stateStrings[value])) {
+      for (size_t i = 0; i < stateStrings.size(); ++ i) {
+        bool isSelected = value == static_cast<int>(i);
+        if (ImGui::Selectable(stateStrings[i], isSelected)) {
+          data.renderingState = static_cast<mt::RenderingState>(i);
+          data.Clear();
+        }
+      }
+      ImGui::EndCombo();
     }
+
+    if (ImGui::InputInt("Samples per pixel", &data.samplesPerPixel)) {
+      data.samplesPerPixel = glm::max(data.samplesPerPixel, 1ul);
+    }
+
+    if (ImGui::InputInt("Paths per sample", &data.pathsPerSample)) {
+      data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
+    }
+
+    ImGui::Text("%lu collected samples", data.collectedSamples);
+
+    ImGui::End();
   }
 
-  ImGui::SameLine();
-  if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) {
+  for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
+    auto & integratorData = renderInfo.integratorData[i];
+    auto & integrator     = pluginInfo.integrators[i];
 
-    // just ensure that image resolution is correct
-    pixelInspectingCoord.x =
-      glm::min(
-        static_cast<int>(renderInfo.imageResolution[0]), pixelInspectingCoord.x
-      );
-    pixelInspectingCoord.y =
-      glm::min(
-        static_cast<int>(renderInfo.imageResolution[1]), pixelInspectingCoord.y
-      );
+    std::string label =
+      std::string{integrator.pluginLabel} + std::string{" (image)"};
 
-    ImGui::ColorButton(
-      ""
-    , ImVec4(
-        pixelInspectingColor.x, pixelInspectingColor.y, pixelInspectingColor.z
-      , 1.0f
-      )
+    if (!ImGui::Begin(label.c_str()))
+      { continue; }
+
+    ImGui::Image(
+      reinterpret_cast<void*>(integratorData.renderedTexture.handle)
+    , ImVec2(integratorData.imageResolution.x, integratorData.imageResolution.y)
     );
+
+    ImGui::End();
   }
 
-  ImGui::End();
+
+  // TODO
+  /* if (!(ImGui::Begin("Image Output"))) { return; } */
+
+  /* static CR_STATE auto pixelInspectingCoord = glm::ivec2(-1); */
+  /* static CR_STATE auto pixelInspectingColor = glm::vec3(); */
+
+  /* static CR_STATE std::array<int, 2> imGuiImageResolution = {{ */
+  /*   static_cast<int>(renderInfo.imageResolution[0]) */
+  /* , static_cast<int>(renderInfo.imageResolution[1]) */
+  /* }}; */
+  /* static CR_STATE bool shareimGuiImageResolution = true; */
+
+  /* // -- display resolution information */
+  /* ImGui::Checkbox("Sync imgui image resolution", &shareimGuiImageResolution); */
+
+  /* if (!shareimGuiImageResolution) { */
+  /*   ImGui::InputInt( */
+  /*     "Texture display resolution" */
+  /*   , imGuiImageResolution.data() */
+  /*   ); */
+  /*   imGuiImageResolution[1] = */
+  /*     imGuiImageResolution[0] */
+  /*   * ( */
+  /*       renderInfo.imageResolution[1] */
+  /*     / static_cast<float>(renderInfo.imageResolution[0]) */
+  /*     ); */
+  /* } else { */
+  /*   imGuiImageResolution[0] = static_cast<int>(renderInfo.imageResolution[0]); */
+  /*   imGuiImageResolution[1] = static_cast<int>(renderInfo.imageResolution[1]); */
+  /* } */
+
+  /* // -- display inspected pixel diagnostic information */
+  /* if (ImGui::ArrowButton("##arrow", ImGuiDir_Right)) { */
+  /*   pixelInspectingCoord = glm::ivec2(-1); */
+  /* } */
+  /* ImGui::SameLine(); */
+  /* ImGui::SetNextItemWidth(100.0f); */
+  /* if (ImGui::InputInt2("Fragment Inspection", &pixelInspectingCoord.x)) { */
+  /*   if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) { */
+  /*     pixelInspectingColor = */
+  /*       diagnosticInfo.currentFragmentBuffer[ */
+  /*         pixelInspectingCoord.y * renderInfo.imageResolution[0] */
+  /*       + pixelInspectingCoord.x */
+  /*       ]; */
+  /*   } */
+  /* } */
+
+  /* if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) { */
+  /*   // just ensure that image resolution is correct */
+  /*   pixelInspectingCoord.x = */
+  /*     glm::min( */
+  /*       static_cast<int>(renderInfo.imageResolution[0]), pixelInspectingCoord.x */
+  /*     ); */
+  /*   pixelInspectingCoord.y = */
+  /*     glm::min( */
+  /*       static_cast<int>(renderInfo.imageResolution[1]), pixelInspectingCoord.y */
+  /*     ); */
+
+  /*   ImGui::SameLine(); */
+  /*   ImGui::ColorButton( */
+  /*     "" */
+  /*   , ImVec4( */
+  /*       pixelInspectingColor.x, pixelInspectingColor.y, pixelInspectingColor.z */
+  /*     , 1.0f */
+  /*     ) */
+  /*   ); */
+  /* } */
+
+  /* // display image */
+  /* ImGui::Image( */
+  /*   diagnosticInfo.textureHandle */
+  /* , ImVec2(imGuiImageResolution[0], imGuiImageResolution[1]) */
+  /* ); */
+
+  /* // clear out the image pixel clicked from previous frame */
+  /* renderInfo.imagePixelClicked = false; */
+
+  /* // if image is clicked, approximate the clicked pixel, taking into account */
+  /* // image resolution differences when displaying to imgui */
+  /* if (ImGui::IsItemClicked()) { */
+  /*   auto const */
+  /*     imItemMin  = ImGui::GetItemRectMin() */
+  /*   , imItemMax  = ImGui::GetItemRectMax() */
+  /*   , imMousePos = ImGui::GetMousePos() */
+  /*   ; */
+
+  /*   auto const */
+  /*     itemMin  = glm::vec2(imItemMin.x, imItemMin.y) */
+  /*   , itemMax  = glm::vec2(imItemMax.x, imItemMax.y) */
+  /*   , mousePos = */
+  /*       glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax) */
+  /*   ; */
+
+  /*   auto const trueResolution = */
+  /*     glm::vec2(renderInfo.imageResolution[0], renderInfo.imageResolution[1]); */
+
+  /*   auto const resolutionRatio = */
+  /*     trueResolution */
+  /*   / glm::vec2(imGuiImageResolution[0], imGuiImageResolution[1]); */
+
+  /*   auto const pixel = (mousePos - itemMin) * resolutionRatio; */
+
+  /*   pixelInspectingCoord = */
+  /*     glm::clamp( */
+  /*       glm::ivec2(glm::round(pixel)) */
+  /*     , glm::ivec2(0) */
+  /*     , glm::ivec2(trueResolution) */
+  /*     ); */
+
+  /*   pixelInspectingColor = */
+  /*     diagnosticInfo.currentFragmentBuffer[ */
+  /*       pixelInspectingCoord.y * renderInfo.imageResolution[0] */
+  /*     + pixelInspectingCoord.x */
+  /*     ]; */
+
+  /*   renderInfo.imagePixel = glm::uvec2(glm::round(pixel)); */
+  /*   renderInfo.imagePixelClicked = true; */
+  /* } */
+
+  /* ImGui::End(); */
 }
 
 void Dispatch(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
-, mt::PluginInfo & pluginInfo
-, mt::DiagnosticInfo & diagnosticInfo
+, mt::PluginInfo const & pluginInfo
 ) {
   ::UiCameraControls(scene, renderInfo);
-  ::UiSceneInfo(scene);
-  ::UiPluginInfo(scene, renderInfo, pluginInfo, diagnosticInfo);
-  ::UiImageOutput(scene, renderInfo, pluginInfo, diagnosticInfo);
+  ::UiPluginInfo(scene, renderInfo, pluginInfo);
+  ::UiImageOutput(scene, renderInfo, pluginInfo);
 }
 
 } // -- end anon namespace
@@ -301,6 +382,7 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
     case CR_LOAD:
       userInterface.Dispatch = &::Dispatch;
       userInterface.pluginType = mt::PluginType::UserInterface;
+      userInterface.pluginLabel = "base user interface";
     break;
     case CR_UNLOAD: break;
     case CR_STEP: break;

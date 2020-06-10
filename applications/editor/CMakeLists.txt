@@ -3,8 +3,7 @@ add_executable(monte-toad-editor)
 target_sources(
   monte-toad-editor
   PRIVATE
-    src/glutil.hpp src/ui.hpp
-    src/glutil.cpp src/ui.cpp
+    src/ui.cpp src/fileutil.cpp
 
     src/source.cpp
 )
@@ -21,6 +20,7 @@ target_link_libraries(
   PRIVATE
     monte-toad mt-plugin-host
     cxxopts glfw OpenGL::OpenGL glad imgui
+    nlohmann_json::nlohmann_json
 )
 
 install(

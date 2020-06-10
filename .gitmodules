@@ -4,3 +4,6 @@
 [submodule "third-party/bvh"]
 	path = third-party/bvh
 	url = https://github.com/madmann91/bvh
+[submodule "third-party/json"]
+	path = third-party/json
+	url = https://github.com/nlohmann/json

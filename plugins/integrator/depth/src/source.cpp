@@ -1,29 +1,31 @@
 #include <cr/cr.h>
 
-#include <monte-toad/scene.hpp>
 #include <monte-toad/log.hpp>
+#include <monte-toad/renderinfo.hpp>
+#include <monte-toad/scene.hpp>
 
 #include <mt-plugin/plugin.hpp>
 
 namespace {
-glm::vec3 Dispatch(
-  glm::vec2 const & uv, glm::vec2 const & resolution
+mt::PixelInfo Dispatch(
+  glm::vec2 const & uv
 , mt::Scene const & scene
 , mt::RenderInfo const & renderInfo
 , mt::PluginInfo const & pluginInfo
+, mt::IntegratorData const & integratorData
 ) {
   auto [origin, wi] =
-    pluginInfo.camera.Dispatch(pluginInfo.random, renderInfo, uv);
+    pluginInfo.camera.Dispatch(
+      pluginInfo.random, renderInfo, integratorData.imageResolution, uv
+    );
 
-  auto results = mt::Raycast(scene, origin, wi, true, nullptr);
-  auto const * triangle = std::get<0>(results);
-  if (!triangle) { return glm::vec3(0.0f); }
+  auto surface = mt::Raycast(scene, origin, wi, nullptr);
+  if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
-  float distance = std::get<1>(results).length;
-
+  float distance = surface.distance;
   distance /= glm::length(scene.bboxMax - scene.bboxMin);
 
-  return glm::vec3(1.0f - glm::exp(-distance));
+  return mt::PixelInfo{glm::vec3(1.0f - glm::exp(-distance)), true};
 }
 }
 
@@ -41,6 +43,7 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
       integrator.useGpu = false;
       integrator.Dispatch = &Dispatch;
       integrator.pluginType = mt::PluginType::Integrator;
+      integrator.pluginLabel = "depth raycaster";
     break;
     case CR_UNLOAD: break;
     case CR_STEP: break;
