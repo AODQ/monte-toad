@@ -18,15 +18,14 @@ void mt::DispatchEngineBlockRegion(
 , size_t const minX, size_t const minY
 , size_t const maxX, size_t const maxY
 ) {
-  size_t progress = 0u;
+  [[maybe_unused]] size_t progress = 0u;
 
-  auto const masterTid = omp_get_thread_num();
-  size_t mainThreadUpdateIt;
+  [[maybe_unused]] auto const masterTid = omp_get_thread_num();
+  [[maybe_unused]] size_t mainThreadUpdateIt;
 
   auto & integratorData = render.integratorData[integratorIdx];
 
   auto const & resolution = integratorData.imageResolution;
-  auto const resolutionDim = resolution.x * resolution.y;
   auto const resolutionAspectRatio =
     resolution.y / static_cast<float>(resolution.x);
 

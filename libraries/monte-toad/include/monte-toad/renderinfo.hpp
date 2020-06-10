@@ -21,9 +21,13 @@ namespace mt {
     span<glm::vec4> mappedImageTransitionBuffer;
     std::vector<uint16_t> pixelCountBuffer;
     mt::GlTexture renderedTexture;
-    glm::u16vec2 imageResolution = glm::u16vec2(640, 480);
 
-    mt::RenderingState renderingState = mt::RenderingState::OnChange;
+    glm::u16vec2 imageResolution = glm::u16vec2(640, 480);
+    mt::AspectRatio imageAspectRatio;
+    bool syncAspectRatioToPrimaryIntegrator = false;
+    bool syncCameraToPrimaryIntegrator = false;
+
+    mt::RenderingState renderingState = mt::RenderingState::Off;
 
     size_t samplesPerPixel = 1;
     size_t pathsPerSample = 1;
@@ -56,7 +60,7 @@ namespace mt {
 
     bool viewImageOnCompletion;
     glm::vec3 cameraOrigin { 1.0f, 0.0f, 0.0f };
-    glm::vec3 cameraDirection { 0.0f, 0.0f, 0.0f };
+    glm::vec3 cameraDirection { 0.0f, 0.0f, 1.0f };
     glm::vec3 cameraUpAxis { 0.0f, -1.0f, 0.0f };
     size_t numThreads = 0;
     float cameraFieldOfView = 90.0f;
@@ -67,6 +71,7 @@ namespace mt {
     void * glfwWindow;
 
     std::vector<mt::IntegratorData> integratorData;
+    size_t primaryIntegrator;
 
     void ClearImageBuffers();
   };

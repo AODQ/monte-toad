@@ -110,7 +110,7 @@ void UiPluginInfo(
 , mt::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
-  if (!(ImGui::Begin("Plugin Info"))) { return; }
+  if (!ImGui::Begin("Plugin Info")) { return; }
 
   // TODO
   /* ImGui::Text("samples per pixel %lu", renderInfo.samplesPerPixel); */
@@ -177,6 +177,17 @@ void UiImageOutput(
 , mt::PluginInfo const & pluginInfo
 ) {
 
+  std::array<float, Idx(mt::AspectRatio::size)> constexpr
+    aspectRatioConversion = {{
+      1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f
+    , 1.0f
+    }};
+
+  std::array<char const *, Idx(mt::AspectRatio::size)> constexpr
+    aspectRatioLabels = {{ 
+      "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None"
+    }};
+
   for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
     auto & data       = renderInfo.integratorData[i];
     auto & integrator = pluginInfo.integrators[i];
@@ -184,8 +195,7 @@ void UiImageOutput(
     std::string label =
       std::string{integrator.pluginLabel} + std::string{" (config)"};
 
-    if (!ImGui::Begin(label.c_str()))
-      { continue; }
+    ImGui::Begin(label.c_str());
 
     std::array<char const *, Idx(mt::RenderingState::Size)> stateStrings = {{
       "Off", "On Change", "On Always"
@@ -212,6 +222,50 @@ void UiImageOutput(
       data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
     }
 
+    /* { // aspect ratio */
+    /*   int currentValue = static_cast<int>(data.imageAspectRatio); */
+    /*   if ( */
+    /*     ImGui::Combo( */
+    /*       "Aspect Ratio", */
+    /*       &currentValue, */
+    /*       aspectRatioLabels.data(), aspectRatioLabels.size() */
+    /*     ) */
+    /*   ) { */
+    /*     data.imageAspectRatio = static_cast<mt::AspectRatio>(currentValue); */
+
+    /*     // update image resolution */
+    /*     data.imageResolution[1] = */
+    /*       data.imageResolution[0] / aspectRatioConversion[currentValue]; */
+    /*     data.Clear(); */
+    /*   } */
+    /* } */
+
+    /* { // -- image resolution */
+    /*   // to check which was changed */
+    /*   auto previousImageResolution = data.imageResolution[0]; */
+    /*   if (ImGui::InputInt2("Image Resolution", &data.imageResolution.x)) { */
+    /*     // only 4k support */
+    /*     data.imageResolution = */
+    /*       glm::clamp(data.imageResolution, glm::u16vec2(1), glm::u16vec2(4096)); */
+
+    /*     // apply aspect ratio change dependent on which item changed */
+    /*     if (data.imageAspectRatio != mt::AspectRatio::eNone) { */
+    /*       if (previousImageResolution != data.imageResolution[0]) { */
+    /*         data.imageResolution[1] = */
+    /*           data.imageResolution[0] */
+    /*         / aspectRatioConversion[Idx(data.imageAspectRatio)]; */
+    /*       } else { */
+    /*         data.imageResolution[0] = */
+    /*           data.imageResolution[1] */
+    /*         * aspectRatioConversion[Idx(data.imageAspectRatio)]; */
+    /*       } */
+    /*     } */
+
+    /*     // must reallocate */
+    /*     data.AllocateGlResources(renderInfo); */
+    /*   } */
+    /* } */
+
     ImGui::Text("%lu collected samples", data.collectedSamples);
 
     ImGui::End();
@@ -224,13 +278,15 @@ void UiImageOutput(
     std::string label =
       std::string{integrator.pluginLabel} + std::string{" (image)"};
 
-    if (!ImGui::Begin(label.c_str()))
-      { continue; }
+    ImGui::Begin(label.c_str());
 
-    ImGui::Image(
-      reinterpret_cast<void*>(integratorData.renderedTexture.handle)
-    , ImVec2(integratorData.imageResolution.x, integratorData.imageResolution.y)
-    );
+      ImGui::Image(
+        reinterpret_cast<void*>(integratorData.renderedTexture.handle)
+      , ImVec2(
+          integratorData.imageResolution.x,
+          integratorData.imageResolution.y
+        )
+      );
 
     ImGui::End();
   }

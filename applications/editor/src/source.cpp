@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
 
   ui::Run(render, plugin);
 
-  printf("Exitting\n");
+  printf("\n");
 
   return 0;
 }

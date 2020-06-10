@@ -16,6 +16,8 @@ namespace mt {
   , size_t idx = 0
   );
 
+  void FreePlugin(size_t idx);
+
   void FreePlugins();
 
   // checks if plugins need to be reloaded

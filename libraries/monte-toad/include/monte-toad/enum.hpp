@@ -18,4 +18,8 @@ namespace mt {
   , OnAlways  // renders only 1 sample all the time
   , Size
   };
+
+  enum struct AspectRatio : int {
+    e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size
+  };
 }

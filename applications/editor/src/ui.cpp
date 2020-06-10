@@ -171,26 +171,24 @@ void UiPluginDisplayInfo(
 
 ////////////////////////////////////////////////////////////////////////////////
 void UiPlugin(mt::PluginInfo & pluginInfo) {
-  static bool open = true;
-  if (!ImGui::Begin("Plugins", &open)) { return; }
+  ImGui::Begin("Plugins");
+    auto DisplayPluginUi = [&](mt::PluginType pluginType, size_t idx = 0) {
+      ImGui::Text("%s (%lu)", ToString(pluginType), idx);
+      if (!mt::Valid(pluginInfo, pluginType, idx)) {
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Not loaded");
+      }
+      ImGui::Separator();
+    };
 
-  auto DisplayPluginUi = [&](mt::PluginType pluginType, size_t idx = 0) {
-    ImGui::Text("%s (%lu)", ToString(pluginType), idx);
-    if (!mt::Valid(pluginInfo, pluginType, idx)) {
-      ImGui::SameLine();
-      ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Not loaded");
-    }
-    ImGui::Separator();
-  };
+    for (size_t idx = 0; idx < pluginInfo.integrators.size(); ++ idx)
+      { DisplayPluginUi(mt::PluginType::Integrator, idx); }
 
-  for (size_t idx = 0; idx < pluginInfo.integrators.size(); ++ idx)
-    { DisplayPluginUi(mt::PluginType::Integrator, idx); }
-
-  DisplayPluginUi(mt::PluginType::Kernel);
-  DisplayPluginUi(mt::PluginType::Material);
-  DisplayPluginUi(mt::PluginType::Camera);
-  DisplayPluginUi(mt::PluginType::Random);
-  DisplayPluginUi(mt::PluginType::UserInterface);
+    DisplayPluginUi(mt::PluginType::Kernel);
+    DisplayPluginUi(mt::PluginType::Material);
+    DisplayPluginUi(mt::PluginType::Camera);
+    DisplayPluginUi(mt::PluginType::Random);
+    DisplayPluginUi(mt::PluginType::UserInterface);
 
   ImGui::End();
 
@@ -226,45 +224,44 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
 
 //------------------------------------------------------------------------------
 void UiLog() {
-  static bool open = true;
-  if (!ImGui::Begin("Console Log", &open)) { return; }
+  ImGui::Begin("Console Log");
 
-  // print out every message to terminal; have to determine colors and labels as
-  // well for each warning level
-  for (auto const & msg : ::imGuiSink->logMessages) {
-    ImVec4 col;
-    switch (msg.level) {
-      default: col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); break;
-      case spdlog::level::level_enum::critical:
-        col = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
-      break;
-      case spdlog::level::level_enum::err:
-        col = ImVec4(1.0f, 0.5f, 0.5f, 1.0f);
-      break;
-      case spdlog::level::level_enum::debug:
-        col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-      break;
-      case spdlog::level::level_enum::info:
-        col = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-      break;
-      case spdlog::level::level_enum::warn:
-        col = ImVec4(0.8f, 0.8f, 0.3f, 1.0f);
-      break;
-      case spdlog::level::level_enum::trace:
-        col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-      break;
+    // print out every message to terminal; have to determine colors and labels
+    // as well for each warning level
+    for (auto const & msg : ::imGuiSink->logMessages) {
+      ImVec4 col;
+      switch (msg.level) {
+        default: col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); break;
+        case spdlog::level::level_enum::critical:
+          col = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
+        break;
+        case spdlog::level::level_enum::err:
+          col = ImVec4(1.0f, 0.5f, 0.5f, 1.0f);
+        break;
+        case spdlog::level::level_enum::debug:
+          col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        break;
+        case spdlog::level::level_enum::info:
+          col = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
+        break;
+        case spdlog::level::level_enum::warn:
+          col = ImVec4(0.8f, 0.8f, 0.3f, 1.0f);
+        break;
+        case spdlog::level::level_enum::trace:
+          col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        break;
+      }
+      ImGui::Text(msg.preLevel.c_str());
+      ImGui::SameLine(0, 0);
+      ImGui::TextColored(col, msg.colorLevel.c_str());
+      ImGui::SameLine(0, 0);
+      ImGui::Text(msg.postLevel.c_str());
     }
-    ImGui::Text(msg.preLevel.c_str());
-    ImGui::SameLine(0, 0);
-    ImGui::TextColored(col, msg.colorLevel.c_str());
-    ImGui::SameLine(0, 0);
-    ImGui::Text(msg.postLevel.c_str());
-  }
 
-  if (::imGuiSink->newMessage && !ImGui::IsAnyMouseDown()) {
-    ::imGuiSink->newMessage = false;
-    ImGui::SetScrollHere(1.0f);
-  }
+    if (::imGuiSink->newMessage && !ImGui::IsAnyMouseDown()) {
+      ::imGuiSink->newMessage = false;
+      ImGui::SetScrollHere(1.0f);
+    }
 
   ImGui::End();
 }
@@ -275,147 +272,67 @@ void UiRenderInfo(
 , mt::PluginInfo & pluginInfo
 ) {
   // -- menubar
-  if (ImGui::BeginMenu("File")) {
-    if (ImGui::MenuItem("Load Scene")) {
-      auto tempFilename =
-        fileutil::FilePicker(
-          " --file-filter=\"3D models |"
-          " *.obj *.gltf *.fbx *.stl *.ply *.blend *.dae\""
-        );
-      if (tempFilename != "") {
-        renderInfo.modelFile = tempFilename;
-        LoadScene(renderInfo, pluginInfo);
-      }
-    }
+  // TODO DTOADQ this causes crash
+  /* if (ImGui::BeginMenu("File")) { */
+  /*   if (ImGui::MenuItem("Load Scene")) { */
+  /*     auto tempFilename = */
+  /*       fileutil::FilePicker( */
+  /*         " --file-filter=\"3D models |" */
+  /*         " *.obj *.gltf *.fbx *.stl *.ply *.blend *.dae\"" */
+  /*       ); */
+  /*     if (tempFilename != "") { */
+  /*       renderInfo.modelFile = tempFilename; */
+  /*       LoadScene(renderInfo, pluginInfo); */
+  /*     } */
+  /*   } */
 
-    if (ImGui::MenuItem("Load Environment File")) {
-      auto tempFilename =
-        fileutil::FilePicker(
-          " --file-filter=\"image files | "
-          " .jpeg .jpg .png .tga .bmp .psd .gif .hdr .pic .ppm .pgm\""
-        );
-      if (tempFilename != "") {
-        renderInfo.environmentMapFile = tempFilename;
-        LoadScene(renderInfo, pluginInfo);
-      }
-    }
+  /*   if (ImGui::MenuItem("Load Environment File")) { */
+  /*     auto tempFilename = */
+  /*       fileutil::FilePicker( */
+  /*         " --file-filter=\"image files | " */
+  /*         " .jpeg .jpg .png .tga .bmp .psd .gif .hdr .pic .ppm .pgm\"" */
+  /*       ); */
+  /*     if (tempFilename != "") { */
+  /*       renderInfo.environmentMapFile = tempFilename; */
+  /*       LoadScene(renderInfo, pluginInfo); */
+  /*     } */
+  /*   } */
 
-    // TODO
-    /* if (ImGui::MenuItem("Save Image")) { */
-    /*   auto filenameFlag = */
-    /*     renderInfo.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; */
-    /*   auto tempFilename = */
-    /*     fileutil::FilePicker( */
-    /*       " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag */
-    /*     ); */
-    /*   if (tempFilename != "") { */
-    /*     renderInfo.outputFile = tempFilename; */
-    /*     mt::SaveImage( */
-    /*       mappedImageTransitionBuffer */
-    /*     , renderInfo.imageResolution[0], renderInfo.imageResolution[1] */
-    /*     , renderInfo.outputFile */
-    /*     , false */
-    /*     ); */
-    /*   } */
-    /* } */
+  /*   // TODO */
+  /*   /1* if (ImGui::MenuItem("Save Image")) { *1/ */
+  /*   /1*   auto filenameFlag = *1/ */
+  /*   /1*     renderInfo.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; *1/ */
+  /*   /1*   auto tempFilename = *1/ */
+  /*   /1*     fileutil::FilePicker( *1/ */
+  /*   /1*       " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag *1/ */
+  /*   /1*     ); *1/ */
+  /*   /1*   if (tempFilename != "") { *1/ */
+  /*   /1*     renderInfo.outputFile = tempFilename; *1/ */
+  /*   /1*     mt::SaveImage( *1/ */
+  /*   /1*       mappedImageTransitionBuffer *1/ */
+  /*   /1*     , renderInfo.imageResolution[0], renderInfo.imageResolution[1] *1/ */
+  /*   /1*     , renderInfo.outputFile *1/ */
+  /*   /1*     , false *1/ */
+  /*   /1*     ); *1/ */
+  /*   /1*   } *1/ */
+  /*   /1* } *1/ */
+  /* } */
 
-    ImGui::EndMenu();
-  }
+  /* ImGui::EndMenu(); */
 
   // -- window
-  static bool open = true;
-  if (!ImGui::Begin("RenderInfo", &open)) { return; }
+  ImGui::Begin("RenderInfo");
+    ImGui::Text("'%s'", renderInfo.modelFile.c_str());
 
-  ImGui::Text("'%s'", renderInfo.modelFile.c_str());
+    if (ImGui::Button("Reload scene")) {
+      LoadScene(renderInfo, pluginInfo);
+    }
 
-  /* if ( */
-  /*     ImGui::Checkbox("Rendering", &renderInfo.rendering) */
-  /*  && renderInfo.rendering */
-  /* ) { */
-  /*   ::AttemptRenderingOn(renderInfo, pluginInfo); */
-  /* } */
-
-  /* ImGui::Checkbox("Realtime", &renderInfo.renderingRealtime); */
-
-  if (ImGui::Button("Reload scene")) {
-    LoadScene(renderInfo, pluginInfo);
-  }
-
-  /* enum struct AspectRatio : int { */
-  /*   e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size */
-  /* }; */
-
-  /* std::array<float, Idx(AspectRatio::size)> constexpr ratioConversion = {{ */
-  /*   1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f */
-  /* , 1.0f */
-  /* }}; */
-
-  /* std::array<char const *, Idx(AspectRatio::size)> constexpr ratioLabels = {{ */
-  /*   "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None" */
-  /* }}; */
-
-  /* static AspectRatio aspectRatio = AspectRatio::e4_3; */
-  /* static char const * aspectRatioLabel = ratioLabels[Idx(aspectRatio)]; */
-  /* static std::array<int, 2> imageResolution = {{ */
-  /*   static_cast<int>(renderInfo.imageResolution[0]) */
-  /* , static_cast<int>(renderInfo.imageResolution[1]) */
-  /* }}; */
-  /* static std::array<int, 2> previousImageResolution = {{ */
-  /*   imageResolution[0], imageResolution[1] */
-  /* }}; */
-
-  /* if (ImGui::BeginCombo("Aspect Ratio", aspectRatioLabel)) { */
-  /*   for (size_t i = 0; i < ratioLabels.size(); ++ i) { */
-  /*     bool isSelected = Idx(aspectRatio) == static_cast<int>(i); */
-  /*     if (ImGui::Selectable(ratioLabels[i], isSelected)) { */
-  /*       aspectRatio = static_cast<AspectRatio>(i); */
-  /*       aspectRatioLabel = ratioLabels[i]; */
-
-  /*       // update image resolution */
-  /*       imageResolution[1] = imageResolution[0] / ratioConversion[i]; */
-  /*       previousImageResolution[1] = imageResolution[1]; */
-  /*     } */
-
-  /*     if (isSelected) { ImGui::SetItemDefaultFocus(); } */
-  /*   } */
-  /*   ImGui::EndCombo(); */
-  /* } */
-
-  /* if (ImGui::InputInt2("Image resolution", imageResolution.data())) { */
-  /*   // Only 4K support right now (accidentally typing large number sucks) */
-  /*   if (imageResolution[0] >= 4096) { imageResolution[0] = 4096; } */
-  /*   if (imageResolution[1] >= 4096) { imageResolution[1] = 4096; } */
-
-  /*   renderInfo.rendering = false; */
-
-  /*   ::ClearImageBuffer(); */
-
-  /*   // apply aspect ratio if requested */
-  /*   if (aspectRatio != AspectRatio::eNone) { */
-  /*     if (previousImageResolution[0] != imageResolution[0]) { */
-  /*       imageResolution[1] = */
-  /*         imageResolution[0] / ratioConversion[Idx(aspectRatio)]; */
-  /*     } else { */
-  /*       imageResolution[0] = */
-  /*         imageResolution[1] * ratioConversion[Idx(aspectRatio)]; */
-  /*     } */
-  /*   } */
-
-  /*   renderInfo.imageResolution[0] = static_cast<size_t>(imageResolution[0]); */
-  /*   renderInfo.imageResolution[1] = static_cast<size_t>(imageResolution[1]); */
-
-  /*   previousImageResolution[0] = imageResolution[0]; */
-  /*   previousImageResolution[1] = imageResolution[1]; */
-
-  /*   // have to reallocate everything now */
-  /*   AllocateGlResources(renderInfo); */
-  /* } */
-
-  int tempNumThreads = static_cast<int>(renderInfo.numThreads);
-  if (ImGui::InputInt("# threads", &tempNumThreads)) {
-    renderInfo.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
-    omp_set_num_threads(renderInfo.numThreads);
-  }
+    int tempNumThreads = static_cast<int>(renderInfo.numThreads);
+    if (ImGui::InputInt("# threads", &tempNumThreads)) {
+      renderInfo.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
+      omp_set_num_threads(renderInfo.numThreads);
+    }
 
   ImGui::End();
 }
@@ -641,6 +558,9 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     mt::UpdatePlugins();
   }
 
+  // clear out scene mesh
+  for (auto & mesh : ::scene.meshes) { mesh.userdata.reset(); }
+
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
@@ -648,8 +568,5 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
   glfwDestroyWindow(::window);
   glfwTerminate();
 
-  // clean plugins
-  for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i)
-    { mt::Clean(pluginInfo, static_cast<mt::PluginType>(i), i); }
   mt::FreePlugins();
 }

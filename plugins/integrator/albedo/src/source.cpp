@@ -52,8 +52,8 @@ void UiUpdate(
 , mt::IntegratorData & integratorData
 ) {
   ImGui::Begin("albedo raycaster (config)");
-  if (ImGui::Checkbox("apply fog", &applyFogging))
-    { integratorData.Clear(); }
+    if (ImGui::Checkbox("apply fog", &applyFogging))
+      { integratorData.Clear(); }
   ImGui::End();
 }
 

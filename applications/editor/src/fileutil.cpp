@@ -44,6 +44,7 @@ void fileutil::LoadEditorConfig(
       return;
     }
 
+    /* mt::FreePlugins(); */
     fileutil::LoadPlugin(plugin, render, info[1], type);
 
     // TODO set their configs

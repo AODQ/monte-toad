@@ -113,7 +113,6 @@ glm::vec3 BsdfFs(
   return material.diffuse * dot(surface.normal, wo) * glm::InvPi;
 }
 
-static CR_STATE bool mtlOpen = false;
 static CR_STATE size_t currentMtlIdx = static_cast<size_t>(-1);
 
 void UiUpdate(
@@ -121,75 +120,76 @@ void UiUpdate(
 , mt::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
-  ImGui::Begin("Material");
+  if (ImGui::Begin("Material")) {
 
-  ImGui::Text("Emitters %lu", scene.emissionSource.triangles.size());
+    ImGui::Text("Emitters %lu", scene.emissionSource.triangles.size());
 
-  ImGui::Separator();
-  ImGui::Text("-- materials --");
-  if (ImGui::Button("-")) {
-    currentMtlIdx = (currentMtlIdx-1) % scene.meshes.size();
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("+")) {
-    currentMtlIdx = (currentMtlIdx+1) % scene.meshes.size();
-  }
-  for (size_t it = 0; it < scene.meshes.size(); ++ it) {
-    if (ImGui::Button(fmt::format("Mtl {}", it).c_str())) {
-      currentMtlIdx = it;
-      mtlOpen = true;
+    ImGui::Separator();
+    ImGui::Text("-- materials --");
+    if (ImGui::Button("-")) {
+      currentMtlIdx = (currentMtlIdx-1) % scene.meshes.size();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("+")) {
+      currentMtlIdx = (currentMtlIdx+1) % scene.meshes.size();
+    }
+    for (size_t it = 0; it < scene.meshes.size(); ++ it) {
+      if (ImGui::Button(fmt::format("Mtl {}", it).c_str())) {
+        currentMtlIdx = it;
+      }
+    }
+
+    // TODO
+    /* if (render.imagePixelClicked) { */
+    /*   auto uv = */
+    /*     glm::vec2(render.imagePixel) */
+    /*   / glm::vec2(render.imageResolution[0], render.imageResolution[1]); */
+
+    /*   uv = (uv - glm::vec2(0.5f)) * 2.0f; */
+    /*   uv.y *= */
+    /*     render.imageResolution[1] / static_cast<float>(render.imageResolution[0]); */
+
+    /*   auto [origin, wi] = plugin.camera.Dispatch(plugin.random, render, uv); */
+
+    /*   auto surface = mt::Raycast(scene, origin, wi, nullptr); */
+
+    /*   currentMtlIdx = */
+    /*     static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1); */
+    /* } */
+
+    ImGui::End();
   }
-
-  // TODO
-  /* if (render.imagePixelClicked) { */
-  /*   auto uv = */
-  /*     glm::vec2(render.imagePixel) */
-  /*   / glm::vec2(render.imageResolution[0], render.imageResolution[1]); */
-
-  /*   uv = (uv - glm::vec2(0.5f)) * 2.0f; */
-  /*   uv.y *= */
-  /*     render.imageResolution[1] / static_cast<float>(render.imageResolution[0]); */
-
-  /*   auto [origin, wi] = plugin.camera.Dispatch(plugin.random, render, uv); */
-
-  /*   auto surface = mt::Raycast(scene, origin, wi, nullptr); */
-
-  /*   currentMtlIdx = */
-  /*     static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1); */
-  /* } */
-
-  ImGui::End();
 
   // in case different scene loads or something else weird happens
   if (currentMtlIdx >= scene.meshes.size())
     { currentMtlIdx = static_cast<size_t>(-1); }
 
-  ImGui::Begin("Material Editor", &mtlOpen);
+  if (ImGui::Begin("Material Editor")) {
 
-  if (mtlOpen && currentMtlIdx != static_cast<size_t>(-1)) {
-    auto & material =
-      std::any_cast<MaterialInfo &>(scene.meshes[currentMtlIdx].userdata);
-    ImGui::Text("Mtl %lu", currentMtlIdx);
-    if (ImGui::ColorPicker3("diffuse", &material.diffuse.x)) {
-      render.ClearImageBuffers();
+    if (currentMtlIdx != static_cast<size_t>(-1)) {
+      auto & material =
+        std::any_cast<MaterialInfo &>(scene.meshes[currentMtlIdx].userdata);
+      ImGui::Text("Mtl %lu", currentMtlIdx);
+      if (ImGui::ColorPicker3("diffuse", &material.diffuse.x)) {
+        render.ClearImageBuffers();
+      }
+      if (ImGui::SliderFloat("roughness", &material.roughness, 0.0f, 1.0f)) {
+        render.ClearImageBuffers();
+      }
+      if (ImGui::InputFloat("emission", &material.emission)) {
+        UpdateSceneEmission(scene);
+        render.ClearImageBuffers();
+      }
+      if (
+          ImGui::InputFloat("transmittive", &material.transmittive)
+       || ImGui::InputFloat("ior", &material.indexOfRefraction)
+      ) {
+        render.ClearImageBuffers();
+      }
     }
-    if (ImGui::SliderFloat("roughness", &material.roughness, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::InputFloat("emission", &material.emission)) {
-      UpdateSceneEmission(scene);
-      render.ClearImageBuffers();
-    }
-    if (
-        ImGui::InputFloat("transmittive", &material.transmittive)
-     || ImGui::InputFloat("ior", &material.indexOfRefraction)
-    ) {
-      render.ClearImageBuffers();
-    }
+
+    ImGui::End();
   }
-
-  ImGui::End();
 }
 
 }

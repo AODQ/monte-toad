@@ -1,6 +1,7 @@
 #include <monte-toad/renderinfo.hpp>
 
 #include <monte-toad/engine.hpp>
+#include <monte-toad/log.hpp>
 
 #include <glad/glad.hpp>
 
@@ -36,6 +37,19 @@ bool mt::IntegratorData::DispatchRender(
     case mt::RenderingState::OnAlways:
       this->Clear(true);
     break;
+  }
+
+  if (
+      this->imageResolution.x * this->imageResolution.y
+   != this->mappedImageTransitionBuffer.size()
+  ) {
+    spdlog::critical(
+      "Image resolution ({}, {}) mismatch with buffer size {}"
+    , this->imageResolution.x, this->imageResolution.y
+    , this->mappedImageTransitionBuffer.size()
+    );
+    this->renderingState = mt::RenderingState::Off;
+    return false;
   }
 
   mt::DispatchEngineBlockRegion(

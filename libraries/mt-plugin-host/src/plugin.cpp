@@ -10,7 +10,7 @@
 #include <array>
 
 namespace {
-  std::array<cr_plugin, static_cast<size_t>(mt::PluginType::Size)> plugins;
+  std::vector<cr_plugin> plugins;
 } // -- end namespace
 
 uint32_t mt::LoadPlugin(
@@ -18,7 +18,8 @@ uint32_t mt::LoadPlugin(
 , PluginType pluginType, std::string const & file
 , size_t idx
 ) {
-  auto & ctx = ::plugins[static_cast<size_t>(pluginType)];
+  ::plugins.emplace_back();
+  auto & ctx = ::plugins.back();
 
   // assign userdata to the respective pluginInfo parameter.
   switch (pluginType) {
@@ -43,30 +44,42 @@ uint32_t mt::LoadPlugin(
     default: ctx.userdata = nullptr; break;
   }
 
-  if (!cr_plugin_open(ctx, file.c_str())) { return CR_USER; }
+  if (!cr_plugin_open(ctx, file.c_str())) {
+    ::plugins.pop_back();
+    return CR_USER;
+  }
 
   cr_set_temporary_path(ctx, "/tmp/");
 
-  if (ctx.failure != CR_NONE) { return ctx.failure; }
+  if (ctx.failure != CR_NONE) {
+    ::plugins.pop_back();
+    return ctx.failure;
+  }
 
   cr_plugin_update(ctx);
 
   return CR_NONE;
 }
 
+void mt::FreePlugin(size_t idx) {
+  cr_plugin_close(::plugins[idx]);
+  ::plugins.erase(::plugins.begin() + idx);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 void mt::FreePlugins() {
-  for (auto & p : plugins) {
-    p.userdata = nullptr; // want to make sure it doesn't try to free static mem
-    if (p.p != nullptr) { cr_plugin_close(p); }
+  for (auto & p : ::plugins) {
+    p.userdata = nullptr; // make sure it doesn't try to free static mem
+    cr_plugin_close(p);
   }
+  ::plugins.clear();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // checks if plugins need to be reloaded
 void mt::UpdatePlugins() {
   for (auto & p : ::plugins) {
-    if (p.userdata != nullptr) { cr_plugin_update(p); }
+    cr_plugin_update(p);
   }
 }
 
