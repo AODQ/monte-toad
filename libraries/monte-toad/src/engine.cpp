@@ -17,6 +17,7 @@ void mt::DispatchEngineBlockRegion(
 , size_t integratorIdx
 , size_t const minX, size_t const minY
 , size_t const maxX, size_t const maxY
+, size_t strideX, size_t strideY
 ) {
   [[maybe_unused]] size_t progress = 0u;
 
@@ -30,8 +31,8 @@ void mt::DispatchEngineBlockRegion(
     resolution.y / static_cast<float>(resolution.x);
 
   #pragma omp parallel for
-  for (size_t x = minX; x < maxX; ++ x)
-  for (size_t y = minX; y < maxY; ++ y) {
+  for (size_t x = minX; x < maxX; x += strideX)
+  for (size_t y = minX; y < maxY; y += strideY) {
     glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
     uv = (uv - glm::vec2(0.5f)) * 2.0f;
     uv.y *= resolutionAspectRatio;

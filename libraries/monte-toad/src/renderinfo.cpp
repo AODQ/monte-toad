@@ -2,6 +2,7 @@
 
 #include <monte-toad/engine.hpp>
 #include <monte-toad/log.hpp>
+#include <mt-plugin/plugin.hpp>
 
 #include <glad/glad.hpp>
 
@@ -59,9 +60,19 @@ bool mt::IntegratorData::DispatchRender(
     return false;
   }
 
+  imageStride = 1;
+
+  if (
+      !plugin.integrators[integratorIdx].realtime
+    && this->collectedSamples == 1
+  ) {
+    imageStride = 8;
+  }
+
   mt::DispatchEngineBlockRegion(
     scene, render, plugin, integratorIdx
   , 0, 0, this->imageResolution.x, this->imageResolution.y
+  , imageStride, imageStride
   );
 
   return true;
@@ -82,6 +93,8 @@ void mt::IntegratorData::DispatchImageCopy() {
   glBindImageTexture(
     0, this->renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8
   );
+
+  glUniform1i(0, this->imageStride);
 
   glDispatchCompute(
     this->imageResolution.x / 8

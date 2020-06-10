@@ -32,11 +32,12 @@ namespace mt {
     size_t samplesPerPixel = 1;
     size_t pathsPerSample = 1;
 
-    bool imagePixelClicked;
-    glm::uvec2 imagePixelClickedCoord;
+    bool imagePixelClicked = false;
+    glm::uvec2 imagePixelClickedCoord = glm::uvec2(0, 0);
 
-    size_t collectedSamples;
+    size_t collectedSamples = 0;
     bool bufferCleared = false;
+    size_t imageStride = 1;
 
     void Clear(bool fast = false);
 
