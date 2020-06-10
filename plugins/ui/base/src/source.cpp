@@ -232,7 +232,10 @@ void UiImageOutput(
 
             // update image resolution
             data.imageResolution[1] =
-              data.imageResolution[0] / aspectRatioConversion[value];
+              glm::max(
+                1.0f
+              , data.imageResolution[0] / aspectRatioConversion[value]
+              );
 
             data.AllocateGlResources(renderInfo);
           }
@@ -253,8 +256,11 @@ void UiImageOutput(
         if (data.imageAspectRatio != mt::AspectRatio::eNone) {
           if (previousImageResolution != data.imageResolution[0]) {
             data.imageResolution[1] =
-              data.imageResolution[0]
-            / aspectRatioConversion[Idx(data.imageAspectRatio)];
+              glm::max(
+                1.0f
+              , data.imageResolution[0]
+              / aspectRatioConversion[Idx(data.imageAspectRatio)]
+              );
           } else {
             data.imageResolution[0] =
               data.imageResolution[1]

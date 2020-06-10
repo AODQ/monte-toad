@@ -38,6 +38,7 @@ namespace mt {
     size_t collectedSamples = 0;
     bool bufferCleared = false;
     size_t imageStride = 1;
+    size_t imageIterator = 0;
 
     void Clear(bool fast = false);
 

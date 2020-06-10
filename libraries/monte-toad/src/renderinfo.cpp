@@ -60,19 +60,45 @@ bool mt::IntegratorData::DispatchRender(
     return false;
   }
 
-  imageStride = 1;
-
+  // set image stride to go from 8 .. 4 .. 2 .. 1
+  this->imageStride = 1;
+  glm::u16vec2 minRange = glm::uvec2(0);
+  glm::u16vec2 maxRange = this->imageResolution;
   if (
       !plugin.integrators[integratorIdx].realtime
-    && this->collectedSamples == 1
   ) {
-    imageStride = 8;
+    switch (this->collectedSamples) {
+      case 1: this->imageStride = 8; break;
+      case 2: this->imageStride = 4; break;
+      case 3: this->imageStride = 2; break;
+      default:
+        // start iterating through range doing 128x128 blocks
+        auto & iterator = this->imageIterator;
+        auto resolution =
+          glm::u16vec2(
+            glm::ceil((glm::vec2(this->imageResolution) / glm::vec2(128.0f)))
+          );
+        minRange =
+          glm::u16vec2(iterator % resolution.x, iterator / resolution.x)
+        * glm::u16vec2(128);
+        minRange = glm::min(minRange, this->imageResolution);
+        maxRange =
+          glm::min(this->imageResolution, minRange + glm::u16vec2(128));
+        // iterate through
+        iterator = (iterator + 1) % (resolution.x*resolution.y);
+      break;
+    }
+  }
+
+  // override image stride if spp is too low
+  if (this->collectedSamples >= this->samplesPerPixel) {
+    this->imageStride = 1;
   }
 
   mt::DispatchEngineBlockRegion(
     scene, render, plugin, integratorIdx
-  , 0, 0, this->imageResolution.x, this->imageResolution.y
-  , imageStride, imageStride
+  , minRange.x, minRange.y, maxRange.x, maxRange.y
+  , this->imageStride, this->imageStride
   );
 
   return true;

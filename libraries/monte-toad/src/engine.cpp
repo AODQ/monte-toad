@@ -30,9 +30,25 @@ void mt::DispatchEngineBlockRegion(
   auto const resolutionAspectRatio =
     resolution.y / static_cast<float>(resolution.x);
 
+  if (minX > resolution.x || maxX > resolution.x) {
+    spdlog::critical(
+      "minX ({}) and maxX({}) not in resolution bounds ({})",
+      minX, maxX, resolution.x
+    );
+    return;
+  }
+
+  if (minY > resolution.x || maxY > resolution.y) {
+    spdlog::critical(
+      "minY ({}) and maxY({}) not in resolution bounds ({})",
+      minY, maxY, resolution.y
+    );
+    return;
+  }
+
   #pragma omp parallel for
   for (size_t x = minX; x < maxX; x += strideX)
-  for (size_t y = minX; y < maxY; y += strideY) {
+  for (size_t y = minY; y < maxY; y += strideY) {
     glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
     uv = (uv - glm::vec2(0.5f)) * 2.0f;
     uv.y *= resolutionAspectRatio;
