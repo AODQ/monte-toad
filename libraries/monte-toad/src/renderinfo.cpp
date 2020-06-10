@@ -19,8 +19,9 @@ void mt::IntegratorData::Clear(bool fast) {
   , glm::vec4(0.0f)
   );
 
-  collectedSamples = 0;
-  bufferCleared = true;
+  this->collectedSamples = 0;
+  this->bufferCleared = true;
+  this->imageIterator = 0;
 }
 
 bool mt::IntegratorData::DispatchRender(
@@ -70,7 +71,6 @@ bool mt::IntegratorData::DispatchRender(
     switch (this->collectedSamples) {
       case 1: this->imageStride = 8; break;
       case 2: this->imageStride = 4; break;
-      case 3: this->imageStride = 2; break;
       default:
         // start iterating through range doing 128x128 blocks
         auto & iterator = this->imageIterator;
@@ -121,6 +121,7 @@ void mt::IntegratorData::DispatchImageCopy() {
   );
 
   glUniform1i(0, this->imageStride);
+  glUniform1i(1, this->collectedSamples == 1);
 
   glDispatchCompute(
     this->imageResolution.x / 8

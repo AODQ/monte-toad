@@ -95,7 +95,8 @@ void AllocateGlResources(mt::RenderInfo & renderInfo) {
     "layout(local_size_x = 8, local_size_y = 8, local_size_x = 1) in;\n"
     "\n"
     "uniform layout(rgba8, binding = 0) writeonly image2D outputImg;\n"
-    "uniform layout(location = 0) int stride;\n"
+    "uniform layout(location = 0) int  stride;\n"
+    "uniform layout(location = 1) bool forceClearImage;\n"
     "layout(std430, binding = 0) buffer TransitionBuffer {\n"
     "  vec4 color[];\n"
     "} transition;\n"
@@ -108,7 +109,9 @@ void AllocateGlResources(mt::RenderInfo & renderInfo) {
     "      sampleCompCoord.y*(gl_NumWorkGroups*gl_WorkGroupSize).x\n"
     "    + sampleCompCoord.x\n"
     "  ];\n"
-    "  imageStore(outputImg, compCoord, vec4(color));\n"
+    "  if (forceClearImage || color.a > 0.0f) {\n"
+    "      imageStore(outputImg, compCoord, vec4(color));\n"
+    "  }\n"
     "}\n"
   ;
 

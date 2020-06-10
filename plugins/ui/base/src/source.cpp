@@ -248,9 +248,13 @@ void UiImageOutput(
       // to check which was changed
       auto previousImageResolution = data.imageResolution[0];
       if (ImGui::InputInt2("Image Resolution", &data.imageResolution.x)) {
+        // must be a multiple of 8
+        data.imageResolution =
+          data.imageResolution - (data.imageResolution % glm::u16vec2(8));
+
         // only 4k support
         data.imageResolution =
-          glm::clamp(data.imageResolution, glm::u16vec2(1), glm::u16vec2(4096));
+          glm::clamp(data.imageResolution, glm::u16vec2(8), glm::u16vec2(4096));
 
         // apply aspect ratio change dependent on which item changed
         if (data.imageAspectRatio != mt::AspectRatio::eNone) {

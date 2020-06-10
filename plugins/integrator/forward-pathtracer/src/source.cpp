@@ -167,8 +167,10 @@ mt::PixelInfo Dispatch(
     surface = mt::Raycast(scene, origin, wi, nullptr);
   }
 
-  if (!surface.Valid())
-    { return mt::PixelInfo{glm::vec3(0.0f), false}; }
+  // return skybox
+  if (!surface.Valid()) {
+    return mt::PixelInfo{glm::vec3(1.0f, 0.0f, 1.0f), true};
+  }
 
   // check if emitter
   if (plugin.material.IsEmitter(scene, *surface.triangle)) {
