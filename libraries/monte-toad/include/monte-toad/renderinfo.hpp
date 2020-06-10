@@ -35,6 +35,9 @@ namespace mt {
     bool imagePixelClicked = false;
     glm::uvec2 imagePixelClickedCoord = glm::uvec2(0, 0);
 
+    bool overrideImGuiImageResolution = false;
+    glm::uint16_t imguiImageResolution = 640;
+
     size_t collectedSamples = 0;
     bool bufferCleared = false;
     size_t imageStride = 1;

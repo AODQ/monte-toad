@@ -277,6 +277,21 @@ void UiImageOutput(
       }
     }
 
+    { // imgui image resolution
+      if (
+        ImGui::Checkbox(
+          "override imgui resolution"
+        , &data.overrideImGuiImageResolution
+        )
+      ) {
+        data.imguiImageResolution = data.imageResolution.x;
+      }
+
+      if (data.overrideImGuiImageResolution) {
+        ImGui::InputInt("ImGui resolution", &data.imguiImageResolution);
+      }
+    }
+
     ImGui::Text("%lu collected samples", data.collectedSamples);
 
     ImGui::End();
@@ -291,9 +306,17 @@ void UiImageOutput(
 
     ImGui::Begin(label.c_str());
 
+      // get image resolution, which might be overriden by user
+      auto imageResolution = data.imageResolution;
+      if (data.overrideImGuiImageResolution) {
+        imageResolution.x = data.imguiImageResolution;
+        imageResolution.y =
+          imageResolution.x / aspectRatioConversion[Idx(data.imageAspectRatio)];
+      }
+
       ImGui::Image(
         reinterpret_cast<void*>(data.renderedTexture.handle)
-      , ImVec2(data.imageResolution.x, data.imageResolution.y)
+      , ImVec2(imageResolution.x, imageResolution.y)
       );
 
       // clear out the image pixel clicked from previous frame
@@ -315,7 +338,10 @@ void UiImageOutput(
             glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
         ;
 
-        auto const pixel = (mousePos - itemMin);
+        auto const resolutionRatio =
+          glm::vec2(imageResolution) / glm::vec2(data.imageResolution);
+
+        auto const pixel = (mousePos - itemMin) / resolutionRatio;
 
         // store results, also have to tell render info which image was clicked
         data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
