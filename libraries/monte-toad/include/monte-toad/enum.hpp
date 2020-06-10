@@ -15,6 +15,7 @@ namespace mt {
   enum class RenderingState {
     Off      // never renders
   , OnChange // renders up to N samples only when something has changed
+  , AfterChange  // Same as on change but only happens after movement is done
   , OnAlways  // renders only 1 sample all the time
   , Size
   };

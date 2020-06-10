@@ -23,7 +23,7 @@ namespace mt {
     mt::GlTexture renderedTexture;
 
     glm::u16vec2 imageResolution = glm::u16vec2(640, 480);
-    mt::AspectRatio imageAspectRatio;
+    mt::AspectRatio imageAspectRatio = mt::AspectRatio::e4_3;
     bool syncAspectRatioToPrimaryIntegrator = false;
     bool syncCameraToPrimaryIntegrator = false;
 
@@ -36,6 +36,7 @@ namespace mt {
     glm::uvec2 imagePixelClickedCoord;
 
     size_t collectedSamples;
+    bool bufferCleared = false;
 
     void Clear(bool fast = false);
 

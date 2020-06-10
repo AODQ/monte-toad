@@ -198,7 +198,7 @@ void UiImageOutput(
     ImGui::Begin(label.c_str());
 
     std::array<char const *, Idx(mt::RenderingState::Size)> stateStrings = {{
-      "Off", "On Change", "On Always"
+      "Off", "On Change", "After Change", "On Always"
     }};
 
     int value = static_cast<int>(data.renderingState);
@@ -222,49 +222,50 @@ void UiImageOutput(
       data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
     }
 
-    /* { // aspect ratio */
-    /*   int currentValue = static_cast<int>(data.imageAspectRatio); */
-    /*   if ( */
-    /*     ImGui::Combo( */
-    /*       "Aspect Ratio", */
-    /*       &currentValue, */
-    /*       aspectRatioLabels.data(), aspectRatioLabels.size() */
-    /*     ) */
-    /*   ) { */
-    /*     data.imageAspectRatio = static_cast<mt::AspectRatio>(currentValue); */
+    { // aspect ratio
+      int value = static_cast<int>(data.imageAspectRatio);
+      if (ImGui::BeginCombo("Aspect Ratio", aspectRatioLabels[value])) {
+        for (size_t i = 0; i < aspectRatioLabels.size(); ++ i) {
+          bool isSelected = value == static_cast<int>(i);
+          if (ImGui::Selectable(aspectRatioLabels[i], isSelected)) {
+            data.imageAspectRatio = static_cast<mt::AspectRatio>(value);
 
-    /*     // update image resolution */
-    /*     data.imageResolution[1] = */
-    /*       data.imageResolution[0] / aspectRatioConversion[currentValue]; */
-    /*     data.Clear(); */
-    /*   } */
-    /* } */
+            // update image resolution
+            data.imageResolution[1] =
+              data.imageResolution[0] / aspectRatioConversion[value];
 
-    /* { // -- image resolution */
-    /*   // to check which was changed */
-    /*   auto previousImageResolution = data.imageResolution[0]; */
-    /*   if (ImGui::InputInt2("Image Resolution", &data.imageResolution.x)) { */
-    /*     // only 4k support */
-    /*     data.imageResolution = */
-    /*       glm::clamp(data.imageResolution, glm::u16vec2(1), glm::u16vec2(4096)); */
+            data.AllocateGlResources(renderInfo);
+          }
+        }
+        ImGui::EndCombo();
+      }
+    }
 
-    /*     // apply aspect ratio change dependent on which item changed */
-    /*     if (data.imageAspectRatio != mt::AspectRatio::eNone) { */
-    /*       if (previousImageResolution != data.imageResolution[0]) { */
-    /*         data.imageResolution[1] = */
-    /*           data.imageResolution[0] */
-    /*         / aspectRatioConversion[Idx(data.imageAspectRatio)]; */
-    /*       } else { */
-    /*         data.imageResolution[0] = */
-    /*           data.imageResolution[1] */
-    /*         * aspectRatioConversion[Idx(data.imageAspectRatio)]; */
-    /*       } */
-    /*     } */
+    { // -- image resolution
+      // to check which was changed
+      auto previousImageResolution = data.imageResolution[0];
+      if (ImGui::InputInt2("Image Resolution", &data.imageResolution.x)) {
+        // only 4k support
+        data.imageResolution =
+          glm::clamp(data.imageResolution, glm::u16vec2(1), glm::u16vec2(4096));
 
-    /*     // must reallocate */
-    /*     data.AllocateGlResources(renderInfo); */
-    /*   } */
-    /* } */
+        // apply aspect ratio change dependent on which item changed
+        if (data.imageAspectRatio != mt::AspectRatio::eNone) {
+          if (previousImageResolution != data.imageResolution[0]) {
+            data.imageResolution[1] =
+              data.imageResolution[0]
+            / aspectRatioConversion[Idx(data.imageAspectRatio)];
+          } else {
+            data.imageResolution[0] =
+              data.imageResolution[1]
+            * aspectRatioConversion[Idx(data.imageAspectRatio)];
+          }
+        }
+
+        // must reallocate
+        data.AllocateGlResources(renderInfo);
+      }
+    }
 
     ImGui::Text("%lu collected samples", data.collectedSamples);
 

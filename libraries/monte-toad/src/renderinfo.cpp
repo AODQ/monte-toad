@@ -19,6 +19,7 @@ void mt::IntegratorData::Clear(bool fast) {
   );
 
   collectedSamples = 0;
+  bufferCleared = true;
 }
 
 bool mt::IntegratorData::DispatchRender(
@@ -30,6 +31,12 @@ bool mt::IntegratorData::DispatchRender(
   switch (this->renderingState) {
     default: return false;
     case mt::RenderingState::Off: return false;
+    case mt::RenderingState::AfterChange:
+      if (this->bufferCleared) {
+        this->bufferCleared = false;
+        return false;
+      }
+    [[fallthrough]]
     case mt::RenderingState::OnChange:
       if (this->collectedSamples >= this->samplesPerPixel) { return false; }
       ++ this->collectedSamples;
@@ -86,6 +93,7 @@ void mt::IntegratorData::DispatchImageCopy() {
 void mt::IntegratorData::AllocateGlResources(
   mt::RenderInfo const & renderInfo
 ) {
+  spdlog::info("Allocating gl resources to {}", this->imageResolution);
   size_t const
     imagePixelLength = this->imageResolution.x * this->imageResolution.y
   , imageByteLength  = imagePixelLength * sizeof(glm::vec4)

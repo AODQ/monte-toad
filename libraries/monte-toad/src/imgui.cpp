@@ -8,9 +8,11 @@ bool ImGui::InputInt(const char * label, size_t * value) {
 }
 
 bool ImGui::InputInt2(const char * label, uint16_t * value) {
-  int values[2] = { value[0], value[1] };
+  int values[2] = { static_cast<int>(value[0]), static_cast<int>(value[1]) };
   bool result = ImGui::InputInt2(label, values);
-  value[0] = static_cast<uint16_t>(values[0]);
-  value[1] = static_cast<uint16_t>(values[0]);
+  if (result) {
+    value[0] = static_cast<uint16_t>(values[0]);
+    value[1] = static_cast<uint16_t>(values[1]);
+  }
   return result;
 }
