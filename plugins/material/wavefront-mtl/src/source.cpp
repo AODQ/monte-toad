@@ -176,6 +176,7 @@ void UiUpdate(
     if (currentMtlIdx != static_cast<size_t>(-1)) {
       auto & material =
         std::any_cast<MaterialInfo &>(scene.meshes[currentMtlIdx].userdata);
+      ImGui::PushID(std::to_string(currentMtlIdx).c_str());
       ImGui::Text("Mtl %lu", currentMtlIdx);
       if (ImGui::ColorPicker3("diffuse", &material.diffuse.x)) {
         render.ClearImageBuffers();
@@ -193,6 +194,7 @@ void UiUpdate(
       ) {
         render.ClearImageBuffers();
       }
+      ImGui::PopID();
     }
 
     ImGui::End();
