@@ -273,7 +273,7 @@ void UiImageOutput(
   }
 
   for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
-    auto & integratorData = renderInfo.integratorData[i];
+    auto & data = renderInfo.integratorData[i];
     auto & integrator     = pluginInfo.integrators[i];
 
     std::string label =
@@ -282,137 +282,39 @@ void UiImageOutput(
     ImGui::Begin(label.c_str());
 
       ImGui::Image(
-        reinterpret_cast<void*>(integratorData.renderedTexture.handle)
-      , ImVec2(
-          integratorData.imageResolution.x,
-          integratorData.imageResolution.y
-        )
+        reinterpret_cast<void*>(data.renderedTexture.handle)
+      , ImVec2(data.imageResolution.x, data.imageResolution.y)
       );
+
+      // clear out the image pixel clicked from previous frame
+      data.imagePixelClicked = false;
+
+      // if image is clicked, approximate the clicked pixel, taking into account
+      // image resolution differences when displaying to imgui
+      if (ImGui::IsItemClicked()) {
+        auto const
+          imItemMin  = ImGui::GetItemRectMin()
+        , imItemMax  = ImGui::GetItemRectMax()
+        , imMousePos = ImGui::GetMousePos()
+        ;
+
+        auto const
+          itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
+        , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
+        , mousePos =
+            glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
+        ;
+
+        auto const pixel = (mousePos - itemMin);
+
+        // store results, also have to tell render info which image was clicked
+        data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
+        data.imagePixelClicked = true;
+        renderInfo.lastIntegratorImageClicked = i;
+      }
 
     ImGui::End();
   }
-
-
-  // TODO
-  /* if (!(ImGui::Begin("Image Output"))) { return; } */
-
-  /* static CR_STATE auto pixelInspectingCoord = glm::ivec2(-1); */
-  /* static CR_STATE auto pixelInspectingColor = glm::vec3(); */
-
-  /* static CR_STATE std::array<int, 2> imGuiImageResolution = {{ */
-  /*   static_cast<int>(renderInfo.imageResolution[0]) */
-  /* , static_cast<int>(renderInfo.imageResolution[1]) */
-  /* }}; */
-  /* static CR_STATE bool shareimGuiImageResolution = true; */
-
-  /* // -- display resolution information */
-  /* ImGui::Checkbox("Sync imgui image resolution", &shareimGuiImageResolution); */
-
-  /* if (!shareimGuiImageResolution) { */
-  /*   ImGui::InputInt( */
-  /*     "Texture display resolution" */
-  /*   , imGuiImageResolution.data() */
-  /*   ); */
-  /*   imGuiImageResolution[1] = */
-  /*     imGuiImageResolution[0] */
-  /*   * ( */
-  /*       renderInfo.imageResolution[1] */
-  /*     / static_cast<float>(renderInfo.imageResolution[0]) */
-  /*     ); */
-  /* } else { */
-  /*   imGuiImageResolution[0] = static_cast<int>(renderInfo.imageResolution[0]); */
-  /*   imGuiImageResolution[1] = static_cast<int>(renderInfo.imageResolution[1]); */
-  /* } */
-
-  /* // -- display inspected pixel diagnostic information */
-  /* if (ImGui::ArrowButton("##arrow", ImGuiDir_Right)) { */
-  /*   pixelInspectingCoord = glm::ivec2(-1); */
-  /* } */
-  /* ImGui::SameLine(); */
-  /* ImGui::SetNextItemWidth(100.0f); */
-  /* if (ImGui::InputInt2("Fragment Inspection", &pixelInspectingCoord.x)) { */
-  /*   if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) { */
-  /*     pixelInspectingColor = */
-  /*       diagnosticInfo.currentFragmentBuffer[ */
-  /*         pixelInspectingCoord.y * renderInfo.imageResolution[0] */
-  /*       + pixelInspectingCoord.x */
-  /*       ]; */
-  /*   } */
-  /* } */
-
-  /* if (pixelInspectingCoord.x > 0 && pixelInspectingCoord.y > 0) { */
-  /*   // just ensure that image resolution is correct */
-  /*   pixelInspectingCoord.x = */
-  /*     glm::min( */
-  /*       static_cast<int>(renderInfo.imageResolution[0]), pixelInspectingCoord.x */
-  /*     ); */
-  /*   pixelInspectingCoord.y = */
-  /*     glm::min( */
-  /*       static_cast<int>(renderInfo.imageResolution[1]), pixelInspectingCoord.y */
-  /*     ); */
-
-  /*   ImGui::SameLine(); */
-  /*   ImGui::ColorButton( */
-  /*     "" */
-  /*   , ImVec4( */
-  /*       pixelInspectingColor.x, pixelInspectingColor.y, pixelInspectingColor.z */
-  /*     , 1.0f */
-  /*     ) */
-  /*   ); */
-  /* } */
-
-  /* // display image */
-  /* ImGui::Image( */
-  /*   diagnosticInfo.textureHandle */
-  /* , ImVec2(imGuiImageResolution[0], imGuiImageResolution[1]) */
-  /* ); */
-
-  /* // clear out the image pixel clicked from previous frame */
-  /* renderInfo.imagePixelClicked = false; */
-
-  /* // if image is clicked, approximate the clicked pixel, taking into account */
-  /* // image resolution differences when displaying to imgui */
-  /* if (ImGui::IsItemClicked()) { */
-  /*   auto const */
-  /*     imItemMin  = ImGui::GetItemRectMin() */
-  /*   , imItemMax  = ImGui::GetItemRectMax() */
-  /*   , imMousePos = ImGui::GetMousePos() */
-  /*   ; */
-
-  /*   auto const */
-  /*     itemMin  = glm::vec2(imItemMin.x, imItemMin.y) */
-  /*   , itemMax  = glm::vec2(imItemMax.x, imItemMax.y) */
-  /*   , mousePos = */
-  /*       glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax) */
-  /*   ; */
-
-  /*   auto const trueResolution = */
-  /*     glm::vec2(renderInfo.imageResolution[0], renderInfo.imageResolution[1]); */
-
-  /*   auto const resolutionRatio = */
-  /*     trueResolution */
-  /*   / glm::vec2(imGuiImageResolution[0], imGuiImageResolution[1]); */
-
-  /*   auto const pixel = (mousePos - itemMin) * resolutionRatio; */
-
-  /*   pixelInspectingCoord = */
-  /*     glm::clamp( */
-  /*       glm::ivec2(glm::round(pixel)) */
-  /*     , glm::ivec2(0) */
-  /*     , glm::ivec2(trueResolution) */
-  /*     ); */
-
-  /*   pixelInspectingColor = */
-  /*     diagnosticInfo.currentFragmentBuffer[ */
-  /*       pixelInspectingCoord.y * renderInfo.imageResolution[0] */
-  /*     + pixelInspectingCoord.x */
-  /*     ]; */
-
-  /*   renderInfo.imagePixel = glm::uvec2(glm::round(pixel)); */
-  /*   renderInfo.imagePixelClicked = true; */
-  /* } */
-
-  /* ImGui::End(); */
 }
 
 void Dispatch(

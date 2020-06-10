@@ -140,22 +140,29 @@ void UiUpdate(
     }
 
     // TODO
-    /* if (render.imagePixelClicked) { */
-    /*   auto uv = */
-    /*     glm::vec2(render.imagePixel) */
-    /*   / glm::vec2(render.imageResolution[0], render.imageResolution[1]); */
+    if (render.lastIntegratorImageClicked != -1) {
+      auto & data = render.integratorData[render.lastIntegratorImageClicked];
+      auto uv =
+        glm::vec2(data.imagePixelClickedCoord)
+      / glm::vec2(data.imageResolution);
 
-    /*   uv = (uv - glm::vec2(0.5f)) * 2.0f; */
-    /*   uv.y *= */
-    /*     render.imageResolution[1] / static_cast<float>(render.imageResolution[0]); */
+      uv = (uv - glm::vec2(0.5f)) * 2.0f;
+      uv.y *=
+        data.imageResolution[1] / static_cast<float>(data.imageResolution[0]);
 
-    /*   auto [origin, wi] = plugin.camera.Dispatch(plugin.random, render, uv); */
+      auto [origin, wi] =
+        plugin.camera.Dispatch(
+          plugin.random, render, data.imageResolution, uv
+        );
 
-    /*   auto surface = mt::Raycast(scene, origin, wi, nullptr); */
+      auto surface = mt::Raycast(scene, origin, wi, nullptr);
 
-    /*   currentMtlIdx = */
-    /*     static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1); */
-    /* } */
+      currentMtlIdx =
+        static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);
+
+      // TODO move below elsewhere
+      render.lastIntegratorImageClicked = -1;
+    }
 
     ImGui::End();
   }
