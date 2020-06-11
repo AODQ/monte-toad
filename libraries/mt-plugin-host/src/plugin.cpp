@@ -10,7 +10,11 @@
 #include <array>
 
 namespace {
-  std::vector<cr_plugin> plugins;
+  struct Plugin {
+    std::string filename;
+    cr_plugin plugin;
+  };
+  std::vector<Plugin> plugins;
 } // -- end namespace
 
 uint32_t mt::LoadPlugin(
@@ -18,8 +22,32 @@ uint32_t mt::LoadPlugin(
 , PluginType pluginType, std::string const & file
 , size_t idx
 ) {
+
+  // first find if the plugin has already been loaded, if that's the case then
+  // we don't need to do anything
+  for (auto & plugin : plugins)
+  {
+    // copy plugin's userdata to the requested pluginInfo, this only works for
+    // plugins that can have multiple plugins like Integrator
+    if (plugin.filename == file) {
+      switch (pluginType) {
+        default:
+          /* spdlog::error("Can't load multiple plugins of this type"); */
+          return CR_USER;
+        break;
+        case PluginType::Integrator:
+          pluginInfo.integrators[idx] =
+            *reinterpret_cast<mt::PluginInfoIntegrator*>(plugin.plugin.userdata);
+        break;
+      }
+      return CR_NONE;
+    }
+  }
+
   ::plugins.emplace_back();
-  auto & ctx = ::plugins.back();
+  auto & plugin = ::plugins.back();
+  plugin.filename = file;
+  auto & ctx = plugin.plugin;
 
   // assign userdata to the respective pluginInfo parameter.
   switch (pluginType) {
@@ -62,15 +90,15 @@ uint32_t mt::LoadPlugin(
 }
 
 void mt::FreePlugin(size_t idx) {
-  cr_plugin_close(::plugins[idx]);
+  cr_plugin_close(::plugins[idx].plugin);
   ::plugins.erase(::plugins.begin() + idx);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void mt::FreePlugins() {
   for (auto & p : ::plugins) {
-    p.userdata = nullptr; // make sure it doesn't try to free static mem
-    cr_plugin_close(p);
+    p.plugin.userdata = nullptr; // make sure it doesn't try to free static mem
+    cr_plugin_close(p.plugin);
   }
   ::plugins.clear();
 }
@@ -79,7 +107,7 @@ void mt::FreePlugins() {
 // checks if plugins need to be reloaded
 void mt::UpdatePlugins() {
   for (auto & p : ::plugins) {
-    cr_plugin_update(p);
+    cr_plugin_update(p.plugin);
   }
 }
 
