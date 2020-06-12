@@ -63,14 +63,16 @@ PropagationStatus ApplyIndirectEmission(
 
       // only valid if the bsdfPdf is not delta dirac
       if (bsdfPdf > 0.0f) {
-        propagationStatus = PropagationStatus::IndirectAccumulation;
-
-        accumulatedIrradiance +=
+        glm::vec3 irradiance =
           info.color
         * radiance
         * plugin.material.BsdfFs(scene, surface, emissionWo)
-        / (emissionPdf/(emissionPdf + bsdfPdf))
-        ;
+        / (emissionPdf/(emissionPdf + bsdfPdf));
+
+        if (glm::length(irradiance) > 0.0001f) {
+          propagationStatus = PropagationStatus::IndirectAccumulation;
+          accumulatedIrradiance += irradiance;
+        }
       }
     }
   }

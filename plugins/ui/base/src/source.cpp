@@ -214,17 +214,21 @@ void UiImageOutput(
       ImGui::EndCombo();
     }
 
-    if (ImGui::InputInt("Samples per pixel", &data.samplesPerPixel)) {
+    if (ImGui::InputInt("samples per pixel", &data.samplesPerPixel)) {
       data.samplesPerPixel = glm::max(data.samplesPerPixel, 1ul);
     }
 
-    if (ImGui::InputInt("Paths per sample", &data.pathsPerSample)) {
+    if (ImGui::InputInt("paths per sample", &data.pathsPerSample)) {
       data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
+    }
+
+    if (ImGui::InputInt("iterations per hunk", &data.hunkIteratorMax)) {
+      data.hunkIteratorMax = glm::clamp(data.hunkIteratorMax, 0ul, 16ul);
     }
 
     { // aspect ratio
       int value = static_cast<int>(data.imageAspectRatio);
-      if (ImGui::BeginCombo("Aspect Ratio", aspectRatioLabels[value])) {
+      if (ImGui::BeginCombo("aspect ratio", aspectRatioLabels[value])) {
         for (size_t i = 0; i < aspectRatioLabels.size(); ++ i) {
           bool isSelected = value == static_cast<int>(i);
           if (ImGui::Selectable(aspectRatioLabels[i], isSelected)) {
@@ -247,7 +251,7 @@ void UiImageOutput(
     { // -- image resolution
       // to check which was changed
       auto previousImageResolution = data.imageResolution[0];
-      if (ImGui::InputInt2("Image Resolution", &data.imageResolution.x)) {
+      if (ImGui::InputInt2("image resolution", &data.imageResolution.x)) {
         // must be a multiple of 8
         data.imageResolution =
           data.imageResolution - (data.imageResolution % glm::u16vec2(8));

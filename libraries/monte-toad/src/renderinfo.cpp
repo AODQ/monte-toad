@@ -84,8 +84,12 @@ bool mt::IntegratorData::DispatchRender(
         minRange = glm::min(minRange, this->imageResolution);
         maxRange =
           glm::min(this->imageResolution, minRange + glm::u16vec2(128));
+
         // iterate through
-        iterator = (iterator + 1) % (resolution.x*resolution.y);
+        if (++this->hunkIterator >= this->hunkIteratorMax) {
+          this->hunkIterator = 0;
+          iterator = (iterator + 1) % (resolution.x*resolution.y);
+        }
       break;
     }
   }

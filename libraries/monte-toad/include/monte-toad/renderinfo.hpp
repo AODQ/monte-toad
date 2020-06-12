@@ -42,6 +42,13 @@ namespace mt {
     bool bufferCleared = false;
     size_t imageStride = 1;
     size_t imageIterator = 0;
+    size_t hunkIterator = 0;
+    size_t hunkIteratorMax = 1;
+
+    glm::uvec2
+      manualHunkMin = glm::uvec2(0, 0)
+    , manualHunkMax = glm::uvec2(0, 0)
+    ;
 
     void Clear(bool fast = false);
 
