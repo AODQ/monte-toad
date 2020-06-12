@@ -158,8 +158,30 @@ namespace mt {
     char const * pluginLabel;
   };
 
+  struct PluginInfoEmitter {
+    mt::PixelInfo (*SampleLi)(
+      mt::Scene const & scene
+    , mt::PluginInfo const & plugin
+    , mt::SurfaceInfo const & surface
+    , glm::vec3 & wo
+    , float & pdf
+    ) = nullptr;
+
+    void (*UiUpdate)(
+      mt::Scene & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo const & plugin
+    ) = nullptr;
+
+    bool isSkybox;
+
+    mt::PluginType pluginType;
+    char const * pluginLabel;
+  };
+
   struct PluginInfo {
     std::vector<PluginInfoIntegrator> integrators;
+    std::vector<PluginInfoEmitter> emitters;
     PluginInfoKernel kernel; // optional
     PluginInfoMaterial material;
     PluginInfoCamera camera; // optional

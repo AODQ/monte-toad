@@ -81,7 +81,5 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
     case CR_CLOSE: break;
   }
 
-  spdlog::info("albedo integrator plugin successfully loaded");
-
   return 0;
 }

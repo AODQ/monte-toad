@@ -11,6 +11,7 @@ namespace mt {
   , Camera
   , Random
   , UserInterface
+  , Emitter
   , Size
   , Invalid
   };

@@ -170,6 +170,7 @@ void UiPluginDisplayInfo(
     case mt::PluginType::Camera: break;
     case mt::PluginType::Random: break;
     case mt::PluginType::UserInterface: break;
+    case mt::PluginType::Emitter: break;
     default: break;
   }
 }
@@ -194,6 +195,7 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
     DisplayPluginUi(mt::PluginType::Camera);
     DisplayPluginUi(mt::PluginType::Random);
     DisplayPluginUi(mt::PluginType::UserInterface);
+    DisplayPluginUi(mt::PluginType::Emitter);
 
   ImGui::End();
 
@@ -423,6 +425,10 @@ void UiEntry(
 
   if (plugin.random.UiUpdate)
     { plugin.random.UiUpdate(scene, render, plugin); }
+
+  for (size_t idx = 0; idx < plugin.emitters.size(); ++ idx) {
+    plugin.emitters[idx].UiUpdate(scene, render, plugin);
+  }
 
   ImGui::EndMenuBar();
 

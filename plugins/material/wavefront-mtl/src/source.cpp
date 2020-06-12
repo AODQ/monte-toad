@@ -46,7 +46,7 @@ void Load(mt::Scene & scene) {
 float BsdfPdf(mt::SurfaceInfo const & surface, glm::vec3 const & wo) {
   auto const & material = std::any_cast<MaterialInfo const &>(surface.material);
   if (material.transmittive > 0.0f) { return 0.0f; }
-  return glm::InvPi * glm::dot(wo, surface.normal);
+  return glm::max(0.0f, glm::InvPi * glm::dot(wo, surface.normal));
 }
 
 std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(

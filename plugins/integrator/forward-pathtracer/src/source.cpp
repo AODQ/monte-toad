@@ -47,45 +47,76 @@ PropagationStatus ApplyIndirectEmission(
 , glm::vec3 const & radiance
 , glm::vec3 & accumulatedIrradiance
 ) {
-  auto [emissionTriangle, emissionBarycentricUvCoord] =
-    mt::EmissionSourceTriangle(scene, plugin.random);
+  auto propagationStatus = PropagationStatus::Continue;
 
-  if (!emissionTriangle) { return PropagationStatus::Continue; }
+  if (scene.emissionSource.skyboxEmitterPluginIdx != -1)
+  { // apply indirect emission from skybox if available
+    glm::vec3 emissionWo;
+    float emissionPdf;
+    auto info =
+      plugin
+        .emitters[scene.emissionSource.skyboxEmitterPluginIdx]
+        .SampleLi(scene, plugin, surface, emissionWo, emissionPdf);
 
-  auto emissionOrigin =
-    BarycentricInterpolation(
-      emissionTriangle->v0, emissionTriangle->v1, emissionTriangle->v2
-    , emissionBarycentricUvCoord
-    );
+    if (info.valid) {
+      float bsdfPdf = plugin.material.BsdfPdf(surface, emissionWo);
 
-  glm::vec3 emissionWo = glm::normalize(emissionOrigin - surface.origin);
+      // only valid if the bsdfPdf is not delta dirac
+      if (bsdfPdf > 0.0f) {
+        propagationStatus = PropagationStatus::IndirectAccumulation;
 
-  float bsdfEmitPdf = plugin.material.BsdfPdf(surface, emissionWo);
+        accumulatedIrradiance +=
+          info.color
+        * radiance
+        * plugin.material.BsdfFs(scene, surface, emissionWo)
+        / (emissionPdf/(emissionPdf + bsdfPdf))
+        ;
+      }
+    }
+  }
 
-  // if the surface is delta-dirac, than there is no indirect emission
-  // contribution
-  if (bsdfEmitPdf == 0.0f) { return PropagationStatus::Continue; }
+  { // apply indirect emission from random emitter in scene
+    auto [emissionTriangle, emissionBarycentricUvCoord] =
+      mt::EmissionSourceTriangle(scene, plugin.random);
 
-  // check that emission source is within reflected hemisphere
-  if (glm::dot(emissionWo, surface.normal) <= 0.0f)
-    { return PropagationStatus::Continue; }
+    if (!emissionTriangle) { return propagationStatus; }
 
-  mt::SurfaceInfo emissionSurface =
-    mt::Raycast(scene, surface.origin, emissionWo, surface.triangle);
+    auto emissionOrigin =
+      BarycentricInterpolation(
+        emissionTriangle->v0, emissionTriangle->v1, emissionTriangle->v2
+      , emissionBarycentricUvCoord
+      );
 
-  if (emissionSurface.triangle != emissionTriangle)
-    { return PropagationStatus::Continue; }
+    glm::vec3 emissionWo = glm::normalize(emissionOrigin - surface.origin);
 
-  float emitPdf = EmitterPdf(surface, emissionSurface);
+    float bsdfEmitPdf = plugin.material.BsdfPdf(surface, emissionWo);
 
-  accumulatedIrradiance +=
-    plugin.material.BsdfFs(scene, emissionSurface, glm::vec3(0)/*no outgoing*/)
-  * radiance
-  * plugin.material.BsdfFs(scene, surface, emissionWo)
-  / (emitPdf/(emitPdf + bsdfEmitPdf))
-  ;
+    // if the surface is delta-dirac, than there is no indirect emission
+    // contribution
+    if (bsdfEmitPdf == 0.0f) { return propagationStatus; }
 
-  return PropagationStatus::IndirectAccumulation;
+    // check that emission source is within reflected hemisphere
+    if (glm::dot(emissionWo, surface.normal) <= 0.0f)
+      { return propagationStatus; }
+
+    mt::SurfaceInfo emissionSurface =
+      mt::Raycast(scene, surface.origin, emissionWo, surface.triangle);
+
+    if (emissionSurface.triangle != emissionTriangle)
+      { return propagationStatus; }
+
+    float emitPdf = EmitterPdf(surface, emissionSurface);
+
+    propagationStatus = PropagationStatus::IndirectAccumulation;
+    accumulatedIrradiance +=
+      plugin.material.BsdfFs(scene, emissionSurface, glm::vec3(0))
+    * radiance
+    * plugin.material.BsdfFs(scene, surface, emissionWo)
+    / (emitPdf/(emitPdf + bsdfEmitPdf))
+    ;
+  }
+
+  return propagationStatus;
 }
 
 PropagationStatus Propagate(
@@ -227,8 +258,6 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
     case CR_STEP: break;
     case CR_CLOSE: break;
   }
-
-  spdlog::info("forward pt integrator plugin successfully loaded");
 
   return 0;
 }

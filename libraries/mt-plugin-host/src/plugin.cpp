@@ -24,25 +24,9 @@ uint32_t mt::LoadPlugin(
 ) {
 
   // first find if the plugin has already been loaded, if that's the case then
-  // we don't need to do anything
+  // error
   for (auto & plugin : plugins)
-  {
-    // copy plugin's userdata to the requested pluginInfo, this only works for
-    // plugins that can have multiple plugins like Integrator
-    if (plugin.filename == file) {
-      switch (pluginType) {
-        default:
-          /* spdlog::error("Can't load multiple plugins of this type"); */
-          return CR_USER;
-        break;
-        case PluginType::Integrator:
-          pluginInfo.integrators[idx] =
-            *reinterpret_cast<mt::PluginInfoIntegrator*>(plugin.plugin.userdata);
-        break;
-      }
-      return CR_NONE;
-    }
-  }
+    { if (plugin.filename == file) { return CR_USER; } }
 
   ::plugins.emplace_back();
   auto & plugin = ::plugins.back();
@@ -68,6 +52,9 @@ uint32_t mt::LoadPlugin(
     break;
     case PluginType::UserInterface:
       ctx.userdata = reinterpret_cast<void*>(&pluginInfo.userInterface);
+    break;
+    case PluginType::Emitter:
+      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.emitters[idx]);
     break;
     default: ctx.userdata = nullptr; break;
   }
@@ -163,6 +150,12 @@ bool mt::Valid(
        && pluginInfo.userInterface.pluginType == pluginType
        && pluginInfo.userInterface.pluginLabel != nullptr
       ;
+    case mt::PluginType::Emitter:
+      return
+          pluginInfo.emitters[idx].SampleLi != nullptr
+       && pluginInfo.emitters[idx].pluginType == pluginType
+       && pluginInfo.emitters[idx].pluginLabel != nullptr
+      ;
     default: return false;
   }
 }
@@ -221,6 +214,12 @@ void mt::Clean(
       pluginInfo.userInterface.pluginType = mt::PluginType::Invalid;
       pluginInfo.userInterface.pluginLabel = nullptr;
     break;
+    case mt::PluginType::Emitter:
+      pluginInfo.emitters[idx].SampleLi = nullptr;
+      pluginInfo.emitters[idx].UiUpdate = nullptr;
+      pluginInfo.emitters[idx].pluginType = mt::PluginType::Invalid;
+      pluginInfo.emitters[idx].pluginLabel = nullptr;
+    break;
     default: return;
   }
 }
@@ -234,6 +233,7 @@ char const * ToString(mt::PluginType pluginType) {
     case mt::PluginType::Camera:        return "Camera";
     case mt::PluginType::Random:        return "Random";
     case mt::PluginType::UserInterface: return "UserInterface";
+    case mt::PluginType::Emitter:       return "Emitter";
     default: return "N/A";
   }
 }

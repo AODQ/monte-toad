@@ -39,6 +39,8 @@ void fileutil::LoadEditorConfig(
       type = mt::PluginType::Random;
     } else if (info[0] == "userinterface") {
       type = mt::PluginType::UserInterface;
+    } else if (info[0] == "emitter") {
+      type = mt::PluginType::Emitter;
     } else {
       spdlog::error("Unknown plugin type '{}' when loading config", info[0]);
       return;
@@ -77,6 +79,10 @@ bool fileutil::LoadPlugin(
     plugin.integrators.emplace_back();
     render.integratorData.emplace_back();
     idx = plugin.integrators.size()-1;
+  }
+  if (type == mt::PluginType::Emitter) {
+    plugin.emitters.emplace_back();
+    idx = plugin.emitters.size()-1;
   }
 
   mt::Clean(plugin, type, idx);
@@ -127,8 +133,15 @@ bool fileutil::LoadPlugin(
   if (!mt::Valid(plugin, type, idx)) {
     spdlog::error("Failed to load plugin, or plugin is incomplete");
     mt::Clean(plugin, type, idx);
-    render.integratorData.pop_back();
-    plugin.integrators.pop_back();
+
+    if (type == mt::PluginType::Integrator) {
+      render.integratorData.pop_back();
+      plugin.integrators.pop_back();
+    }
+    if (type == mt::PluginType::Emitter) {
+      plugin.emitters.pop_back();
+    }
+
     return false;
   }
 

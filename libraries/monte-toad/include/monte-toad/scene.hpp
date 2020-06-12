@@ -25,6 +25,8 @@ namespace mt {
 
   struct EmissionSource {
     std::vector<size_t> triangles;
+
+    int32_t skyboxEmitterPluginIdx = -1;
   };
 
   struct Scene {

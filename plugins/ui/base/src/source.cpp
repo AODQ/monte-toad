@@ -353,6 +353,33 @@ void UiImageOutput(
   }
 }
 
+void UiEmitters(
+  mt::Scene & scene
+, mt::RenderInfo & renderInfo
+, mt::PluginInfo const & pluginInfo
+) {
+  ImGui::Begin("emitters");
+    { // select skybox emitter
+      auto GetEmissionLabel = [&](int32_t idx) -> char const * {
+        return idx == -1 ? "none" : pluginInfo.emitters[idx].pluginLabel;
+      };
+
+      int32_t & emissionIdx = scene.emissionSource.skyboxEmitterPluginIdx;
+      if (ImGui::BeginCombo("Skybox", GetEmissionLabel(emissionIdx))) {
+        for (size_t i = 0; i < pluginInfo.emitters.size(); ++ i) {
+          if (!pluginInfo.emitters[i].isSkybox) { continue; }
+          bool isSelected = emissionIdx == static_cast<int32_t>(i);
+          if (ImGui::Selectable(GetEmissionLabel(i), isSelected)) {
+            emissionIdx = static_cast<int32_t>(i);
+            renderInfo.ClearImageBuffers();
+          }
+        }
+        ImGui::EndCombo();
+      }
+    }
+  ImGui::End();
+}
+
 void Dispatch(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
@@ -361,6 +388,7 @@ void Dispatch(
   ::UiCameraControls(scene, renderInfo);
   ::UiPluginInfo(scene, renderInfo, pluginInfo);
   ::UiImageOutput(scene, renderInfo, pluginInfo);
+  ::UiEmitters(scene, renderInfo, pluginInfo);
 }
 
 } // -- end anon namespace
@@ -383,8 +411,6 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
     case CR_STEP: break;
     case CR_CLOSE: break;
   }
-
-  spdlog::info("base ui plugin successfully loaded");
 
   return 0;
 }
