@@ -291,6 +291,8 @@ void UiRenderInfo(
       if (tempFilename != "") {
         renderInfo.modelFile = tempFilename;
         LoadScene(renderInfo, pluginInfo);
+        // reset camera origin
+        renderInfo.cameraOrigin = glm::vec3(0.0f);
       }
     }
 

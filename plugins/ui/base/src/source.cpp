@@ -223,7 +223,7 @@ void UiImageOutput(
     }
 
     if (ImGui::InputInt("iterations per hunk", &data.hunkIteratorMax)) {
-      data.hunkIteratorMax = glm::clamp(data.hunkIteratorMax, 0ul, 16ul);
+      data.hunkIteratorMax = glm::clamp(data.hunkIteratorMax, 1ul, 16ul);
     }
 
     { // aspect ratio
