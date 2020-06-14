@@ -9,9 +9,9 @@
 
 namespace {
 
-static CR_STATE glm::vec3 emissionDirection;
-static CR_STATE glm::vec3 emissionColor;
-static CR_STATE float emissionPower;
+static CR_STATE glm::vec3 emissionDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+static CR_STATE glm::vec3 emissionColor = glm::vec3(1.0f);
+static CR_STATE float emissionPower = 1.0f;
 
 static char const * PluginLabel = "directional emitter";
 
@@ -46,10 +46,10 @@ void UiUpdate(
       emissionDirection = glm::normalize(emissionDirection);
       render.ClearImageBuffers();
     }
-    if (ImGui::ColorPicker3("color", &emissionColor.r)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::InputFloat("power", &emissionPower)) {
+    if (
+        ImGui::ColorPicker3("color", &emissionColor.r)
+     || ImGui::InputFloat("power", &emissionPower)
+    ) {
       render.ClearImageBuffers();
     }
   ImGui::End();

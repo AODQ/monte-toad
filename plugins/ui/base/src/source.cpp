@@ -110,7 +110,7 @@ void UiPluginInfo(
 , mt::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
-  if (!ImGui::Begin("Plugin Info")) { return; }
+  if (!ImGui::Begin("Plugin Info")) { ImGui::End(); return; }
 
   // TODO
   /* ImGui::Text("samples per pixel %lu", renderInfo.samplesPerPixel); */

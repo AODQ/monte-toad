@@ -12,7 +12,7 @@
 namespace {
   struct Plugin {
     std::string filename;
-    cr_plugin plugin;
+    std::unique_ptr<cr_plugin> plugin;
   };
   std::vector<Plugin> plugins;
 } // -- end namespace
@@ -28,64 +28,63 @@ uint32_t mt::LoadPlugin(
   for (auto & plugin : plugins)
     { if (plugin.filename == file) { return CR_USER; } }
 
-  ::plugins.emplace_back();
+  ::plugins.emplace_back(file, std::make_unique<cr_plugin>());
   auto & plugin = ::plugins.back();
-  plugin.filename = file;
   auto & ctx = plugin.plugin;
 
   // assign userdata to the respective pluginInfo parameter.
   switch (pluginType) {
     case PluginType::Integrator:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.integrators[idx]);
+      ctx->userdata = reinterpret_cast<void*>(&pluginInfo.integrators[idx]);
     break;
     case PluginType::Kernel:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.kernel);
+      ctx->userdata = reinterpret_cast<void*>(&pluginInfo.kernel);
     break;
     case PluginType::Material:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.material);
+      ctx->userdata = reinterpret_cast<void*>(&pluginInfo.material);
     break;
     case PluginType::Camera:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.camera);
+      ctx->userdata = reinterpret_cast<void*>(&pluginInfo.camera);
     break;
     case PluginType::Random:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.random);
+      ctx->userdata = reinterpret_cast<void*>(&pluginInfo.random);
     break;
     case PluginType::UserInterface:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.userInterface);
+      ctx->userdata = reinterpret_cast<void*>(&pluginInfo.userInterface);
     break;
     case PluginType::Emitter:
-      ctx.userdata = reinterpret_cast<void*>(&pluginInfo.emitters[idx]);
+      ctx->userdata = reinterpret_cast<void*>(&pluginInfo.emitters[idx]);
     break;
-    default: ctx.userdata = nullptr; break;
+    default: ctx->userdata = nullptr; break;
   }
 
-  if (!cr_plugin_open(ctx, file.c_str())) {
+  if (!cr_plugin_open(*ctx, file.c_str())) {
     ::plugins.pop_back();
     return CR_USER;
   }
 
-  cr_set_temporary_path(ctx, "/tmp/");
+  cr_set_temporary_path(*ctx, "/tmp/");
 
-  if (ctx.failure != CR_NONE) {
+  if (ctx->failure != CR_NONE) {
     ::plugins.pop_back();
-    return ctx.failure;
+    return ctx->failure;
   }
 
-  cr_plugin_update(ctx);
+  cr_plugin_update(*ctx);
 
   return CR_NONE;
 }
 
 void mt::FreePlugin(size_t idx) {
-  cr_plugin_close(::plugins[idx].plugin);
+  cr_plugin_close(*::plugins[idx].plugin);
   ::plugins.erase(::plugins.begin() + idx);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void mt::FreePlugins() {
   for (auto & p : ::plugins) {
-    p.plugin.userdata = nullptr; // make sure it doesn't try to free static mem
-    cr_plugin_close(p.plugin);
+    p.plugin->userdata = nullptr; // make sure it doesn't try to free static mem
+    cr_plugin_close(*p.plugin);
   }
   ::plugins.clear();
 }
@@ -94,7 +93,7 @@ void mt::FreePlugins() {
 // checks if plugins need to be reloaded
 void mt::UpdatePlugins() {
   for (auto & p : ::plugins) {
-    cr_plugin_update(p.plugin);
+    cr_plugin_update(*p.plugin);
   }
 }
 
@@ -107,7 +106,8 @@ bool mt::Valid(
   switch (pluginType) {
     case mt::PluginType::Integrator:
       return
-          pluginInfo.integrators[idx].Dispatch != nullptr
+          idx < pluginInfo.integrators.size()
+       && pluginInfo.integrators[idx].Dispatch != nullptr
        && pluginInfo.integrators[idx].pluginType == pluginType
        && pluginInfo.integrators[idx].pluginLabel != nullptr
        ;
@@ -152,7 +152,8 @@ bool mt::Valid(
       ;
     case mt::PluginType::Emitter:
       return
-          pluginInfo.emitters[idx].SampleLi != nullptr
+          idx < pluginInfo.emitters.size()
+       && pluginInfo.emitters[idx].SampleLi != nullptr
        && pluginInfo.emitters[idx].pluginType == pluginType
        && pluginInfo.emitters[idx].pluginLabel != nullptr
       ;
