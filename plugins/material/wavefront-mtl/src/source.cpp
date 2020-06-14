@@ -60,13 +60,24 @@ std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
   if (material.transmittive > 0.0f) {
 
     glm::vec3 normal = surface.normal;
+    float eta = material.indexOfRefraction;
+    float f0 = glm::sqr((1.0f - eta) /  (1.0f + eta));
 
     // flip normal if surface is incorrect for refraction
     if (glm::dot(surface.incomingAngle, surface.normal) > 0.0f) {
       normal = -surface.normal;
+      eta = 1.0f/eta;
     }
 
-    bool reflection = random.SampleUniform1() > material.transmittive;
+    float cosTheta = glm::dot(surface.incomingAngle, surface.normal);
+    float fr = f0 + (1.0f - f0)*glm::pow(1.0f - cosTheta, 5.0f);
+
+    bool reflection = random.SampleUniform1() > fr;
+
+    /* // check for total internal reflection as well */
+    /* if (1.0f - eta*eta*(1.0f - cosTheta*cosTheta) < 0.0f) { */
+    /*   reflection = true; */
+    /* } */
 
     return
       {
