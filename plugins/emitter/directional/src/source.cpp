@@ -30,6 +30,23 @@ mt::PixelInfo SampleLi(
   return { emissionColor * emissionPower, true };
 }
 
+mt::PixelInfo SampleWo(
+  mt::Scene const & scene
+, mt::PluginInfo const & plugin
+, mt::SurfaceInfo const & surface
+, glm::vec3 const & wo
+, float & pdf
+) {
+  pdf = 0.0f; return { glm::vec3(0.0f), false };
+}
+
+void Precompute(
+  mt::Scene const & scene
+, mt::RenderInfo const & render
+, mt::PluginInfo const & plugin
+) {
+}
+
 void UiUpdate(
   mt::Scene & scene
 , mt::RenderInfo & render
@@ -68,8 +85,10 @@ CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
   switch (operation) {
     case CR_LOAD:
       emitter.isSkybox = true; // TODO TOAD technically this isn't a skybox
-      emitter.SampleLi = &SampleLi ;
+      emitter.SampleLi = &SampleLi;
+      emitter.SampleWo = &SampleWo;
       emitter.UiUpdate = &UiUpdate;
+      emitter.Precompute = &Precompute;
       emitter.pluginType = mt::PluginType::Emitter;
       emitter.pluginLabel = PluginLabel;
     break;

@@ -77,7 +77,8 @@ void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
     , render.environmentMapFile
     );
 
-  render.cameraOrigin = glm::vec3(0.0f);
+  for (auto & emitter : plugin.emitters)
+    { emitter.Precompute(scene, render, plugin); }
 
   if (mt::Valid(plugin, mt::PluginType::Material)) {
     plugin.material.Load(::scene);
@@ -297,10 +298,11 @@ void UiRenderInfo(
       auto tempFilename =
         fileutil::FilePicker(
           " --file-filter=\"image files | "
-          " .jpeg .jpg .png .tga .bmp .psd .gif .hdr .pic .ppm .pgm\""
+          " *.jpeg *.jpg *.png *.tga *.bmp *.psd *.gif *.hdr *.pic *.ppm"
+          " *.pgm\""
         );
       if (tempFilename != "") {
-        renderInfo.environmentMapFile = tempFilename;
+        renderInfo.environmentMapFile = std::filesystem::path{tempFilename};
         LoadScene(renderInfo, pluginInfo);
       }
     }

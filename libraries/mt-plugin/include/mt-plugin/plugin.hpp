@@ -167,6 +167,20 @@ namespace mt {
     , float & pdf
     ) = nullptr;
 
+    mt::PixelInfo (*SampleWo)(
+      mt::Scene const & scene
+    , mt::PluginInfo const & plugin
+    , mt::SurfaceInfo const & surface
+    , glm::vec3 const & wo
+    , float & pdf
+    ) = nullptr;
+
+    void (*Precompute)(
+      mt::Scene const & scene
+    , mt::RenderInfo const & render
+    , mt::PluginInfo const & plugin
+    );
+
     void (*UiUpdate)(
       mt::Scene & scene
     , mt::RenderInfo & render

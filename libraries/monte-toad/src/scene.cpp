@@ -255,9 +255,10 @@ mt::Scene mt::Scene::Construct(
       std::move(LoadAssetIntoScene(scene, filename))
     );
 
-  /* if(environmentMapFilename != "") { */
-  /*   scene.environmentTexture = Texture::Construct(environmentMapFilename); */
-  /* } */
+  if(environmentMapFilename != "") {
+    scene.emissionSource.environmentMap =
+      mt::Texture::Construct(environmentMapFilename);
+  }
 
   return scene;
 }

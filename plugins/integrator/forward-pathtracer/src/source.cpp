@@ -148,10 +148,22 @@ PropagationStatus Propagate(
 
   // check if an emitter or skybox (which could be a blackbody) was hit
   if (nextSurface.triangle == nullptr) {
-    Join(
-      propagationStatus,
-      PropagationStatus::End
-    );
+    if (scene.emissionSource.skyboxEmitterPluginIdx == -1) {
+      Join(propagationStatus, PropagationStatus::End);
+    } else {
+      float pdf;
+      auto & emitter =
+        plugin.emitters[scene.emissionSource.skyboxEmitterPluginIdx];
+      auto color = emitter.SampleWo(scene, plugin, surface, bsdfWo, pdf);
+
+      if (color.valid) {
+        // TODO use pdf
+        accumulatedIrradiance += color.color * radiance * bsdfFs / bsdfPdf;
+        Join(propagationStatus, PropagationStatus::DirectAccumulation);
+      } else {
+        Join(propagationStatus, PropagationStatus::End);
+      }
+    }
   } else if (plugin.material.IsEmitter(scene, *nextSurface.triangle)) {
     auto emissiveColor = plugin.material.BsdfFs(scene, nextSurface, bsdfWo);
 
@@ -202,6 +214,17 @@ mt::PixelInfo Dispatch(
 
   // return skybox
   if (!surface.Valid()) {
+    if (scene.emissionSource.skyboxEmitterPluginIdx != -1) {
+      auto & emitter =
+        plugin.emitters[scene.emissionSource.skyboxEmitterPluginIdx];
+      float pdf;
+      return {
+        emitter
+          .SampleWo(scene, plugin, surface, surface.incomingAngle, pdf)
+          .color
+      , true
+      };
+    }
     return mt::PixelInfo{glm::vec3(1.0f, 0.0f, 1.0f), true};
   }
 

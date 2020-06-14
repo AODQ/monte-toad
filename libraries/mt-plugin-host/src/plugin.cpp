@@ -154,6 +154,8 @@ bool mt::Valid(
       return
           idx < pluginInfo.emitters.size()
        && pluginInfo.emitters[idx].SampleLi != nullptr
+       && pluginInfo.emitters[idx].SampleWo != nullptr
+       && pluginInfo.emitters[idx].Precompute != nullptr
        && pluginInfo.emitters[idx].pluginType == pluginType
        && pluginInfo.emitters[idx].pluginLabel != nullptr
       ;
@@ -217,6 +219,8 @@ void mt::Clean(
     break;
     case mt::PluginType::Emitter:
       pluginInfo.emitters[idx].SampleLi = nullptr;
+      pluginInfo.emitters[idx].SampleWo = nullptr;
+      pluginInfo.emitters[idx].Precompute = nullptr;
       pluginInfo.emitters[idx].UiUpdate = nullptr;
       pluginInfo.emitters[idx].pluginType = mt::PluginType::Invalid;
       pluginInfo.emitters[idx].pluginLabel = nullptr;

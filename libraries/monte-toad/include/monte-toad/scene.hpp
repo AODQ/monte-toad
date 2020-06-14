@@ -2,6 +2,7 @@
 
 #include <monte-toad/primitive.hpp>
 #include <monte-toad/surfaceinfo.hpp>
+#include <monte-toad/texture.hpp>
 
 #include <glm/glm.hpp>
 
@@ -25,6 +26,8 @@ namespace mt {
 
   struct EmissionSource {
     std::vector<size_t> triangles;
+
+    mt::Texture environmentMap;
 
     int32_t skyboxEmitterPluginIdx = -1;
   };

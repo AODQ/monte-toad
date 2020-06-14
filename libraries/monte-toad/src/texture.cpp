@@ -8,12 +8,12 @@
 #include <filesystem>
 
 ////////////////////////////////////////////////////////////////////////////////
-Texture Texture::Construct(std::string const & filename) {
+mt::Texture mt::Texture::Construct(std::string const & filename) {
   stbi_set_flip_vertically_on_load(false);
 
   spdlog::debug("Loading texture {}", filename);
 
-  Texture texture;
+  mt::Texture texture;
   texture.filename = filename;
 
   { // load texture
@@ -71,22 +71,24 @@ Texture Texture::Construct(std::string const & filename) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Texture Texture::Construct(int width, int height, void * data) {
-  return Texture{};
+mt::Texture mt::Texture::Construct(int width, int height, void * data) {
+  return mt::Texture{};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-CubemapTexture CubemapTexture::Construct(std::string const & baseFilename) {
+mt::CubemapTexture mt::CubemapTexture::Construct(
+  std::string const & baseFilename
+) {
   auto basePath = std::filesystem::path{baseFilename};
   auto baseExtension = basePath.extension();
 
-  CubemapTexture texture;
+  mt::CubemapTexture texture;
 
   // remove extension to load files with -0.ext, ..., -5.ext
   basePath.replace_extension(""); //
   for (size_t i = 0; i < 6; ++ i) {
     texture.textures[i] =
-      Texture::Construct(
+      mt::Texture::Construct(
         (basePath / "-" / std::to_string(i) / baseExtension).string()
       );
   }
@@ -95,7 +97,7 @@ CubemapTexture CubemapTexture::Construct(std::string const & baseFilename) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords) {
+glm::vec4 mt::Sample(mt::Texture const & texture, glm::vec2 uvCoords) {
   uvCoords = glm::mod(uvCoords, glm::vec2(1.0f));
   /* uvCoords = glm::clamp(uvCoords, glm::vec2(0.0f), glm::vec2(1.0f)); */
   uvCoords.y = 1.0f - uvCoords.y;
@@ -114,7 +116,7 @@ glm::vec4 Sample(Texture const & texture, glm::vec2 uvCoords) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec4 SampleBilinear(Texture const & texture, glm::vec2 uvCoords) {
+glm::vec4 mt::SampleBilinear(mt::Texture const & texture, glm::vec2 uvCoords) {
   glm::vec2 res = glm::vec2(texture.width, texture.height);
 
   glm::vec2 st = uvCoords*res - glm::vec2(0.5f);
@@ -138,13 +140,13 @@ glm::vec4 SampleBilinear(Texture const & texture, glm::vec2 uvCoords) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec4 Sample(CubemapTexture const & texture, glm::vec3 dir) {
+glm::vec4 mt::Sample(mt::CubemapTexture const & texture, glm::vec3 dir) {
   // TODO
   return glm::vec4(1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec4 Sample(Texture const & texture, glm::vec3 dir) {
+glm::vec4 mt::Sample(mt::Texture const & texture, glm::vec3 dir) {
   return
     Sample(
       texture,
