@@ -66,10 +66,14 @@ std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
       normal = -surface.normal;
     }
 
+    bool reflection = random.SampleUniform1() > material.transmittive;
+
     return
       {
         glm::normalize(
-          glm::refract(
+          reflection
+        ? glm::reflect(surface.incomingAngle, -normal)
+        : glm::refract(
             surface.incomingAngle
           , normal
           , surface.exitting
