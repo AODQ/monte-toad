@@ -40,6 +40,7 @@ namespace mt {
     bool overrideImGuiImageResolution = false;
     glm::uint16_t imguiImageResolution = 640;
 
+    // -- information used to collect pixel informations over blocks
     std::vector<uint16_t> blockPixelsFinished;
     bool bufferCleared = false;
     size_t dispatchedCycles = 0u;
@@ -48,6 +49,17 @@ namespace mt {
     size_t blockInternalIterator = 0ul;
     size_t blockInternalIteratorMax = 1ul;
     size_t blockIteratorStride = 128ul;
+
+    // TODO maybe implement below sometime
+    // -- used to 'clean up' the last few pixels; so we can just batch the last
+    //    100 or whatever pixels instead of brute forcing them through blocks.
+    //    For now this size is controlled by blockIteratorStride but can change
+    //    to something else
+    std::vector<size_t> unfinishedPixels;
+    size_t unfinishedPixelsCount;
+
+    // this is a bit weird but in order to collect the unfinished pixels, a =
+    bool collectedUnfinishedPixels;
 
     glm::uvec2
       manualBlockMin = glm::uvec2(0, 0)
