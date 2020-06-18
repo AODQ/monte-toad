@@ -38,7 +38,7 @@ void mt::DispatchEngineBlockRegion(
     return;
   }
 
-  if (minY > resolution.x || maxY > resolution.y) {
+  if (minY > resolution.y || maxY > resolution.y) {
     spdlog::critical(
       "minY ({}) and maxY({}) not in resolution bounds ({})",
       minY, maxY, resolution.y
@@ -49,6 +49,12 @@ void mt::DispatchEngineBlockRegion(
   #pragma omp parallel for
   for (size_t x = minX; x < maxX; x += strideX)
   for (size_t y = minY; y < maxY; y += strideY) {
+    auto & pixelCount = integratorData.pixelCountBuffer[y*resolution.x + x];
+    auto & pixel =
+      integratorData.mappedImageTransitionBuffer[y*resolution.x + x];
+
+    if (pixelCount >= integratorData.samplesPerPixel) { continue; }
+
     glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
     uv = (uv - glm::vec2(0.5f)) * 2.0f;
     uv.y *= resolutionAspectRatio;

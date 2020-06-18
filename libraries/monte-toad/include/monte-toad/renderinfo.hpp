@@ -32,39 +32,52 @@ namespace mt {
     size_t samplesPerPixel = 1;
     size_t pathsPerSample = 1;
 
+    bool renderingFinished = false;
+
     bool imagePixelClicked = false;
     glm::uvec2 imagePixelClickedCoord = glm::uvec2(0, 0);
 
     bool overrideImGuiImageResolution = false;
     glm::uint16_t imguiImageResolution = 640;
 
-    size_t collectedSamples = 0;
+    std::vector<uint16_t> blockPixelsFinished;
     bool bufferCleared = false;
-    size_t imageStride = 1;
-    size_t imageIterator = 0;
-    size_t hunkIterator = 0;
-    size_t hunkIteratorMax = 1;
+    size_t dispatchedCycles = 0u;
+    size_t imageStride = 1ul;
+    size_t blockIterator = 0ul;
+    size_t blockInternalIterator = 0ul;
+    size_t blockInternalIteratorMax = 1ul;
+    size_t blockIteratorStride = 128ul;
 
     glm::uvec2
-      manualHunkMin = glm::uvec2(0, 0)
-    , manualHunkMax = glm::uvec2(0, 0)
+      manualBlockMin = glm::uvec2(0, 0)
+    , manualBlockMax = glm::uvec2(0, 0)
     ;
-
-    void Clear(bool fast = false);
-
-    bool DispatchRender(
-      mt::Scene const & scene
-    , mt::RenderInfo & render
-    , mt::PluginInfo const & plugin
-    , size_t integratorIdx
-    );
-
-    void FlushTransitionBuffer();
-
-    void DispatchImageCopy();
-
-    void AllocateGlResources(mt::RenderInfo const & renderInfo);
   };
+
+  void Clear(mt::IntegratorData & self, bool fast = false);
+
+  bool DispatchRender(
+    mt::IntegratorData & self
+  , mt::Scene const & scene
+  , mt::RenderInfo & render
+  , mt::PluginInfo const & plugin
+  , size_t integratorIdx
+  );
+
+  size_t FinishedPixels(mt::IntegratorData & self);
+  size_t FinishedPixelsGoal(mt::IntegratorData & self);
+
+  size_t BlockIteratorMax(mt::IntegratorData & self);
+
+  void FlushTransitionBuffer(mt::IntegratorData & self);
+
+  void DispatchImageCopy(mt::IntegratorData & self);
+
+  void AllocateGlResources(
+    mt::IntegratorData & self
+  , mt::RenderInfo const & renderInfo
+  );
 
   struct RenderInfo {
     std::string modelFile;

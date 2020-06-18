@@ -19,6 +19,17 @@ float msTime = 0.0f;
 float CR_STATE mouseSensitivity = 1.0f;
 float CR_STATE cameraRelativeVelocity = 1.0f;
 
+std::array<float, Idx(mt::AspectRatio::size)> constexpr
+  aspectRatioConversion = {{
+    1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f
+  , 1.0f
+  }};
+
+std::array<char const *, Idx(mt::AspectRatio::size)> constexpr
+  aspectRatioLabels = {{
+    "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None"
+  }};
+
 void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
   // clamp to prevent odd ms time (like if scene were to load)
   msTime = glm::clamp(msTime, 1.0f, 10055.5f);
@@ -112,16 +123,6 @@ void UiPluginInfo(
 ) {
   if (!ImGui::Begin("Plugin Info")) { ImGui::End(); return; }
 
-  // TODO
-  /* ImGui::Text("samples per pixel %lu", renderInfo.samplesPerPixel); */
-
-  /* { */
-  /*   int pps = static_cast<int>(renderInfo.pathsPerSample); */
-  /*   ImGui::InputInt("paths per sample", &pps); */
-  /*   pps = glm::clamp(pps, 0, 64); */
-  /*   renderInfo.pathsPerSample = static_cast<size_t>(pps); */
-  /* } */
-
   float
     min = glm::min(scene.bboxMin.x, glm::min(scene.bboxMin.y, scene.bboxMin.z))
   , max = glm::max(scene.bboxMax.x, glm::max(scene.bboxMax.y, scene.bboxMax.z));
@@ -171,22 +172,29 @@ void UiPluginInfo(
   ImGui::End();
 }
 
+void ApplyImageResolutionConstraint(
+  glm::u16vec2 & resolution, mt::AspectRatio aspectRatio
+) {
+  // must be a multiple of 8
+  resolution -= (resolution % glm::u16vec2(8));
+
+  // only 4k support
+  resolution = glm::clamp(resolution, glm::u16vec2(8), glm::u16vec2(4096));
+
+  // apply aspect ratio change dependent
+  if (aspectRatio != mt::AspectRatio::eNone) {
+    resolution.y =
+      glm::max(
+        1.0f, resolution.x / ::aspectRatioConversion[Idx(aspectRatio)]
+      );
+  }
+}
+
 void UiImageOutput(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
-
-  std::array<float, Idx(mt::AspectRatio::size)> constexpr
-    aspectRatioConversion = {{
-      1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f
-    , 1.0f
-    }};
-
-  std::array<char const *, Idx(mt::AspectRatio::size)> constexpr
-    aspectRatioLabels = {{ 
-      "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None"
-    }};
 
   for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
     auto & data       = renderInfo.integratorData[i];
@@ -208,7 +216,10 @@ void UiImageOutput(
         bool isSelected = value == static_cast<int>(i);
         if (ImGui::Selectable(stateStrings[i], isSelected)) {
           data.renderingState = static_cast<mt::RenderingState>(i);
-          data.Clear();
+
+          // don't clear out data if set to off
+          if (data.renderingState != mt::RenderingState::Off)
+            { mt::Clear(data); }
         }
       }
       ImGui::EndCombo();
@@ -216,72 +227,50 @@ void UiImageOutput(
 
     if (ImGui::InputInt("samples per pixel", &data.samplesPerPixel)) {
       data.samplesPerPixel = glm::max(data.samplesPerPixel, 1ul);
+      mt::Clear(data);
     }
 
     if (ImGui::InputInt("paths per sample", &data.pathsPerSample)) {
       data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
+      mt::Clear(data);
     }
 
-    if (ImGui::InputInt("iterations per hunk", &data.hunkIteratorMax)) {
-      data.hunkIteratorMax = glm::clamp(data.hunkIteratorMax, 1ul, 16ul);
+    if (ImGui::InputInt("iterations per hunk", &data.blockInternalIteratorMax)){
+      data.blockInternalIteratorMax =
+        glm::clamp(data.blockInternalIteratorMax, 1ul, 64ul);
     }
 
-    { // aspect ratio
-      int value = static_cast<int>(data.imageAspectRatio);
-      if (ImGui::BeginCombo("aspect ratio", aspectRatioLabels[value])) {
-        for (size_t i = 0; i < aspectRatioLabels.size(); ++ i) {
-          bool isSelected = value == static_cast<int>(i);
-          if (ImGui::Selectable(aspectRatioLabels[i], isSelected)) {
-            data.imageAspectRatio = static_cast<mt::AspectRatio>(value);
+    { // -- apply image resolution/aspect ratio fixes
 
-            // update image resolution
-            data.imageResolution[1] =
-              glm::max(
-                1.0f
-              , data.imageResolution[0] / aspectRatioConversion[value]
+      auto previousResolution = data.imageResolution;
+
+      { // aspect ratio
+        int value = static_cast<int>(data.imageAspectRatio);
+        if (ImGui::BeginCombo("aspect ratio", ::aspectRatioLabels[value])) {
+          for (size_t i = 0; i < ::aspectRatioLabels.size(); ++ i) {
+            bool isSelected = value == static_cast<int>(i);
+            if (ImGui::Selectable(::aspectRatioLabels[i], isSelected)) {
+              data.imageAspectRatio = static_cast<mt::AspectRatio>(i);
+
+              ApplyImageResolutionConstraint(
+                data.imageResolution
+              , data.imageAspectRatio
               );
-
-            data.AllocateGlResources(renderInfo);
+            }
           }
+          ImGui::EndCombo();
         }
-        ImGui::EndCombo();
       }
-    }
 
-    { // -- image resolution
-      // to check which was changed
-      auto previousImageResolution = data.imageResolution[0];
-      if (ImGui::InputInt2("image resolution", &data.imageResolution.x)) {
-        // must be a multiple of 8
-        data.imageResolution =
-          data.imageResolution - (data.imageResolution % glm::u16vec2(8));
-
-        // only 4k support
-        data.imageResolution =
-          glm::clamp(data.imageResolution, glm::u16vec2(8), glm::u16vec2(4096));
-
-        // apply aspect ratio change dependent on which item changed
-        if (data.imageAspectRatio != mt::AspectRatio::eNone) {
-          if (previousImageResolution != data.imageResolution[0]) {
-            data.imageResolution[1] =
-              glm::max(
-                1.0f
-              , data.imageResolution[0]
-              / aspectRatioConversion[Idx(data.imageAspectRatio)]
-              );
-          } else {
-            data.imageResolution[0] =
-              data.imageResolution[1]
-            * aspectRatioConversion[Idx(data.imageAspectRatio)];
-          }
-        }
-
-        // must reallocate
-        data.AllocateGlResources(renderInfo);
+      // image resolution
+      if (ImGui::InputInt("image resolution", &data.imageResolution.x, 8)) {
+        ApplyImageResolutionConstraint(
+          data.imageResolution
+        , data.imageAspectRatio
+        );
       }
-    }
 
-    { // imgui image resolution
+      // -- imgui image resolution
       if (
         ImGui::Checkbox(
           "override imgui resolution"
@@ -294,16 +283,59 @@ void UiImageOutput(
       if (data.overrideImGuiImageResolution) {
         ImGui::InputInt("ImGui resolution", &data.imguiImageResolution);
       }
+
+      // must reallocate resources if resolution has changed
+      if (previousResolution != data.imageResolution)
+        { mt::AllocateGlResources(data, renderInfo); }
     }
 
-    ImGui::Text("%lu collected samples", data.collectedSamples);
+    if (data.renderingFinished) {
+      ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "rendering completed");
+    }
+
+    ImGui::Text(
+      "image resolution <%u, %u>"
+    , data.imageResolution.x, data.imageResolution.y
+    );
+
+    if (data.overrideImGuiImageResolution) {
+      ImGui::Text(
+        "imgui resolution <%u, %u>"
+      , data.imguiImageResolution
+      , static_cast<uint32_t>(
+          data.imguiImageResolution
+        / ::aspectRatioConversion[Idx(data.imageAspectRatio)]
+        )
+      );
+    }
+
+    ImGui::Text("%lu dispatched cycles", data.dispatchedCycles);
+
+    ImGui::Text(
+      "%lu / %lu finished pixels"
+    , mt::FinishedPixels(data), mt::FinishedPixelsGoal(data)
+    );
+
+    size_t finishedBlocks = 0;
+    for (auto & i : data.blockPixelsFinished) {
+      finishedBlocks +=
+        static_cast<size_t>(
+          i >= data.blockIteratorStride*data.blockIteratorStride
+        );
+    }
+    ImGui::Text(
+      "%lu / %lu finished blocks"
+    , finishedBlocks
+    , data.blockPixelsFinished.size()
+    );
+    ImGui::Text("%lu block iterator", data.blockIterator);
 
     ImGui::End();
   }
 
   for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
     auto & data = renderInfo.integratorData[i];
-    auto & integrator     = pluginInfo.integrators[i];
+    auto & integrator = pluginInfo.integrators[i];
 
     std::string label =
       std::string{integrator.pluginLabel} + std::string{" (image)"};
@@ -315,7 +347,8 @@ void UiImageOutput(
       if (data.overrideImGuiImageResolution) {
         imageResolution.x = data.imguiImageResolution;
         imageResolution.y =
-          imageResolution.x / aspectRatioConversion[Idx(data.imageAspectRatio)];
+          imageResolution.x
+        / ::aspectRatioConversion[Idx(data.imageAspectRatio)];
       }
 
       ImGui::Image(
