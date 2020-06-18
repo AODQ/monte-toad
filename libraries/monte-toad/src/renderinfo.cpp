@@ -302,10 +302,10 @@ void mt::AllocateGlResources(
   }
 
   // clear resources of garbage memory
-  this->Clear();
+  mt::Clear(self);
 }
 
 void mt::RenderInfo::ClearImageBuffers() {
   for (auto & integrator : this->integratorData)
-    { integrator.Clear(); }
+    { mt::Clear(integrator); }
 }

@@ -64,10 +64,6 @@ void mt::DispatchEngineBlockRegion(
         .integrators[integratorIdx]
         .Dispatch(uv, scene, render, plugin, integratorData);
 
-    auto & pixelCount = integratorData.pixelCountBuffer[y*resolution.x + x];
-    auto & pixel =
-      integratorData.mappedImageTransitionBuffer[y*resolution.x + x];
-
     if (pixelResults.valid) {
       pixel =
         glm::vec4(

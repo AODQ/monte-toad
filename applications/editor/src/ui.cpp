@@ -89,7 +89,7 @@ void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
 ////////////////////////////////////////////////////////////////////////////////
 void AllocateGlResources(mt::RenderInfo & renderInfo) {
   for (auto & integrator : renderInfo.integratorData)
-    { integrator.AllocateGlResources(renderInfo); }
+    { mt::AllocateGlResources(integrator, renderInfo); }
 
   // -- construct program
   std::string const imageTransitionSource =
@@ -143,7 +143,7 @@ void UiPluginLoadFile(
     switch (pluginType) {
       default: break;
       case mt::PluginType::Integrator:
-        render.integratorData.back().AllocateGlResources(render);
+        mt::AllocateGlResources(render.integratorData.back(), render);
       break;
       case mt::PluginType::Material:
         pluginInfo.material.Load(scene);
@@ -361,9 +361,9 @@ void DispatchRender(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
   for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
     auto & integratorData = render.integratorData[idx];
 
-    if (integratorData.DispatchRender(::scene, render, plugin, idx)) {
-      integratorData.FlushTransitionBuffer();
-      integratorData.DispatchImageCopy();
+    if (mt::DispatchRender(integratorData, ::scene, render, plugin, idx)) {
+      FlushTransitionBuffer(integratorData);
+      mt::DispatchImageCopy(integratorData);
     }
   }
 }
