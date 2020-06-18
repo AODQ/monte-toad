@@ -74,10 +74,10 @@ std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
 
     bool reflection = random.SampleUniform1() > fr;
 
-    /* // check for total internal reflection as well */
-    /* if (1.0f - eta*eta*(1.0f - cosTheta*cosTheta) < 0.0f) { */
-    /*   reflection = true; */
-    /* } */
+    // check for total internal reflection as well
+    if (1.0f - eta*eta*(1.0f - cosTheta*cosTheta) < 0.0f) {
+      reflection = true;
+    }
 
     return
       {
