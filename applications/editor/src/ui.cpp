@@ -541,16 +541,24 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
   renderInfo.glfwWindow = reinterpret_cast<void*>(window);
 
   while (!glfwWindowShouldClose(::window)) {
-    glfwPollEvents();
+    // update plugins, shouldn't fall into the frame skip since a plugin could
+    // have just been recompiled
+    mt::UpdatePlugins();
 
-    { // -- sleep
-      // if nothing is rendering then sleep for 10ms
+    { // -- event & sleep update
+      // check if currently rendering anything
       bool rendering = false; // TODO TOAD set to rendering
       for (auto & integrator : renderInfo.integratorData) {
         rendering = rendering | !integrator.renderingFinished;
       }
-      if (!rendering) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+      // switch between a live event handler or an event-based handler if
+      // rendering has occured or not. This saves CPU cycles when monte-toad is
+      // just sitting in the background
+      if (rendering) {
+        glfwPollEvents();
+      } else {
+        glfwWaitEventsTimeout(1.0);
       }
     }
 
@@ -580,9 +588,6 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     }
 
     glfwSwapBuffers(::window);
-
-    // update plugins too
-    mt::UpdatePlugins();
   }
 
   // clear out scene mesh
