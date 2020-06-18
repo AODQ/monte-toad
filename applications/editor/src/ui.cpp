@@ -60,6 +60,7 @@ public:
     logMsg.level = msg.level;
     this->logMessages.emplace_back(logMsg);
     newMessage = true;
+    flush_();
   }
 
   void flush_() override {
