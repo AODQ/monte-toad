@@ -309,26 +309,28 @@ void UiImageOutput(
       );
     }
 
-    ImGui::Text("%lu dispatched cycles", data.dispatchedCycles);
+    if (!integrator.realtime) {
+      ImGui::Text("%lu dispatched cycles", data.dispatchedCycles);
 
-    ImGui::Text(
-      "%lu / %lu finished pixels"
-    , mt::FinishedPixels(data), mt::FinishedPixelsGoal(data)
-    );
+      ImGui::Text(
+        "%lu / %lu finished pixels"
+      , mt::FinishedPixels(data), mt::FinishedPixelsGoal(data)
+      );
 
-    size_t finishedBlocks = 0;
-    for (auto & i : data.blockPixelsFinished) {
-      finishedBlocks +=
-        static_cast<size_t>(
-          i >= data.blockIteratorStride*data.blockIteratorStride
-        );
+      size_t finishedBlocks = 0;
+      for (auto & i : data.blockPixelsFinished) {
+        finishedBlocks +=
+          static_cast<size_t>(
+            i >= data.blockIteratorStride*data.blockIteratorStride
+          );
+      }
+      ImGui::Text(
+        "%lu / %lu finished blocks"
+      , finishedBlocks
+      , data.blockPixelsFinished.size()
+      );
+      ImGui::Text("%lu block iterator", data.blockIterator);
     }
-    ImGui::Text(
-      "%lu / %lu finished blocks"
-    , finishedBlocks
-    , data.blockPixelsFinished.size()
-    );
-    ImGui::Text("%lu block iterator", data.blockIterator);
 
     ImGui::End();
   }

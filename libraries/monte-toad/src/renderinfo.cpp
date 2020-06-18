@@ -41,7 +41,13 @@ void BlockCalculateRange(
 
 void BlockCollectFinishedPixels(
   mt::IntegratorData & self
+, mt::PluginInfoIntegrator const & plugin
 ) {
+  if (plugin.realtime) {
+    self.renderingFinished = true;
+    return;
+  }
+
   glm::u16vec2 minRange, maxRange;
   ::BlockCalculateRange(self, minRange, maxRange);
 
@@ -125,13 +131,20 @@ void mt::Clear(mt::IntegratorData & self, bool fast) {
   self.blockInternalIterator = 0ul;
   self.renderingFinished = false;
 
-  // recalculate block samples
+  // clear block samples
   self.blockPixelsFinished.resize(mt::BlockIteratorMax(self));
   std::fill(
     self.blockPixelsFinished.begin(),
     self.blockPixelsFinished.end(),
     0ul
   );
+
+  // clear unfinishedPixels
+  self.unfinishedPixelsCount = 0u;
+
+  if (self.renderingState == mt::RenderingState::Off) {
+    self.renderingFinished = true;
+  }
 }
 
 bool mt::DispatchRender(
@@ -191,7 +204,7 @@ bool mt::DispatchRender(
   , self.imageStride, self.imageStride
   );
 
-  ::BlockCollectFinishedPixels(self);
+  ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
 
   return true;
 }
@@ -300,6 +313,9 @@ void mt::AllocateGlResources(
     glTextureParameteri(handle, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTextureParameteri(handle, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   }
+
+  // set unfinishedPixels
+  self.unfinishedPixels.resize(self.blockIteratorStride);
 
   // clear resources of garbage memory
   mt::Clear(self);
