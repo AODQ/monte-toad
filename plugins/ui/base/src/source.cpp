@@ -30,6 +30,10 @@ std::array<char const *, Idx(mt::AspectRatio::size)> constexpr
     "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None"
   }};
 
+std::array<size_t, 4> constexpr blockIteratorStrides = {{
+  32ul, 64ul, 128ul, 256ul
+}};
+
 void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
   // clamp to prevent odd ms time (like if scene were to load)
   msTime = glm::clamp(msTime, 1.0f, 10055.5f);
@@ -227,7 +231,10 @@ void UiImageOutput(
 
     if (ImGui::InputInt("samples per pixel", &data.samplesPerPixel)) {
       data.samplesPerPixel = glm::max(data.samplesPerPixel, 1ul);
-      mt::Clear(data);
+
+      // don't clear data, but in case rendering is already complete allow it
+      // to process again
+      data.renderingFinished = false;
     }
 
     if (ImGui::InputInt("paths per sample", &data.pathsPerSample)) {
@@ -238,6 +245,38 @@ void UiImageOutput(
     if (ImGui::InputInt("iterations per hunk", &data.blockInternalIteratorMax)){
       data.blockInternalIteratorMax =
         glm::clamp(data.blockInternalIteratorMax, 1ul, 64ul);
+    }
+
+    { // -- iterator block size
+      size_t iteratorIdx = 0ul;
+      // get current idx
+      for (size_t idx = 0; idx < ::blockIteratorStrides.size(); ++ idx)
+      {
+        if (::blockIteratorStrides[idx] == data.blockIteratorStride) {
+          iteratorIdx = idx;
+          break;
+        }
+      }
+
+      if (
+        ImGui::BeginCombo(
+          "block size"
+        , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
+        )
+      ) {
+        for (size_t i = 0; i < ::blockIteratorStrides.size(); ++ i) {
+          bool isSelected = iteratorIdx == i;
+          if (
+            ImGui::Selectable(
+              std::to_string(::blockIteratorStrides[i]).c_str()
+            , isSelected)
+          ) {
+            data.blockIteratorStride = ::blockIteratorStrides[i];
+            mt::Clear(data);
+          }
+        }
+        ImGui::EndCombo();
+      }
     }
 
     { // -- apply image resolution/aspect ratio fixes

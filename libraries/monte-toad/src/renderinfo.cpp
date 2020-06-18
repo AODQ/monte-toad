@@ -51,27 +51,28 @@ void BlockCollectFinishedPixels(
   glm::u16vec2 minRange, maxRange;
   ::BlockCalculateRange(self, minRange, maxRange);
 
-  size_t finishedPixels = 0;
+  // find the next multiple of N (N-1 => N, N => N, N+1 => N*2) for maxRange
+  // this is so that an entire block can be taken into account if the image
+  // resolution isn't divisible by the stride; this could be optimized into a
+  // single mathematical expression, instead of the for-loop, in the future if
+  // wanted
+  auto const & stride = self.blockIteratorStride;
+  maxRange.x = maxRange.x + ((stride-maxRange.x) % stride);
+  maxRange.y = maxRange.y + ((stride-maxRange.y) % stride);
 
+  size_t finishedPixels = 0;
   for (size_t x = minRange.x; x < maxRange.x; ++ x)
   for (size_t y = minRange.y; y < maxRange.y; ++ y) {
+    if (y*self.imageResolution.x + x >= self.pixelCountBuffer.size()) {
+      ++ finishedPixels;
+      continue;
+    }
+
     finishedPixels +=
       static_cast<size_t>(
         self.pixelCountBuffer[y*self.imageResolution.x + x]
       >= self.samplesPerPixel
       );
-  }
-
-  // in cases where resolution of image doesn't match the stride (ei the block
-  // overlaps into regions of the image that don't exist), add finished pixels
-  if (maxRange.x % self.blockIteratorStride != 0) {
-    finishedPixels +=
-      (self.blockIteratorStride - maxRange.x % self.blockIteratorStride)
-    * (maxRange.y - minRange.y);
-  } else if (maxRange.y % self.blockIteratorStride != 0) {
-    finishedPixels +=
-      (self.blockIteratorStride - maxRange.y % self.blockIteratorStride)
-    * (maxRange.x - minRange.x);
   }
 
   self.blockPixelsFinished[self.blockIterator] = finishedPixels;

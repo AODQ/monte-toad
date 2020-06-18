@@ -41,7 +41,7 @@ namespace mt {
     glm::uint16_t imguiImageResolution = 640;
 
     // -- information used to collect pixel informations over blocks
-    std::vector<uint16_t> blockPixelsFinished;
+    std::vector<size_t> blockPixelsFinished;
     bool bufferCleared = false;
     size_t dispatchedCycles = 0u;
     size_t imageStride = 1ul;
