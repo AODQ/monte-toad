@@ -543,6 +543,17 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
   while (!glfwWindowShouldClose(::window)) {
     glfwPollEvents();
 
+    { // -- sleep
+      // if nothing is rendering then sleep for 10ms
+      bool rendering = false; // TODO TOAD set to rendering
+      for (auto & integrator : renderInfo.integratorData) {
+        rendering = rendering | !integrator.renderingFinished;
+      }
+      if (!rendering) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+    }
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
