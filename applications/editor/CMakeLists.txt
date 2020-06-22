@@ -8,7 +8,7 @@ target_sources(
     src/source.cpp
 )
 
-target_compile_features(monte-toad-editor PRIVATE cxx_std_20)
+#target_compile_features(monte-toad-editor PRIVATE cxx_std_20)
 
 set_target_properties(monte-toad-editor PROPERTIES COMPILE_FLAGS "-Wall")
 
