@@ -5,7 +5,7 @@ target_link_libraries(
   emitter-furnace
   PRIVATE
     mt-plugin monte-toad
-    cr imgui
+    imgui
 )
 
 set_target_properties(emitter-furnace PROPERTIES COMPILE_FLAGS "-Wall")

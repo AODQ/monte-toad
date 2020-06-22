@@ -5,7 +5,6 @@ target_link_libraries(
   camera-pinhole
   PRIVATE
     mt-plugin monte-toad
-    cr
 )
 
 set_target_properties(camera-pinhole PROPERTIES COMPILE_FLAGS "-Wall")

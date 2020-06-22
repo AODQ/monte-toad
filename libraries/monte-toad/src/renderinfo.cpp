@@ -43,7 +43,7 @@ void BlockCollectFinishedPixels(
   mt::IntegratorData & self
 , mt::PluginInfoIntegrator const & plugin
 ) {
-  if (plugin.realtime) {
+  if (plugin.RealTime()) {
     self.renderingFinished = true;
     return;
   }
@@ -190,7 +190,7 @@ bool mt::DispatchRender(
   self.imageStride = 1;
   glm::u16vec2 minRange = glm::uvec2(0);
   glm::u16vec2 maxRange = self.imageResolution;
-  if (!plugin.integrators[integratorIdx].realtime) {
+  if (!plugin.integrators[integratorIdx].RealTime()) {
     switch (self.dispatchedCycles) {
       case 1: self.imageStride = 8; break;
       default:

@@ -5,7 +5,6 @@ target_link_libraries(
   integrator-depth
   PRIVATE
     mt-plugin monte-toad
-    cr
 )
 
 set_target_properties(integrator-depth PROPERTIES COMPILE_FLAGS "-Wall")

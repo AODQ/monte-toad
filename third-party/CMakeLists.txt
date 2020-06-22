@@ -16,7 +16,3 @@ target_include_directories(stb INTERFACE stb/include)
 add_library(cxxopts INTERFACE)
 target_compile_definitions(cxxopts INTERFACE CXXOPTS_NO_EXCEPTIONS)
 target_include_directories(cxxopts INTERFACE cxxopts/include)
-
-## CR
-add_library(cr INTERFACE)
-target_include_directories(cr INTERFACE cr/include)

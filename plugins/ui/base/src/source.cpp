@@ -1,5 +1,3 @@
-#include <cr/cr.h>
-
 #include <monte-toad/enum.hpp>
 #include <monte-toad/imgui.hpp>
 #include <monte-toad/renderinfo.hpp>
@@ -16,8 +14,8 @@
 namespace {
 
 float msTime = 0.0f;
-float CR_STATE mouseSensitivity = 1.0f;
-float CR_STATE cameraRelativeVelocity = 1.0f;
+float mouseSensitivity = 1.0f;
+float cameraRelativeVelocity = 1.0f;
 
 std::array<float, Idx(mt::AspectRatio::size)> constexpr
   aspectRatioConversion = {{
@@ -86,7 +84,7 @@ void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
     cameraHasMoved = true;
   }
 
-  static CR_STATE double prevX = -1.0, prevY = -1.0;
+  static double prevX = -1.0, prevY = -1.0;
   if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
 
     // hide as mouse will spaz around screen being teleported
@@ -205,7 +203,7 @@ void UiImageOutput(
     auto & integrator = pluginInfo.integrators[i];
 
     std::string label =
-      std::string{integrator.pluginLabel} + std::string{" (config)"};
+      std::string{integrator.PluginLabel()} + std::string{" (config)"};
 
     ImGui::Begin(label.c_str());
 
@@ -348,7 +346,7 @@ void UiImageOutput(
       );
     }
 
-    if (!integrator.realtime) {
+    if (!integrator.RealTime()) {
       ImGui::Text("%lu dispatched cycles", data.dispatchedCycles);
 
       ImGui::Text(
@@ -379,7 +377,7 @@ void UiImageOutput(
     auto & integrator = pluginInfo.integrators[i];
 
     std::string label =
-      std::string{integrator.pluginLabel} + std::string{" (image)"};
+      std::string{integrator.PluginLabel()} + std::string{" (image)"};
 
     ImGui::Begin(label.c_str());
 
@@ -439,13 +437,13 @@ void UiEmitters(
   ImGui::Begin("emitters");
     { // select skybox emitter
       auto GetEmissionLabel = [&](int32_t idx) -> char const * {
-        return idx == -1 ? "none" : pluginInfo.emitters[idx].pluginLabel;
+        return idx == -1 ? "none" : pluginInfo.emitters[idx].PluginLabel();
       };
 
       int32_t & emissionIdx = scene.emissionSource.skyboxEmitterPluginIdx;
       if (ImGui::BeginCombo("Skybox", GetEmissionLabel(emissionIdx))) {
         for (size_t i = 0; i < pluginInfo.emitters.size(); ++ i) {
-          if (!pluginInfo.emitters[i].isSkybox) { continue; }
+          if (!pluginInfo.emitters[i].IsSkybox()) { continue; }
           bool isSelected = emissionIdx == static_cast<int32_t>(i);
           if (ImGui::Selectable(GetEmissionLabel(i), isSelected)) {
             emissionIdx = static_cast<int32_t>(i);
@@ -458,6 +456,13 @@ void UiEmitters(
   ImGui::End();
 }
 
+} // -- end anon namespace
+
+extern "C" {
+
+char const * PluginLabel() { return "base UI"; }
+mt::PluginType PluginType() { return mt::PluginType::UserInterface; }
+
 void Dispatch(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
@@ -469,26 +474,4 @@ void Dispatch(
   ::UiEmitters(scene, renderInfo, pluginInfo);
 }
 
-} // -- end anon namespace
-
-CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
-  // return immediately if an update, this won't do anything
-  if (operation == CR_STEP || operation == CR_UNLOAD) { return 0; }
-  if (!ctx || !ctx->userdata) { return 0; }
-
-  auto & userInterface =
-    *reinterpret_cast<mt::PluginInfoUserInterface*>(ctx->userdata);
-
-  switch (operation) {
-    case CR_LOAD:
-      userInterface.Dispatch = &::Dispatch;
-      userInterface.pluginType = mt::PluginType::UserInterface;
-      userInterface.pluginLabel = "base user interface";
-    break;
-    case CR_UNLOAD: break;
-    case CR_STEP: break;
-    case CR_CLOSE: break;
-  }
-
-  return 0;
 }

@@ -12,7 +12,6 @@
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
-#include <cr/cr.h>
 #include <glad/glad.hpp>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.hpp>
@@ -164,8 +163,7 @@ void UiPluginDisplayInfo(
   switch (pluginType) {
     case mt::PluginType::Integrator: {
       auto & integrator = plugin.integrators[idx];
-      ImGui::Text("Realtime: %s", integrator.realtime ? "Yes" : "No");
-      ImGui::Text("UseGpu: %s", integrator.useGpu ? "Yes" : "No");
+      ImGui::Text("Realtime: %s", integrator.RealTime() ? "Yes" : "No");
     } break;
     case mt::PluginType::Kernel: break;
     case mt::PluginType::Material: break;

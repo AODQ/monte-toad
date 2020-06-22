@@ -5,7 +5,7 @@ target_link_libraries(
   wavefront-mtl
   PRIVATE
     mt-plugin monte-toad
-    cr imgui
+    imgui
 )
 
 set_target_properties(wavefront-mtl PROPERTIES COMPILE_FLAGS "-Wall")

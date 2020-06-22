@@ -5,4 +5,4 @@ target_sources(mt-plugin-host PRIVATE src/plugin.cpp)
 
 set_target_properties(mt-plugin-host PROPERTIES COMPILE_FLAGS "-Wall")
 
-target_link_libraries(mt-plugin-host PUBLIC cr mt-plugin)
+target_link_libraries(mt-plugin-host PUBLIC mt-plugin)

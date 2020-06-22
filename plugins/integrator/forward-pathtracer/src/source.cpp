@@ -1,5 +1,3 @@
-#include <cr/cr.h>
-
 #include <monte-toad/enum.hpp>
 #include <monte-toad/geometry.hpp>
 #include <monte-toad/log.hpp>
@@ -196,6 +194,13 @@ PropagationStatus Propagate(
   return propagationStatus;
 }
 
+} // -- end anon namespace
+
+extern "C" {
+
+char const * PluginLabel() { return "forward integrator"; }
+mt::PluginType PluginType() { return mt::PluginType::Integrator; }
+
 mt::PixelInfo Dispatch(
   glm::vec2 const & uv
 , mt::Scene const & scene
@@ -261,28 +266,7 @@ mt::PixelInfo Dispatch(
 
   return mt::PixelInfo { accumulatedIrradiance, hit };
 }
-}
 
-CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
-  // return immediately if an update, this won't do anything
-  if (operation == CR_STEP || operation == CR_UNLOAD) { return 0; }
-  if (!ctx || !ctx->userdata) { return 0; }
+bool RealTime() { return false; }
 
-  auto & integrator =
-    *reinterpret_cast<mt::PluginInfoIntegrator*>(ctx->userdata);
-
-  switch (operation) {
-    case CR_LOAD:
-      integrator.realtime = false;
-      integrator.useGpu = false;
-      integrator.Dispatch = &Dispatch;
-      integrator.pluginType = mt::PluginType::Integrator;
-      integrator.pluginLabel = "forward pathtracer";
-    break;
-    case CR_UNLOAD: break;
-    case CR_STEP: break;
-    case CR_CLOSE: break;
-  }
-
-  return 0;
-}
+} // -- extern C

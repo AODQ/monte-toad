@@ -5,7 +5,6 @@
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
-#include <cr/cr.h>
 #include <nlohmann/json.hpp>
 
 #include <fstream>
@@ -87,51 +86,11 @@ bool fileutil::LoadPlugin(
 
   mt::Clean(plugin, type, idx);
 
-  switch (mt::LoadPlugin(plugin, type, file, idx)) {
-    case CR_NONE:
-      spdlog::info("Loaded '{}'", file);
-    break;
-    case CR_INITIAL_FAILURE:
-      spdlog::error("Could not load '{}', initial failure", file);
-    break;
-    case CR_SEGFAULT:
-      spdlog::error("Could not load '{}', Segfault", file);
-    break;
-    case CR_ILLEGAL:
-      spdlog::error("Could not load '{}', Illegal operation", file);
-    break;
-    case CR_ABORT:
-      spdlog::error("Could not load '{}', aborted, SIGBRT", file);
-    break;
-    case CR_MISALIGN:
-      spdlog::error("Could not load '{}', misalignment, SIGBUS", file);
-    break;
-    case CR_BOUNDS:
-      spdlog::error("Could not load '{}', bounds error", file);
-    break;
-    case CR_STACKOVERFLOW:
-      spdlog::error("Could not load '{}', stack overflow", file);
-    break;
-    case CR_STATE_INVALIDATED:
-      spdlog::error("Could not load '{}', static CR_STATE failure", file);
-    break;
-    case CR_BAD_IMAGE:
-      spdlog::error("Could not load '{}', plugin is not valid", file);
-    break;
-    case CR_OTHER:
-      spdlog::error("Could not load '{}', other signal", file);
-    break;
-    case CR_USER:
-      spdlog::error("Could not load '{}', user/mt plugin error", file);
-    break;
-    default:
-      spdlog::error("Could not load '{}', unknown failure", file);
-    break;
-  }
+  mt::LoadPlugin(plugin, type, file, idx);
 
   // check that the plugin loaded itself properly (ei members set properly)
   if (!mt::Valid(plugin, type, idx)) {
-    spdlog::error("Failed to load plugin, or plugin is incomplete");
+    spdlog::error("Failed to load plugin {}, or plugin is incomplete", file);
     mt::Clean(plugin, type, idx);
 
     if (type == mt::PluginType::Integrator) {

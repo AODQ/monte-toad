@@ -5,7 +5,6 @@ target_link_libraries(
   integrator-normal
   PRIVATE
     mt-plugin monte-toad
-    cr
 )
 
 set_target_properties(integrator-normal PROPERTIES COMPILE_FLAGS "-Wall")

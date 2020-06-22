@@ -1,5 +1,3 @@
-#include <cr/cr.h>
-
 #include <monte-toad/geometry.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
@@ -33,6 +31,13 @@ void UpdateSceneEmission(mt::Scene & scene) {
       { scene.emissionSource.triangles.emplace_back(i); }
   }
 }
+
+} // -- end anon namespace
+
+extern "C" {
+
+char const * PluginLabel() { return "wavefront mtl"; }
+mt::PluginType PluginType() { return mt::PluginType::Material; }
 
 void Load(mt::Scene & scene) {
   for (auto & mesh : scene.meshes)
@@ -128,7 +133,7 @@ glm::vec3 BsdfFs(
   return material.diffuse * dot(surface.normal, wo) * glm::InvPi;
 }
 
-static CR_STATE size_t currentMtlIdx = static_cast<size_t>(-1);
+static size_t currentMtlIdx = static_cast<size_t>(-1);
 
 void UiUpdate(
   mt::Scene & scene
@@ -216,31 +221,4 @@ void UiUpdate(
   }
 }
 
-}
-
-CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
-  // return immediately if an update, this won't do anything
-  if (operation == CR_UNLOAD || operation == CR_STEP) { return 0; }
-  if (!ctx || !ctx->userdata) { return 0; }
-
-  auto & userInterface =
-    *reinterpret_cast<mt::PluginInfoMaterial*>(ctx->userdata);
-
-  switch (operation) {
-    case CR_STEP: break;
-    case CR_LOAD:
-      userInterface.Load = &::Load;
-      userInterface.BsdfSample = &::BsdfSample;
-      userInterface.BsdfPdf = &::BsdfPdf;
-      userInterface.BsdfFs = &::BsdfFs;
-      userInterface.IsEmitter = &::IsEmitter;
-      userInterface.UiUpdate = &::UiUpdate;
-      userInterface.pluginType = mt::PluginType::Material;
-      userInterface.pluginLabel = "wavefront material";
-    break;
-    case CR_UNLOAD: break;
-    case CR_CLOSE: break;
-  }
-
-  return 0;
-}
+} // -- end extern "C"

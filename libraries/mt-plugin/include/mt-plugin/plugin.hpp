@@ -47,11 +47,9 @@ namespace mt {
     , mt::IntegratorData & integratorData
     ) = nullptr;
 
-    bool realtime = false; // renders either block-by-block or full-screen
-    bool useGpu = false; // TODO , will give GPU texture handle to render to
-
-    mt::PluginType pluginType;
-    char const * pluginLabel;
+    bool (*RealTime)();
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
   };
 
   struct PluginInfoKernel {
@@ -76,8 +74,8 @@ namespace mt {
     , mt::PluginInfo const & plugin
     ) = nullptr;
 
-    mt::PluginType pluginType;
-    char const * pluginLabel;
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
   };
 
   struct PluginInfoRandom {
@@ -94,8 +92,8 @@ namespace mt {
     , mt::PluginInfo const & plugin
     ) = nullptr;
 
-    mt::PluginType pluginType;
-    char const * pluginLabel;
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
   };
 
   struct PluginInfoMaterial {
@@ -125,8 +123,8 @@ namespace mt {
     , mt::PluginInfo const & plugin
     ) = nullptr;
 
-    mt::PluginType pluginType;
-    char const * pluginLabel;
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
   };
 
   struct PluginInfoCamera {
@@ -143,8 +141,8 @@ namespace mt {
     , mt::PluginInfo const & plugin
     ) = nullptr;
 
-    mt::PluginType pluginType;
-    char const * pluginLabel;
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
   };
 
   struct PluginInfoUserInterface {
@@ -154,8 +152,8 @@ namespace mt {
     , mt::PluginInfo const & plugin
     ) = nullptr;
 
-    mt::PluginType pluginType;
-    char const * pluginLabel;
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
   };
 
   struct PluginInfoEmitter {
@@ -187,10 +185,10 @@ namespace mt {
     , mt::PluginInfo const & plugin
     ) = nullptr;
 
-    bool isSkybox;
+    bool (*IsSkybox)();
 
-    mt::PluginType pluginType;
-    char const * pluginLabel;
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
   };
 
   struct PluginInfo {

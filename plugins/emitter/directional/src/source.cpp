@@ -1,5 +1,3 @@
-#include <cr/cr.h>
-
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
@@ -9,11 +7,16 @@
 
 namespace {
 
-static CR_STATE glm::vec3 emissionDirection = glm::vec3(0.0f, 0.0f, 1.0f);
-static CR_STATE glm::vec3 emissionColor = glm::vec3(1.0f);
-static CR_STATE float emissionPower = 1.0f;
+static glm::vec3 emissionDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+static glm::vec3 emissionColor = glm::vec3(1.0f);
+static float emissionPower = 1.0f;
 
-static char const * PluginLabel = "directional emitter";
+} // -- end anon namespace
+
+extern "C" {
+
+char const * PluginLabel() { return "directional emitter"; }
+mt::PluginType PluginType() { return mt::PluginType::Emitter; }
 
 mt::PixelInfo SampleLi(
   mt::Scene const & scene
@@ -52,8 +55,8 @@ void UiUpdate(
 , mt::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
-  auto pluginIdx = scene.emissionSource.skyboxEmitterPluginIdx;
-  if (pluginIdx == -1 || plugin.emitters[pluginIdx].pluginLabel != PluginLabel)
+  auto idx = scene.emissionSource.skyboxEmitterPluginIdx;
+  if (idx == -1 || plugin.emitters[idx].PluginLabel() != ::PluginLabel())
     { return; }
 
   ImGui::Begin("emitters");
@@ -72,30 +75,6 @@ void UiUpdate(
   ImGui::End();
 }
 
-}
+bool IsSkybox() { return true; }
 
-CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
-  // return immediately if an update, this won't do anything
-  if (operation == CR_STEP || operation == CR_UNLOAD) { return 0; }
-  if (!ctx || !ctx->userdata) { return 0; }
-
-  auto & emitter =
-    *reinterpret_cast<mt::PluginInfoEmitter*>(ctx->userdata);
-
-  switch (operation) {
-    case CR_LOAD:
-      emitter.isSkybox = true; // TODO TOAD technically this isn't a skybox
-      emitter.SampleLi = &SampleLi;
-      emitter.SampleWo = &SampleWo;
-      emitter.UiUpdate = &UiUpdate;
-      emitter.Precompute = &Precompute;
-      emitter.pluginType = mt::PluginType::Emitter;
-      emitter.pluginLabel = PluginLabel;
-    break;
-    case CR_UNLOAD: break;
-    case CR_STEP: break;
-    case CR_CLOSE: break;
-  }
-
-  return 0;
-}
+} // -- end extern C

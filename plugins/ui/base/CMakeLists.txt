@@ -5,7 +5,7 @@ target_link_libraries(
   ui-base
   PRIVATE
     mt-plugin monte-toad
-    cr imgui glfw
+    imgui glfw
 )
 
 set_target_properties(ui-base PROPERTIES COMPILE_FLAGS "-Wall")

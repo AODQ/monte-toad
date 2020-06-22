@@ -10,7 +10,7 @@ namespace mt {
   // loads plugin of specific type from the filename into pluginInfo. In cases
   // where the type is a vector, the memory must be allocated beforehand and
   // its index passed in
-  uint32_t LoadPlugin(
+  bool LoadPlugin(
     mt::PluginInfo & pluginInfo
   , mt::PluginType pluginType, std::string const & filename
   , size_t idx = 0

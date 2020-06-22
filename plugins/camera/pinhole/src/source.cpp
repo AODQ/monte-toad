@@ -1,12 +1,14 @@
-#include <cr/cr.h>
-
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 
 #include <mt-plugin/plugin.hpp>
 
-namespace {
+extern "C" {
+
+char const * PluginLabel() { return "pinhole camera"; }
+mt::PluginType PluginType() { return mt::PluginType::Camera; }
+
 glm::vec3 LookAt(glm::vec3 dir, glm::vec2 uv, glm::vec3 up, float fovRadians) {
   glm::vec3
     ww = glm::normalize(dir),
@@ -42,25 +44,5 @@ std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> Dispatch(
     );
   return results;
 }
-}
 
-CR_EXPORT int cr_main(struct cr_plugin * ctx, enum cr_op operation) {
-  // return immediately if an update, this won't do anything
-  if (operation == CR_STEP || operation == CR_UNLOAD) { return 0; }
-  if (!ctx || !ctx->userdata) { return 0; }
-
-  auto & camera = *reinterpret_cast<mt::PluginInfoCamera*>(ctx->userdata);
-
-  switch (operation) {
-    case CR_LOAD:
-      camera.Dispatch = &::Dispatch;
-      camera.pluginType = mt::PluginType::Camera;
-      camera.pluginLabel = "pinhole camera";
-    break;
-    case CR_UNLOAD: break;
-    case CR_STEP: break;
-    case CR_CLOSE: break;
-  }
-
-  return 0;
-}
+} // -- end extern "C"
