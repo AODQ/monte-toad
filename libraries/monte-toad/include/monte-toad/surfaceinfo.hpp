@@ -24,7 +24,7 @@ namespace mt {
 
     glm::vec3 incomingAngle = glm::vec3(0.0f);
 
-    std::any material;
+    size_t material;
 
     bool Valid() { return triangle != nullptr; }
 

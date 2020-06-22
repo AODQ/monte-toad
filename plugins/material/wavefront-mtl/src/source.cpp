@@ -18,14 +18,18 @@ struct MaterialInfo {
   float indexOfRefraction = 1.0f;
 };
 
-void UpdateSceneEmission(mt::Scene & scene) {
+// TODO TOAD this should be taken care of by an emitter plugin
+void UpdateSceneEmission(
+  mt::Scene & scene
+, mt::PluginInfoMaterial const & self
+) {
   if (!scene.accelStructure) { return; }
   scene.emissionSource.triangles.resize(0);
   for (size_t i = 0; i < scene.accelStructure->triangles.size(); ++ i) {
     auto & material =
-      std::any_cast<MaterialInfo &>(
-        scene.meshes[scene.accelStructure->triangles[i].meshIdx].userdata
-      );
+      reinterpret_cast<MaterialInfo *>(self.userdata)[
+        scene.accelStructure->triangles[i].meshIdx
+      ];
 
     if (material.emission > 0.00001f)
       { scene.emissionSource.triangles.emplace_back(i); }
@@ -39,28 +43,48 @@ extern "C" {
 char const * PluginLabel() { return "wavefront mtl"; }
 mt::PluginType PluginType() { return mt::PluginType::Material; }
 
-void Load(mt::Scene & scene) {
-  for (auto & mesh : scene.meshes)
-    { mesh.userdata = std::make_any<MaterialInfo>(); }
+void Load(mt::PluginInfoMaterial & self, mt::Scene & scene) {
+  // free previous data
+  if (self.userdata) { free(self.userdata); }
 
+  // allocate data
+  auto * mtl =
+    reinterpret_cast<MaterialInfo*>(
+      malloc(scene.meshes.size() * sizeof(MaterialInfo))
+    );
+  self.userdata = reinterpret_cast<void*>(mtl);
+
+  // assign data
+  for (size_t i = 0; i < scene.meshes.size(); ++ i) {
+    mtl[i] = MaterialInfo{};
+  }
+
+  // TODO these should probably be emitter
   scene.emissionSource.triangles.clear();
-
-  UpdateSceneEmission(scene);
+  UpdateSceneEmission(scene, self);
 }
 
-float BsdfPdf(mt::SurfaceInfo const & surface, glm::vec3 const & wo) {
-  auto const & material = std::any_cast<MaterialInfo const &>(surface.material);
+float BsdfPdf(
+  mt::PluginInfoMaterial const & self
+, mt::SurfaceInfo const & surface
+, glm::vec3 const & wo
+) {
+  auto const & material =
+    reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material];
+
   if (material.transmittive > 0.0f) { return 0.0f; }
   return glm::max(0.0f, glm::InvPi * glm::dot(wo, surface.normal));
 }
 
 std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
-  mt::PluginInfoRandom const & random
+  mt::PluginInfoMaterial const & self
+, mt::PluginInfoRandom const & random
 , mt::SurfaceInfo const & surface
 ) {
   glm::vec3 wo;
 
-  auto const & material = std::any_cast<MaterialInfo const &>(surface.material);
+  auto const & material =
+    reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material];
 
   if (material.transmittive > 0.0f) {
 
@@ -109,20 +133,27 @@ std::tuple<glm::vec3 /*wo*/, float /*pdf*/> BsdfSample(
     , surface.normal
     );
 
-  return { wo, BsdfPdf(surface, wo) };
+  return { wo, BsdfPdf(self, surface, wo) };
 }
 
-bool IsEmitter(mt::Scene const & scene, mt::Triangle const & triangle) {
-  return
-    std::any_cast<MaterialInfo const &>(
-      scene.meshes[triangle.meshIdx].userdata
-    ).emission > 0.0f;
+bool IsEmitter(
+  mt::PluginInfoMaterial const & self
+, mt::Scene const & scene
+, mt::Triangle const & triangle
+) {
+  auto const & mtl =
+    reinterpret_cast<MaterialInfo const *>(self.userdata)[triangle.meshIdx];
+  return mtl.emission > 0.0f;
 }
 
 glm::vec3 BsdfFs(
-  mt::Scene const & scene, mt::SurfaceInfo const & surface, glm::vec3 const & wo
+  mt::PluginInfoMaterial const & self
+, mt::Scene const & scene
+, mt::SurfaceInfo const & surface
+, glm::vec3 const & wo
 ) {
-  auto const & material = std::any_cast<MaterialInfo const &>(surface.material);
+  auto const & material =
+    reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material];
 
   if (material.emission > 0.0f) { return material.emission * material.diffuse; }
 
@@ -195,7 +226,9 @@ void UiUpdate(
 
     if (currentMtlIdx != static_cast<size_t>(-1)) {
       auto & material =
-        std::any_cast<MaterialInfo &>(scene.meshes[currentMtlIdx].userdata);
+        reinterpret_cast<MaterialInfo *>(plugin.material.userdata)[
+          currentMtlIdx
+        ];
       ImGui::PushID(std::to_string(currentMtlIdx).c_str());
       ImGui::Text("Mtl %lu", currentMtlIdx);
       if (ImGui::ColorPicker3("diffuse", &material.diffuse.x)) {
@@ -205,7 +238,7 @@ void UiUpdate(
         render.ClearImageBuffers();
       }
       if (ImGui::InputFloat("emission", &material.emission)) {
-        UpdateSceneEmission(scene);
+        UpdateSceneEmission(scene, plugin.material);
         render.ClearImageBuffers();
       }
       if (

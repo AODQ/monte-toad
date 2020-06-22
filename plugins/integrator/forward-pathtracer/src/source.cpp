@@ -57,14 +57,15 @@ PropagationStatus ApplyIndirectEmission(
         .SampleLi(scene, plugin, surface, emissionWo, emissionPdf);
 
     if (info.valid) {
-      float bsdfPdf = plugin.material.BsdfPdf(surface, emissionWo);
+      float bsdfPdf =
+        plugin.material.BsdfPdf(plugin.material, surface, emissionWo);
 
       // only valid if the bsdfPdf is not delta dirac
       if (bsdfPdf > 0.0f) {
         glm::vec3 irradiance =
           info.color
         * radiance
-        * plugin.material.BsdfFs(scene, surface, emissionWo)
+        * plugin.material.BsdfFs(plugin.material, scene, surface, emissionWo)
         / (emissionPdf/(emissionPdf + bsdfPdf));
 
         if (glm::length(irradiance) > 0.0001f) {
@@ -89,7 +90,8 @@ PropagationStatus ApplyIndirectEmission(
 
     glm::vec3 emissionWo = glm::normalize(emissionOrigin - surface.origin);
 
-    float bsdfEmitPdf = plugin.material.BsdfPdf(surface, emissionWo);
+    float bsdfEmitPdf =
+      plugin.material.BsdfPdf(plugin.material, surface, emissionWo);
 
     // if the surface is delta-dirac, than there is no indirect emission
     // contribution
@@ -109,9 +111,13 @@ PropagationStatus ApplyIndirectEmission(
 
     propagationStatus = PropagationStatus::IndirectAccumulation;
     accumulatedIrradiance +=
-      plugin.material.BsdfFs(scene, emissionSurface, glm::vec3(0))
+      plugin.material.BsdfFs(
+        plugin.material, scene, emissionSurface, glm::vec3(0)
+      )
     * radiance
-    * plugin.material.BsdfFs(scene, surface, emissionWo)
+    * plugin.material.BsdfFs(
+        plugin.material, scene, surface, emissionWo
+      )
     / (emitPdf/(emitPdf + bsdfEmitPdf))
     ;
   }
@@ -134,8 +140,8 @@ PropagationStatus Propagate(
 
   // generate bsdf sample (this will also be used for next propagation)
   auto [bsdfWo, bsdfPdf] =
-    plugin.material.BsdfSample(plugin.random, surface);
-  auto bsdfFs = plugin.material.BsdfFs(scene, surface, bsdfWo);
+    plugin.material.BsdfSample(plugin.material, plugin.random, surface);
+  auto bsdfFs = plugin.material.BsdfFs(plugin.material, scene, surface, bsdfWo);
 
   // delta-dirac correct pdfs, valid only for direct emissions
   bsdfPdf = bsdfPdf == 0.0f ? 1.0f : bsdfPdf;
@@ -162,8 +168,11 @@ PropagationStatus Propagate(
         Join(propagationStatus, PropagationStatus::End);
       }
     }
-  } else if (plugin.material.IsEmitter(scene, *nextSurface.triangle)) {
-    auto emissiveColor = plugin.material.BsdfFs(scene, nextSurface, bsdfWo);
+  } else if (
+      plugin.material.IsEmitter(plugin.material, scene, *nextSurface.triangle)
+  ) {
+    auto emissiveColor =
+      plugin.material.BsdfFs(plugin.material, scene, nextSurface, bsdfWo);
 
     /* float emitPdf = EmitterPdf(surface, nextSurface); */
 
@@ -234,8 +243,10 @@ mt::PixelInfo Dispatch(
   }
 
   // check if emitter
-  if (plugin.material.IsEmitter(scene, *surface.triangle)) {
-    auto const emission = plugin.material.BsdfFs(scene, surface, glm::vec3(0));
+  if (plugin.material.IsEmitter(plugin.material, scene, *surface.triangle)) {
+    auto const emission =
+      plugin.material.BsdfFs(plugin.material, scene, surface, glm::vec3(0));
+
     return mt::PixelInfo{emission, true};
   }
 

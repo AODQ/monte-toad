@@ -30,7 +30,7 @@ mt::PixelInfo Dispatch(
 
   auto color =
     pluginInfo.material.BsdfFs(
-      scene, surface, glm::reflect(wi, surface.normal)
+      pluginInfo.material, scene, surface, glm::reflect(wi, surface.normal)
     );
 
   // do fogging just for some visual characteristics if requested

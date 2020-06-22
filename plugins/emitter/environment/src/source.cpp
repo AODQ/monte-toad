@@ -28,7 +28,8 @@ mt::PixelInfo SampleLi(
     { pdf = 0.0f; return { glm::vec3(0.0f), false }; }
 
   {
-    auto [wo0, pdf0] = plugin.material.BsdfSample(plugin.random, surface);
+    auto [wo0, pdf0] =
+      plugin.material.BsdfSample(plugin.material, plugin.random, surface);
     wo = wo0;
     pdf = pdf0;
   }

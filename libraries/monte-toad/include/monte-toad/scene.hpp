@@ -20,8 +20,7 @@ namespace mt {
   struct Scene;
 
   struct Mesh {
-    Mesh() = default;
-    std::any userdata;
+    size_t idx;
   };
 
   struct EmissionSource {

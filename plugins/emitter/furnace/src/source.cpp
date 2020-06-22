@@ -8,7 +8,7 @@
 
 namespace {
 
-static glm::vec3 emissionColor = glm::vec3(0.0f);
+static glm::vec3 emissionColor = glm::vec3(1.0f);
 static float emissionPower = 1.0f;
 
 } // -- end anon namespace
@@ -26,7 +26,8 @@ mt::PixelInfo SampleLi(
 , float & pdf
 ) {
   {
-    auto [wo0, pdf0] = plugin.material.BsdfSample(plugin.random, surface);
+    auto [wo0, pdf0] =
+      plugin.material.BsdfSample(plugin.material, plugin.random, surface);
     wo = wo0;
     pdf = pdf0;
   }

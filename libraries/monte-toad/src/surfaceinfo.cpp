@@ -27,7 +27,7 @@ mt::SurfaceInfo mt::SurfaceInfo::Construct(
   surface.incomingAngle = incomingAngle;
   surface.distance = intersection.length;
   surface.barycentricUv = intersection.barycentricUv;
-  surface.material = scene.meshes[surface.triangle->meshIdx].userdata;
+  surface.material = surface.triangle->meshIdx;
 
   if (triangle) {
     surface.normal =

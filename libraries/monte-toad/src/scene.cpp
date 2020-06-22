@@ -14,6 +14,9 @@ std::vector<mt::Triangle> LoadAssetIntoScene(
 , std::string const & filename
 ) {
   Assimp::Importer importer;
+
+  spdlog::info("Loading scene '{}'", filename);
+
   aiScene const * asset =
     importer.ReadFile(
       filename
@@ -47,7 +50,7 @@ std::vector<mt::Triangle> LoadAssetIntoScene(
   for (size_t meshIt = 0; meshIt < asset->mNumMeshes; ++ meshIt) {
     auto const & mesh = *asset->mMeshes[meshIt];
 
-    model.meshes.push_back({});
+    model.meshes.push_back({meshIt});
 
     for (size_t face = 0; face < mesh.mNumFaces; ++ face)
     for (size_t idx  = 0; idx < mesh.mFaces[face].mNumIndices/3; ++ idx) {

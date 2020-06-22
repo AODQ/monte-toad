@@ -97,25 +97,32 @@ namespace mt {
   };
 
   struct PluginInfoMaterial {
-    void (*Load)(mt::Scene &) = nullptr;
+    void (*Load)(mt::PluginInfoMaterial & self, mt::Scene &) = nullptr;
 
     std::tuple<glm::vec3 /*wo*/, float /*pdf*/> (*BsdfSample)(
-      mt::PluginInfoRandom const & random
+      mt::PluginInfoMaterial const & self
+    , mt::PluginInfoRandom const & random
     , mt::SurfaceInfo const & surface
     ) = nullptr;
 
     float (*BsdfPdf)(
-      mt::SurfaceInfo const & surface
-    , glm::vec3 const & wo
-    ) = nullptr;
-
-    glm::vec3 (*BsdfFs)(
-      mt::Scene const & scene
+      mt::PluginInfoMaterial const & self
     , mt::SurfaceInfo const & surface
     , glm::vec3 const & wo
     ) = nullptr;
 
-    bool (*IsEmitter)(mt::Scene const & scene, mt::Triangle const & triangle);
+    glm::vec3 (*BsdfFs)(
+      mt::PluginInfoMaterial const & self
+    , mt::Scene const & scene
+    , mt::SurfaceInfo const & surface
+    , glm::vec3 const & wo
+    ) = nullptr;
+
+    bool (*IsEmitter)(
+      mt::PluginInfoMaterial const & self
+    , mt::Scene const & scene
+    , mt::Triangle const & triangle
+    );
 
     void (*UiUpdate)(
       mt::Scene & scene
@@ -125,6 +132,8 @@ namespace mt {
 
     mt::PluginType (*PluginType)();
     char const * (*PluginLabel)();
+
+    void * userdata = nullptr;
   };
 
   struct PluginInfoCamera {

@@ -254,15 +254,18 @@ void mt::Clean(
       pluginInfo.kernel.PluginLabel = nullptr;
     break;
     case mt::PluginType::Material:
-      pluginInfo.material.BsdfFs     = nullptr;
-      pluginInfo.material.BsdfPdf    = nullptr;
-      pluginInfo.material.BsdfSample = nullptr;
-      pluginInfo.material.IsEmitter  = nullptr;
-      pluginInfo.material.Load       = nullptr;
-      pluginInfo.material.UiUpdate   = nullptr;
-      pluginInfo.material.PluginType = nullptr;
+      pluginInfo.material.BsdfFs      = nullptr;
+      pluginInfo.material.BsdfPdf     = nullptr;
+      pluginInfo.material.BsdfSample  = nullptr;
+      pluginInfo.material.IsEmitter   = nullptr;
+      pluginInfo.material.Load        = nullptr;
+      pluginInfo.material.UiUpdate    = nullptr;
+      pluginInfo.material.PluginType  = nullptr;
       pluginInfo.material.PluginLabel = nullptr;
-      pluginInfo.material.PluginLabel = nullptr;
+
+      if (pluginInfo.material.userdata)
+        { free(pluginInfo.material.userdata); }
+      pluginInfo.material.userdata    = nullptr;
     break;
     case mt::PluginType::Camera:
       pluginInfo.camera.Dispatch = nullptr;

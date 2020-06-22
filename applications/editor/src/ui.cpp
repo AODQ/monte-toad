@@ -81,7 +81,7 @@ void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
     { emitter.Precompute(scene, render, plugin); }
 
   if (mt::Valid(plugin, mt::PluginType::Material)) {
-    plugin.material.Load(::scene);
+    plugin.material.Load(plugin.material, ::scene);
   }
 }
 
@@ -145,7 +145,7 @@ void UiPluginLoadFile(
         mt::AllocateGlResources(render.integratorData.back(), render);
       break;
       case mt::PluginType::Material:
-        pluginInfo.material.Load(scene);
+        pluginInfo.material.Load(pluginInfo.material, scene);
       break;
       case mt::PluginType::Random:
         pluginInfo.random.Initialize();
@@ -587,9 +587,6 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
     glfwSwapBuffers(::window);
   }
-
-  // clear out scene mesh
-  for (auto & mesh : ::scene.meshes) { mesh.userdata.reset(); }
 
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
