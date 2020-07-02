@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <type_traits>
 
 template <typename EnumType> constexpr auto Idx(EnumType const & v) {
@@ -23,4 +25,8 @@ namespace mt {
   enum struct AspectRatio : int {
     e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size
   };
+
+  RenderingState ToRenderingState(char const * label);
+  AspectRatio ToAspectRatio(char const * label);
+  void ApplyAspectRatioY(mt::AspectRatio ratio, uint16_t const x, uint16_t & y);
 }

@@ -5,6 +5,7 @@ target_sources(
   monte-toad
   PRIVATE
     src/engine.cpp
+    src/enum.cpp
     src/geometry.cpp
     src/glutil.cpp
     src/imagebuffer.cpp

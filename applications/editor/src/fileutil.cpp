@@ -9,6 +9,85 @@
 
 #include <fstream>
 
+namespace {
+
+bool AttemptJsonStore(
+  nlohmann::json const & info
+, size_t & value, std::string const & label
+) {
+  if (auto s = info.find(label); s != info.end() && s->is_number_unsigned()) {
+    value = s->get<size_t>();
+    return true;
+  }
+  return false;
+}
+
+bool AttemptJsonStore(
+  nlohmann::json const & info
+, uint16_t & value, std::string const & label
+) {
+  if (auto s = info.find(label); s != info.end() && s->is_number_unsigned()) {
+    value = s->get<uint16_t>();
+    return true;
+  }
+  return false;
+}
+
+void LoadPluginIntegrator(
+  mt::PluginInfoIntegrator & integrator
+, mt::IntegratorData & data
+, nlohmann::json const & info
+) {
+  if (auto s = info.find("state"); s != info.end() && s->is_string()) {
+    data.renderingState = mt::ToRenderingState(s->get<std::string>().c_str());
+  }
+
+  if (auto s = info.find("aspect-ratio"); s != info.end() && s->is_string()) {
+    data.imageAspectRatio = mt::ToAspectRatio(s->get<std::string>().c_str());
+  }
+
+  ::AttemptJsonStore(info, data.samplesPerPixel, "samples-per-pixel");
+  ::AttemptJsonStore(info, data.pathsPerSample, "paths-per-sample");
+  ::AttemptJsonStore(
+    info, data.blockInternalIteratorMax, "iterations-per-block"
+  );
+  ::AttemptJsonStore(info, data.blockIteratorStride, "block-stride");
+  ::AttemptJsonStore(info, data.imageResolution.x, "resolution");
+  data.overrideImGuiImageResolution =
+    ::AttemptJsonStore(info, data.imguiImageResolution, "imgui-resolution");
+
+  mt::ApplyAspectRatioY(
+    data.imageAspectRatio
+  , data.imageResolution.x
+  , data.imageResolution.y
+  );
+}
+
+[[maybe_unused]]
+void LoadPluginEmitter(nlohmann::json json) {
+}
+
+[[maybe_unused]]
+void LoadPluginKernel(nlohmann::json json) {
+}
+
+[[maybe_unused]]
+void LoadPluginMaterial(nlohmann::json json) {
+}
+
+[[maybe_unused]]
+void LoadPluginCamera(nlohmann::json json) {
+}
+
+[[maybe_unused]]
+void LoadPluginRandom(nlohmann::json json) {
+}
+
+[[maybe_unused]]
+void LoadPluginUserInterface(nlohmann::json json) {
+}
+} // -- end anon namespace
+
 //------------------------------------------------------------------------------
 void fileutil::LoadEditorConfig(
   mt::RenderInfo & render
@@ -21,34 +100,64 @@ void fileutil::LoadEditorConfig(
     file >> json;
   }
 
-  for (auto const & pluginInfo : json["plugins"]) {
+  for (auto const & info : json["plugins"]) {
 
-    auto info = pluginInfo.get<std::vector<std::string>>();
-    mt::PluginType type;
+    mt::PluginType pluginType;
 
-    if (info[0] == "integrator") {
-      type = mt::PluginType::Integrator;
-    } else if (info[0] == "kernel") {
-      type = mt::PluginType::Kernel;
-    } else if (info[0] == "material") {
-      type = mt::PluginType::Material;
-    } else if (info[0] == "camera") {
-      type = mt::PluginType::Camera;
-    } else if (info[0] == "random") {
-      type = mt::PluginType::Random;
-    } else if (info[0] == "userinterface") {
-      type = mt::PluginType::UserInterface;
-    } else if (info[0] == "emitter") {
-      type = mt::PluginType::Emitter;
+    auto type = info.find("type");
+    auto file = info.find("file");
+
+    if (type == info.end()) {
+      spdlog::error("Plugin needs to have a type");
+      continue;
+    }
+
+    if (file == info.end()) {
+      spdlog::error("Plugin needs to have a file");
+      continue;
+    }
+
+    auto typeStr = type->get<std::string>();
+
+    if (typeStr == "integrator") {
+      pluginType = mt::PluginType::Integrator;
+    } else if (typeStr == "kernel") {
+      pluginType = mt::PluginType::Kernel;
+    } else if (typeStr == "material") {
+      pluginType = mt::PluginType::Material;
+    } else if (typeStr == "camera") {
+      pluginType = mt::PluginType::Camera;
+    } else if (typeStr == "random") {
+      pluginType = mt::PluginType::Random;
+    } else if (typeStr == "userinterface") {
+      pluginType = mt::PluginType::UserInterface;
+    } else if (typeStr == "emitter") {
+      pluginType = mt::PluginType::Emitter;
     } else {
-      spdlog::error("Unknown plugin type '{}' when loading config", info[0]);
+      spdlog::error("Unknown plugin type '{}' when loading config", typeStr);
       return;
     }
 
-    /* mt::FreePlugins(); */
-    fileutil::LoadPlugin(plugin, render, info[1], type);
+    if (
+      !fileutil::LoadPlugin(
+        plugin, render, file->get<std::string>(), pluginType
+      )
+    ) {
+      continue;
+    }
 
-    // TODO set their configs
+    // -- plugin loaded successfully here, can now set their configurations
+
+    switch (pluginType) {
+      default: break;
+      case mt::PluginType::Integrator:
+        ::LoadPluginIntegrator(
+          plugin.integrators.back(),
+          render.integratorData.back(),
+          info
+        );
+      break;
+    }
   }
 
   for (auto const & sceneInfo : json["scene"]) {

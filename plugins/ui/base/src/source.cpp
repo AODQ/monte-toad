@@ -17,12 +17,6 @@ float msTime = 0.0f;
 float mouseSensitivity = 1.0f;
 float cameraRelativeVelocity = 1.0f;
 
-std::array<float, Idx(mt::AspectRatio::size)> constexpr
-  aspectRatioConversion = {{
-    1.0f, 3.0f/2.0f, 4.0f/3.0f, 5.0f/4.0f, 16.0f/9.0f, 16.0f/10.0f, 21.0f/9.0f
-  , 1.0f
-  }};
-
 std::array<char const *, Idx(mt::AspectRatio::size)> constexpr
   aspectRatioLabels = {{
     "1x1", "3x2", "4x3", "5x4", "16x9", "16x10", "21x9", "None"
@@ -184,12 +178,7 @@ void ApplyImageResolutionConstraint(
   resolution = glm::clamp(resolution, glm::u16vec2(8), glm::u16vec2(4096));
 
   // apply aspect ratio change dependent
-  if (aspectRatio != mt::AspectRatio::eNone) {
-    resolution.y =
-      glm::max(
-        1.0f, resolution.x / ::aspectRatioConversion[Idx(aspectRatio)]
-      );
-  }
+  mt::ApplyAspectRatioY(aspectRatio, resolution.x, resolution.y);
 }
 
 void UiImageOutput(
@@ -336,13 +325,15 @@ void UiImageOutput(
     );
 
     if (data.overrideImGuiImageResolution) {
+      uint16_t y;
+      mt::ApplyAspectRatioY(
+        data.imageAspectRatio, data.imguiImageResolution, y
+      );
+
       ImGui::Text(
         "imgui resolution <%u, %u>"
       , data.imguiImageResolution
-      , static_cast<uint32_t>(
-          data.imguiImageResolution
-        / ::aspectRatioConversion[Idx(data.imageAspectRatio)]
-        )
+      , static_cast<uint32_t>(y)
       );
     }
 
@@ -385,9 +376,9 @@ void UiImageOutput(
       auto imageResolution = data.imageResolution;
       if (data.overrideImGuiImageResolution) {
         imageResolution.x = data.imguiImageResolution;
-        imageResolution.y =
-          imageResolution.x
-        / ::aspectRatioConversion[Idx(data.imageAspectRatio)];
+        mt::ApplyAspectRatioY(
+          data.imageAspectRatio, imageResolution.x, imageResolution.y
+        );
       }
 
       ImGui::Image(
