@@ -7,6 +7,94 @@
 
 #include <filesystem>
 
+/*
+
+  Textures represent a set of discrete infinitesimal colour values (texels),
+    and a filter to reconstruct the original image from these texels;
+
+    ⌠1 ⌠1                      1 1
+    │  │  p(img, u, v) du dv ≈ Σ Σ f(p, img[ΔuΔv], u, v)
+    ⌡0 ⌡0                      u v
+
+  where,
+    u and v are the UV coordinates of the image, a floating-point [0 ‥ 1]
+    Δu and Δv are the amount by which u/v are stepped per iteration
+    img is the image, img[X] is the mipmap of the image
+    p is a function that returns a texel value at coordinates;
+    f is a filter-reconstruction function (nearest-neighbour, linear, etc)
+
+  Ideally you would integrate along the entire image and use continous function
+    p to collect texel values, which would be the ground-truth of the captured
+    image. Because memory and processing is finite, these pixels can be
+    approximated using p as a discrete function to grab individual texels, and
+    a filter reconstructing function f to approximate the ground-truth by
+    combining the texels in different manners.
+
+  The filter is necessary since pixels (infinitesimal points on the rendered
+    image) do not necessarily map directly to texels. The values of Δu and Δv
+    can vary greatly, and uv can even extend past 1 in some cases (such as
+    wrapping).
+
+  The cheapest filter is the nearest-neighbor filter, which chooses the closest
+    texel to represent the pixel. The mapping is simple;
+
+    f(p, img, u, v) = p(img, round(u*width), round(v*height))
+
+      where p in this case would take integer coordinates [0 ‥ width/height]
+
+  Another filter is to mix the four closest pixels, 'bilinear' filter;
+
+    f(p, img, u, v) =
+
+       ⎛                   ⎞
+      p⎜img, uₜ    , vₜ    ⎟ * fract(u*w) * fract(1 - v*h)
+       ⎝                   ⎠
+
+       ⎛                  1⎞
+    + p⎜img, uₜ    , vₜ + ─⎟ * fract(u*w) * fract(v*h)
+       ⎝                  h⎠
+
+       ⎛          1        ⎞
+    + p⎜img, uₜ + ─, vₜ    ⎟ * fract(1 - u*w) * fract(1 - v*h)
+       ⎝          w        ⎠
+
+       ⎛          1       1⎞
+    + p⎜img, uₜ + ─, vₜ + ─⎟ * fract(1 - u*w) * fract(v*h)
+       ⎝          w       h⎠
+
+    where,
+      uₜ, vₜ are the centers of the uv coordinate;
+
+                                      1
+        uₜ = u + (0.5 - fract(u*w)) * ─
+                                      w
+
+                                      1
+        vₜ = v + (0.5 - fract(v*h)) * ─
+                                      h
+
+  In practice these textures are mapped to 3D surfaces. In those conditions, not
+    even all available-texels will readily be useable;
+
+    ┌────────────┐             │  ┌────────────┐
+    │     ╱╲     │             │  │     ╱╲     │
+    │    ╱**╲    │             │  │    ╱**╲    │
+    │   ╱****╲   │             │  │   ╱****╲   │
+    │  ╱******╲  │             │  │            │
+    │            │             │  │            │
+    └────────────┘             │  └────────────┘
+    13 pixels are available to │  6 pixels are avilable to
+    map to texels              │  map to texels
+
+  Aliasing occurs when there are not enough pixels on the geometry to sample
+    all texels. Precomputing mipmaps by halving an image's dimension N times
+    (to produce N mipmaps) means that (W*H)/2^N pixels need to be sampled to
+    produce a good approximation of the image. Thus, another way to put this,
+    when a geometry's screen-space area decreases, the less pixels can map to
+    texels, and the higher mipmap-level is necessary to build a good
+    approximation of the ground-truth image.
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 mt::Texture mt::Texture::Construct(std::string const & filename) {
   stbi_set_flip_vertically_on_load(false);
