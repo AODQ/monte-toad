@@ -420,6 +420,36 @@ void UiImageOutput(
   }
 }
 
+void UiDispatchers(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
+  ImGui::Begin("dispatchers");
+
+    if (plugin.dispatchers.size() == 0) {
+      ImGui::Text("No dispatcher plugin");
+      ImGui::End();
+      return;
+    }
+
+    auto const DispatcherLabel = [&](size_t idx) -> char const * {
+      return plugin.dispatchers[idx].PluginLabel();
+    };
+
+    { // select a primary dispatcher
+      auto & idx = render.primaryDispatcher;
+      if (ImGui::BeginCombo("Primary", DispatcherLabel(idx))) {
+        for (size_t i = 0; i < plugin.dispatchers.size(); ++ i) {
+          bool isSelected = idx == i;
+          if (ImGui::Selectable(DispatcherLabel(idx), isSelected)) {
+            idx = i;
+            render.ClearImageBuffers();
+          }
+        }
+        ImGui::EndCombo();
+      }
+    }
+
+  ImGui::End();
+}
+
 void UiEmitters(
   mt::Scene & scene
 , mt::RenderInfo & renderInfo
