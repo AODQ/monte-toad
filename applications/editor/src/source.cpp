@@ -6,6 +6,7 @@
 
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
+#include <monte-toad/material/layered.hpp>
 #include <monte-toad/scene.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
@@ -147,6 +148,9 @@ int main(int argc, char** argv) {
   // -- load up renderinfo & plugin from config file
   mt::PluginInfo plugin;
   fileutil::LoadEditorConfig(render, plugin);
+
+    mt::material::layered::Data data;
+    data.layers = { mt::material::layered::Data::Layer{0.0f, 0.2f, 0.2f, 0.9f} };
 
   ui::Initialize(render, plugin);
 

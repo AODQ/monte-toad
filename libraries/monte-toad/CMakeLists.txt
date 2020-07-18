@@ -9,6 +9,7 @@ target_sources(
     src/glutil.cpp
     src/imagebuffer.cpp
     src/imgui.cpp
+    src/material/layered.cpp
     src/log.cpp
     src/math.cpp
     src/primitive.cpp

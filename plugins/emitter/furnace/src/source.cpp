@@ -26,7 +26,7 @@ mt::PixelInfo SampleLi(
 , float & pdf
 ) {
   {
-    auto [wo0, pdf0] =
+    auto [wo0, _, pdf0] =
       plugin.material.BsdfSample(plugin.material, plugin.random, surface);
     wo = wo0;
     pdf = pdf0;

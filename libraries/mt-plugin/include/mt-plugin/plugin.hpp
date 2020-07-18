@@ -99,7 +99,7 @@ namespace mt {
   struct PluginInfoMaterial {
     void (*Load)(mt::PluginInfoMaterial & self, mt::Scene &) = nullptr;
 
-    std::tuple<glm::vec3 /*wo*/, float /*pdf*/> (*BsdfSample)(
+    std::tuple<glm::vec3 /*wo*/, glm::vec3 /*fs*/, float /*pdf*/> (*BsdfSample)(
       mt::PluginInfoMaterial const & self
     , mt::PluginInfoRandom const & random
     , mt::SurfaceInfo const & surface
@@ -113,7 +113,6 @@ namespace mt {
 
     glm::vec3 (*BsdfFs)(
       mt::PluginInfoMaterial const & self
-    , mt::Scene const & scene
     , mt::SurfaceInfo const & surface
     , glm::vec3 const & wo
     ) = nullptr;

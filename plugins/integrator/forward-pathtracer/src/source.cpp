@@ -65,7 +65,7 @@ PropagationStatus ApplyIndirectEmission(
         glm::vec3 irradiance =
           info.color
         * radiance
-        * plugin.material.BsdfFs(plugin.material, scene, surface, emissionWo)
+        * plugin.material.BsdfFs(plugin.material, surface, emissionWo)
         / (emissionPdf/(emissionPdf + bsdfPdf));
 
         if (glm::length(irradiance) > 0.0001f) {
@@ -111,13 +111,9 @@ PropagationStatus ApplyIndirectEmission(
 
     propagationStatus = PropagationStatus::IndirectAccumulation;
     accumulatedIrradiance +=
-      plugin.material.BsdfFs(
-        plugin.material, scene, emissionSurface, glm::vec3(0)
-      )
+      plugin.material.BsdfFs(plugin.material, emissionSurface, glm::vec3(0))
     * radiance
-    * plugin.material.BsdfFs(
-        plugin.material, scene, surface, emissionWo
-      )
+    * plugin.material.BsdfFs(plugin.material, surface, emissionWo)
     / (emitPdf/(emitPdf + bsdfEmitPdf))
     ;
   }
@@ -139,9 +135,8 @@ PropagationStatus Propagate(
   auto propagationStatus = PropagationStatus::Continue;
 
   // generate bsdf sample (this will also be used for next propagation)
-  auto [bsdfWo, bsdfPdf] =
+  auto [bsdfWo, bsdfFs, bsdfPdf] =
     plugin.material.BsdfSample(plugin.material, plugin.random, surface);
-  auto bsdfFs = plugin.material.BsdfFs(plugin.material, scene, surface, bsdfWo);
 
   // delta-dirac correct pdfs, valid only for direct emissions
   bsdfPdf = bsdfPdf == 0.0f ? 1.0f : bsdfPdf;
@@ -172,7 +167,7 @@ PropagationStatus Propagate(
       plugin.material.IsEmitter(plugin.material, scene, *nextSurface.triangle)
   ) {
     auto emissiveColor =
-      plugin.material.BsdfFs(plugin.material, scene, nextSurface, bsdfWo);
+      plugin.material.BsdfFs(plugin.material, nextSurface, bsdfWo);
 
     /* float emitPdf = EmitterPdf(surface, nextSurface); */
 
@@ -245,7 +240,7 @@ mt::PixelInfo Dispatch(
   // check if emitter
   if (plugin.material.IsEmitter(plugin.material, scene, *surface.triangle)) {
     auto const emission =
-      plugin.material.BsdfFs(plugin.material, scene, surface, glm::vec3(0));
+      plugin.material.BsdfFs(plugin.material, surface, glm::vec3(0));
 
     return mt::PixelInfo{emission, true};
   }
