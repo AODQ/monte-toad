@@ -18,15 +18,27 @@ struct Plugin {
 
   enum class Optional { Yes, No };
 
+  struct FnCache {
+    void * fnPtr;
+    std::string fnStr;
+    Optional optional;
+  };
+
+  std::vector<FnCache> functionCache;
+  std::string filename;
+
   template <typename T> void LoadFunction(
     T & fn,
     char const * label,
     Optional optional = Optional::No
   );
+
+  void Reload();
 };
 
-Plugin::Plugin(char const * filename) {
-  data = dlopen(filename, RTLD_NOW);
+Plugin::Plugin(char const * filenameTmp) {
+  this->filename = std::string{filenameTmp};
+  this->data = dlopen(this->filename.c_str(), RTLD_NOW);
 }
 
 Plugin::~Plugin() {
@@ -43,6 +55,25 @@ template <typename T> void Plugin::LoadFunction(
   fn = reinterpret_cast<T>(dlsym(this->data, label));
   if (!fn && optional == Optional::No)
     { printf("Failed to load function '%s'; '%s'\n", label, dlerror()); }
+}
+
+void Plugin::Reload() {
+  // attempt close
+  if (this->data) { dlclose(this->data); }
+  // open dll again
+  this->data = dlopen(this->filename.c_str(), RTLD_NOW);
+
+  // load cache
+  for (auto & fn : functionCache) {
+    fn.fnPtr = dlsym(this->data, fn.fnStr.c_str());
+    if (!fn.fnPtr && fn.optional == Optional::No) {
+      printf(
+        "Failed to load function '%s'; '%s'\n"
+      , fn.fnStr.c_str()
+      , dlerror()
+      );
+    }
+  }
 }
 
 struct Plugins {
@@ -160,8 +191,11 @@ void mt::FreePlugins() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// checks if plugins need to be reloaded
+// checks if plugins need to be reloaded TODO
 void mt::UpdatePlugins() {
+  for (auto & plugin : ::plugins) {
+    plugin.plugin->Reload();
+  }
 }
 
 //------------------------------------------------------------------------------

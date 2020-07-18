@@ -27,6 +27,8 @@ namespace {
 GLFWwindow * window;
 mt::Scene scene;
 
+bool reloadPlugin = false;
+
 mt::GlProgram imageTransitionProgram;
 
 int displayWidth, displayHeight;
@@ -340,6 +342,10 @@ void UiRenderInfo(
       LoadScene(renderInfo, pluginInfo);
     }
 
+    if (ImGui::Button("Reload plugins")) {
+     reloadPlugin = true;
+    }
+
     int tempNumThreads = static_cast<int>(renderInfo.numThreads);
     if (ImGui::InputInt("# threads", &tempNumThreads)) {
       renderInfo.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
@@ -541,10 +547,6 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
   renderInfo.glfwWindow = reinterpret_cast<void*>(window);
 
   while (!glfwWindowShouldClose(::window)) {
-    // update plugins, shouldn't fall into the frame skip since a plugin could
-    // have just been recompiled
-    mt::UpdatePlugins();
-
     { // -- event & sleep update
       // check if currently rendering anything
       bool rendering = false; // TODO TOAD set to rendering
@@ -588,6 +590,13 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     }
 
     glfwSwapBuffers(::window);
+
+    if (reloadPlugin) {
+      // update plugins, should be ran every frame with a file checker in the
+      // future
+      mt::UpdatePlugins();
+      reloadPlugin = false;
+    }
   }
 
   ImGui_ImplOpenGL3_Shutdown();
