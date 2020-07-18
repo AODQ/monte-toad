@@ -26,6 +26,12 @@ namespace mt {
     e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size
   };
 
+  // TODO probably move out? this is more internal and not ui related
+  // Indicates how the ray was/should-be cast; either generated naturally for
+  // Radiance, such as from the BSDF or generated from importance-sampled
+  // information, such as next-event estimation or BDPT etc
+  enum TransportMode { Radiance, Importance };
+
   RenderingState ToRenderingState(char const * label);
   AspectRatio ToAspectRatio(char const * label);
   void ApplyAspectRatioY(mt::AspectRatio ratio, uint16_t const x, uint16_t & y);
