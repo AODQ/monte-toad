@@ -4,7 +4,6 @@ target_include_directories(monte-toad PUBLIC "include/")
 target_sources(
   monte-toad
   PRIVATE
-    src/engine.cpp
     src/enum.cpp
     src/geometry.cpp
     src/glutil.cpp

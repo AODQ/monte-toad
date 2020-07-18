@@ -1,5 +1,3 @@
-#include <monte-toad/engine.hpp>
-
 #include <monte-toad/imagebuffer.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
@@ -10,20 +8,25 @@
 
 #include <omp.h>
 
-void mt::DispatchEngineBlockRegion(
+namespace mt { struct Scene; }
+namespace mt { struct PluginInfo; }
+namespace mt { struct RenderInfo; }
+
+extern "C" {
+
+char const * PluginLabel() { return "path-recorder dispatcher"; }
+mt::PluginType PluginType() { return mt::PluginType::Dispatcher; }
+
+void DispatchBlockRegion(
   mt::Scene const & scene
 , mt::RenderInfo & render
 , mt::PluginInfo const & plugin
+
 , size_t integratorIdx
 , size_t const minX, size_t const minY
 , size_t const maxX, size_t const maxY
 , size_t strideX, size_t strideY
 ) {
-  [[maybe_unused]] size_t progress = 0u;
-
-  [[maybe_unused]] auto const masterTid = omp_get_thread_num();
-  [[maybe_unused]] size_t mainThreadUpdateIt;
-
   auto & integratorData = render.integratorData[integratorIdx];
 
   auto const & resolution = integratorData.imageResolution;
@@ -76,13 +79,6 @@ void mt::DispatchEngineBlockRegion(
         );
       ++ pixelCount;
     }
-
-    /* if (headless */
-    /*  && omp_get_thread_num() == masterTid && (++mainThreadUpdateIt)%5 == 0 */
-    /* ) { */
-    /*   PrintProgress( */
-    /*     progress/static_cast<float>(resolutionDim) */
-    /*   ); */
-    /* } */
   }
+}
 }

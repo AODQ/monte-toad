@@ -200,9 +200,26 @@ namespace mt {
     char const * (*PluginLabel)();
   };
 
+  struct PluginInfoDispatcher {
+    void (*DispatchBlockRegion)(
+      mt::Scene const & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo const & pluginInfo
+
+    , size_t integratorIdx
+    , size_t const minX, size_t const minY
+    , size_t const maxX, size_t const maxY
+    , size_t strideX, size_t strideY
+    );
+
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
+  };
+
   struct PluginInfo {
     std::vector<PluginInfoIntegrator> integrators;
     std::vector<PluginInfoEmitter> emitters;
+    std::vector<PluginInfoDispatcher> dispatchers;
     PluginInfoKernel kernel; // optional
     PluginInfoMaterial material;
     PluginInfoCamera camera; // optional

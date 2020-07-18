@@ -463,6 +463,7 @@ void Dispatch(
   ::UiPluginInfo(scene, renderInfo, pluginInfo);
   ::UiImageOutput(scene, renderInfo, pluginInfo);
   ::UiEmitters(scene, renderInfo, pluginInfo);
+  ::UiDispatchers(renderInfo, pluginInfo);
 }
 
 }

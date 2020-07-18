@@ -1,6 +1,5 @@
 #include <monte-toad/renderinfo.hpp>
 
-#include <monte-toad/engine.hpp>
 #include <monte-toad/log.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -156,6 +155,7 @@ bool mt::DispatchRender(
 , size_t integratorIdx
 ) {
   if (self.renderingFinished) { return false; }
+  if (plugin.dispatchers.size() == 0) { return false; }
   switch (self.renderingState) {
     default: return false;
     case mt::RenderingState::Off: return false;
@@ -199,11 +199,13 @@ bool mt::DispatchRender(
     }
   }
 
-  mt::DispatchEngineBlockRegion(
-    scene, render, plugin, integratorIdx
-  , minRange.x, minRange.y, maxRange.x, maxRange.y
-  , self.imageStride, self.imageStride
-  );
+  plugin
+    .dispatchers[render.primaryDispatcher]
+    .DispatchBlockRegion(
+      scene, render, plugin, integratorIdx
+    , minRange.x, minRange.y, maxRange.x, maxRange.y
+    , self.imageStride, self.imageStride
+    );
 
   ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
 

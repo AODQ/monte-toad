@@ -12,6 +12,7 @@ namespace mt {
   , Random
   , UserInterface
   , Emitter
+  , Dispatcher
   , Size
   , Invalid
   };

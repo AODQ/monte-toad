@@ -171,6 +171,7 @@ void UiPluginDisplayInfo(
     case mt::PluginType::Random: break;
     case mt::PluginType::UserInterface: break;
     case mt::PluginType::Emitter: break;
+    case mt::PluginType::Dispatcher: break;
     default: break;
   }
 }
@@ -196,6 +197,7 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
     DisplayPluginUi(mt::PluginType::Random);
     DisplayPluginUi(mt::PluginType::UserInterface);
     DisplayPluginUi(mt::PluginType::Emitter);
+    DisplayPluginUi(mt::PluginType::Dispatcher);
 
   ImGui::End();
 

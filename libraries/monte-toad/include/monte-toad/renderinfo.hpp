@@ -109,7 +109,7 @@ namespace mt {
     void * glfwWindow;
 
     std::vector<mt::IntegratorData> integratorData;
-    size_t primaryIntegrator;
+    size_t primaryDispatcher = 0ul;
 
     void ClearImageBuffers();
   };

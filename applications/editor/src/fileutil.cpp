@@ -133,6 +133,8 @@ void fileutil::LoadEditorConfig(
       pluginType = mt::PluginType::UserInterface;
     } else if (typeStr == "emitter") {
       pluginType = mt::PluginType::Emitter;
+    } else if (typeStr == "dispatcher") {
+      pluginType = mt::PluginType::Dispatcher;
     } else {
       spdlog::error("Unknown plugin type '{}' when loading config", typeStr);
       return;
@@ -192,6 +194,10 @@ bool fileutil::LoadPlugin(
     plugin.emitters.emplace_back();
     idx = plugin.emitters.size()-1;
   }
+  if (type == mt::PluginType::Dispatcher) {
+    plugin.dispatchers.emplace_back();
+    idx = plugin.dispatchers.size()-1;
+  }
 
   mt::Clean(plugin, type, idx);
 
@@ -208,6 +214,9 @@ bool fileutil::LoadPlugin(
     }
     if (type == mt::PluginType::Emitter) {
       plugin.emitters.pop_back();
+    }
+    if (type == mt::PluginType::Dispatcher) {
+      plugin.dispatchers.pop_back();
     }
 
     return false;

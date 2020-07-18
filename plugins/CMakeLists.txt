@@ -1,4 +1,5 @@
 add_subdirectory(camera)
+add_subdirectory(dispatcher)
 add_subdirectory(emitter)
 add_subdirectory(integrator)
 add_subdirectory(kernel)

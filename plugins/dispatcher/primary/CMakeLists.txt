@@ -1,0 +1,21 @@
+add_library(dispatcher-primary SHARED)
+target_sources(dispatcher-primary PRIVATE src/source.cpp)
+
+target_link_libraries(
+  dispatcher-primary
+  PRIVATE
+    mt-plugin monte-toad
+    omp
+)
+
+set_target_properties(dispatcher-primary PROPERTIES COMPILE_FLAGS "-Wall")
+set_target_properties(dispatcher-primary PROPERTIES SUFFIX ".mt-plugin")
+set_target_properties(dispatcher-primary PROPERTIES PREFIX "")
+
+install(
+  TARGETS dispatcher-primary
+  LIBRARY NAMELINK_SKIP
+  LIBRARY
+    DESTINATION plugins/
+    COMPONENT plugin
+)

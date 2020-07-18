@@ -138,6 +138,12 @@ bool mt::LoadPlugin(
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
     } break;
+    case PluginType::Dispatcher: {
+      auto & unit = pluginInfo.dispatchers[idx];
+      ctx.LoadFunction(unit.DispatchBlockRegion, "DispatchBlockRegion");
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
     default: break;
   }
 
@@ -227,6 +233,14 @@ bool mt::Valid(
        && pluginInfo.emitters[idx].PluginType() == pluginType
        && pluginInfo.emitters[idx].PluginLabel != nullptr
       ;
+    case mt::PluginType::Dispatcher:
+      return
+          idx < pluginInfo.dispatchers.size()
+       && pluginInfo.dispatchers[idx].DispatchBlockRegion != nullptr
+       && pluginInfo.dispatchers[idx].PluginType != nullptr
+       && pluginInfo.dispatchers[idx].PluginType() == pluginType
+       && pluginInfo.dispatchers[idx].PluginLabel != nullptr
+      ;
     default: return false;
   }
 }
@@ -300,6 +314,11 @@ void mt::Clean(
       pluginInfo.emitters[idx].PluginLabel = nullptr;
       pluginInfo.emitters[idx].IsSkybox = nullptr;
     break;
+    case mt::PluginType::Dispatcher:
+      pluginInfo.dispatchers[idx].DispatchBlockRegion = nullptr;
+      pluginInfo.dispatchers[idx].PluginType = nullptr;
+      pluginInfo.dispatchers[idx].PluginLabel = nullptr;
+    break;
     default: return;
   }
 }
@@ -314,6 +333,7 @@ char const * ToString(mt::PluginType pluginType) {
     case mt::PluginType::Random:        return "Random";
     case mt::PluginType::UserInterface: return "UserInterface";
     case mt::PluginType::Emitter:       return "Emitter";
+    case mt::PluginType::Dispatcher:    return "Dispatcher";
     default: return "N/A";
   }
 }
