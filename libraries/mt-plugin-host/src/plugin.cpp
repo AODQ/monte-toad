@@ -75,6 +75,80 @@ struct Plugins {
 };
 std::vector<Plugins> plugins;
 
+
+void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
+  switch (ctx.type) {
+    case mt::PluginType::Integrator: {
+      auto & unit = plugin.integrators[ctx.idx];
+      ctx.LoadFunction(unit.Dispatch, "Dispatch");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+      ctx.LoadFunction(unit.RealTime, "RealTime");
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    case mt::PluginType::Kernel: {
+      auto & unit = plugin.kernel;
+      ctx.LoadFunction(unit.Tonemap, "Tonemap");
+      ctx.LoadFunction(unit.Denoise, "Denoise");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    case mt::PluginType::Material: {
+      auto & unit = plugin.material;
+      ctx.LoadFunction(unit.Load, "Load");
+      ctx.LoadFunction(unit.BsdfSample, "BsdfSample");
+      ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
+      ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
+      ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    case mt::PluginType::Camera: {
+      auto & unit = plugin.camera;
+      ctx.LoadFunction(unit.Dispatch, "Dispatch");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    case mt::PluginType::Random: {
+      auto & unit = plugin.random;
+      ctx.LoadFunction(unit.Initialize, "Initialize");
+      ctx.LoadFunction(unit.Clean, "Clean");
+      ctx.LoadFunction(unit.SampleUniform1, "SampleUniform1");
+      ctx.LoadFunction(unit.SampleUniform2, "SampleUniform2");
+      ctx.LoadFunction(unit.SampleUniform3, "SampleUniform3");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    case mt::PluginType::UserInterface: {
+      auto & unit = plugin.userInterface;
+      ctx.LoadFunction(unit.Dispatch, "Dispatch");
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    case mt::PluginType::Emitter: {
+      auto & unit = plugin.emitters[ctx.idx];
+      ctx.LoadFunction(unit.IsSkybox, "IsSkybox");
+      ctx.LoadFunction(unit.SampleLi, "SampleLi");
+      ctx.LoadFunction(unit.SampleWo, "SampleWo");
+      ctx.LoadFunction(unit.Precompute, "Precompute");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    case mt::PluginType::Dispatcher: {
+      auto & unit = plugin.dispatchers[ctx.idx];
+      ctx.LoadFunction(unit.DispatchBlockRegion, "DispatchBlockRegion");
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
+    default: break;
+  }
+}
+
 } // -- namespace
 
 bool mt::LoadPlugin(
@@ -102,76 +176,7 @@ bool mt::LoadPlugin(
   }
 
   // -- load functions to respective plugin type
-  switch (pluginType) {
-    case PluginType::Integrator: {
-      auto & unit = pluginInfo.integrators[idx];
-      ctx.LoadFunction(unit.Dispatch, "Dispatch");
-      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-      ctx.LoadFunction(unit.RealTime, "RealTime");
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    case PluginType::Kernel: {
-      auto & unit = pluginInfo.kernel;
-      ctx.LoadFunction(unit.Tonemap, "Tonemap");
-      ctx.LoadFunction(unit.Denoise, "Denoise");
-      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    case PluginType::Material: {
-      auto & unit = pluginInfo.material;
-      ctx.LoadFunction(unit.Load, "Load");
-      ctx.LoadFunction(unit.BsdfSample, "BsdfSample");
-      ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
-      ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
-      ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
-      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    case PluginType::Camera: {
-      auto & unit = pluginInfo.camera;
-      ctx.LoadFunction(unit.Dispatch, "Dispatch");
-      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    case PluginType::Random: {
-      auto & unit = pluginInfo.random;
-      ctx.LoadFunction(unit.Initialize, "Initialize");
-      ctx.LoadFunction(unit.Clean, "Clean");
-      ctx.LoadFunction(unit.SampleUniform1, "SampleUniform1");
-      ctx.LoadFunction(unit.SampleUniform2, "SampleUniform2");
-      ctx.LoadFunction(unit.SampleUniform3, "SampleUniform3");
-      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    case PluginType::UserInterface: {
-      auto & unit = pluginInfo.userInterface;
-      ctx.LoadFunction(unit.Dispatch, "Dispatch");
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    case PluginType::Emitter: {
-      auto & unit = pluginInfo.emitters[idx];
-      ctx.LoadFunction(unit.IsSkybox, "IsSkybox");
-      ctx.LoadFunction(unit.SampleLi, "SampleLi");
-      ctx.LoadFunction(unit.SampleWo, "SampleWo");
-      ctx.LoadFunction(unit.Precompute, "Precompute");
-      ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    case PluginType::Dispatcher: {
-      auto & unit = pluginInfo.dispatchers[idx];
-      ctx.LoadFunction(unit.DispatchBlockRegion, "DispatchBlockRegion");
-      ctx.LoadFunction(unit.PluginType, "PluginType");
-      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-    } break;
-    default: break;
-  }
+  LoadPluginFunctions(pluginInfo, *plugin.plugin);
 
   return true;
 }
@@ -196,76 +201,7 @@ void mt::UpdatePlugins(
     auto & ctx = *plugin.plugin;
 
     // -- load functions to respective plugin type
-    switch (plugin.plugin->type) {
-      case PluginType::Integrator: {
-        auto & unit = pluginInfo.integrators[plugin.plugin->idx];
-        ctx.LoadFunction(unit.Dispatch, "Dispatch");
-        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-        ctx.LoadFunction(unit.RealTime, "RealTime");
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      case PluginType::Kernel: {
-        auto & unit = pluginInfo.kernel;
-        ctx.LoadFunction(unit.Tonemap, "Tonemap");
-        ctx.LoadFunction(unit.Denoise, "Denoise");
-        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      case PluginType::Material: {
-        auto & unit = pluginInfo.material;
-        ctx.LoadFunction(unit.Load, "Load");
-        ctx.LoadFunction(unit.BsdfSample, "BsdfSample");
-        ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
-        ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
-        ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
-        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      case PluginType::Camera: {
-        auto & unit = pluginInfo.camera;
-        ctx.LoadFunction(unit.Dispatch, "Dispatch");
-        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      case PluginType::Random: {
-        auto & unit = pluginInfo.random;
-        ctx.LoadFunction(unit.Initialize, "Initialize");
-        ctx.LoadFunction(unit.Clean, "Clean");
-        ctx.LoadFunction(unit.SampleUniform1, "SampleUniform1");
-        ctx.LoadFunction(unit.SampleUniform2, "SampleUniform2");
-        ctx.LoadFunction(unit.SampleUniform3, "SampleUniform3");
-        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      case PluginType::UserInterface: {
-        auto & unit = pluginInfo.userInterface;
-        ctx.LoadFunction(unit.Dispatch, "Dispatch");
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      case PluginType::Emitter: {
-        auto & unit = pluginInfo.emitters[plugin.plugin->idx];
-        ctx.LoadFunction(unit.IsSkybox, "IsSkybox");
-        ctx.LoadFunction(unit.SampleLi, "SampleLi");
-        ctx.LoadFunction(unit.SampleWo, "SampleWo");
-        ctx.LoadFunction(unit.Precompute, "Precompute");
-        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      case PluginType::Dispatcher: {
-        auto & unit = pluginInfo.dispatchers[plugin.plugin->idx];
-        ctx.LoadFunction(unit.DispatchBlockRegion, "DispatchBlockRegion");
-        ctx.LoadFunction(unit.PluginType, "PluginType");
-        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
-      } break;
-      default: break;
-    }
+    LoadPluginFunctions(pluginInfo, *plugin.plugin);
   }
 }
 
