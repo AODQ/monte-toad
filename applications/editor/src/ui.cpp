@@ -596,7 +596,7 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     if (reloadPlugin) {
       // update plugins, should be ran every frame with a file checker in the
       // future
-      mt::UpdatePlugins();
+      mt::UpdatePlugins(pluginInfo);
       reloadPlugin = false;
     }
   }

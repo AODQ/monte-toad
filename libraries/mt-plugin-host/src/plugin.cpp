@@ -2,6 +2,8 @@
 
 #include <mt-plugin/plugin.hpp>
 
+#include <spdlog/spdlog.h>
+
 #include <array>
 #include <memory>
 
@@ -12,21 +14,20 @@
 namespace {
 
 struct Plugin {
-  Plugin(char const * filename);
+// -- constructors
+  Plugin(char const * filename, mt::PluginType type, size_t idx);
   ~Plugin();
-  void * data = nullptr;
 
+// -- members
+  std::string filename;
+  void * data = nullptr;
+  mt::PluginType type;
+  size_t idx;
+
+// -- static
   enum class Optional { Yes, No };
 
-  struct FnCache {
-    void * fnPtr;
-    std::string fnStr;
-    Optional optional;
-  };
-
-  std::vector<FnCache> functionCache;
-  std::string filename;
-
+// -- functions
   template <typename T> void LoadFunction(
     T & fn,
     char const * label,
@@ -36,8 +37,9 @@ struct Plugin {
   void Reload();
 };
 
-Plugin::Plugin(char const * filenameTmp) {
-  this->filename = std::string{filenameTmp};
+Plugin::Plugin(char const * filename_, mt::PluginType type_, size_t idx_)
+  : filename(filename_), type(type_), idx(idx_)
+{
   this->data = dlopen(this->filename.c_str(), RTLD_NOW);
 }
 
@@ -54,26 +56,17 @@ template <typename T> void Plugin::LoadFunction(
 ) {
   fn = reinterpret_cast<T>(dlsym(this->data, label));
   if (!fn && optional == Optional::No)
-    { printf("Failed to load function '%s'; '%s'\n", label, dlerror()); }
+    { spdlog::error("Failed to load function '{}'; '{}'", label, dlerror()); }
+
+  spdlog::info("Loaded function {}\n", reinterpret_cast<void*>(fn));
 }
 
 void Plugin::Reload() {
+  spdlog::info("Reloading plugin '{}'", this->filename.c_str());
   // attempt close
   if (this->data) { dlclose(this->data); }
   // open dll again
   this->data = dlopen(this->filename.c_str(), RTLD_NOW);
-
-  // load cache
-  for (auto & fn : functionCache) {
-    fn.fnPtr = dlsym(this->data, fn.fnStr.c_str());
-    if (!fn.fnPtr && fn.optional == Optional::No) {
-      printf(
-        "Failed to load function '%s'; '%s'\n"
-      , fn.fnStr.c_str()
-      , dlerror()
-      );
-    }
-  }
 }
 
 struct Plugins {
@@ -96,7 +89,9 @@ bool mt::LoadPlugin(
     { if (plugin.filename == file) { return false; } }
 
   // -- load plugin
-  ::plugins.emplace_back(file, std::make_unique<Plugin>(file.c_str()));
+  ::plugins.emplace_back(
+    file, std::make_unique<Plugin>(file.c_str(), pluginType, idx)
+  );
   auto & plugin = ::plugins.back();
   auto & ctx = *plugin.plugin;
 
@@ -192,9 +187,85 @@ void mt::FreePlugins() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // checks if plugins need to be reloaded TODO
-void mt::UpdatePlugins() {
+void mt::UpdatePlugins(
+  mt::PluginInfo & pluginInfo
+) {
   for (auto & plugin : ::plugins) {
     plugin.plugin->Reload();
+
+    auto & ctx = *plugin.plugin;
+
+    // -- load functions to respective plugin type
+    switch (plugin.plugin->type) {
+      case PluginType::Integrator: {
+        auto & unit = pluginInfo.integrators[plugin.plugin->idx];
+        ctx.LoadFunction(unit.Dispatch, "Dispatch");
+        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+        ctx.LoadFunction(unit.RealTime, "RealTime");
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      case PluginType::Kernel: {
+        auto & unit = pluginInfo.kernel;
+        ctx.LoadFunction(unit.Tonemap, "Tonemap");
+        ctx.LoadFunction(unit.Denoise, "Denoise");
+        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      case PluginType::Material: {
+        auto & unit = pluginInfo.material;
+        ctx.LoadFunction(unit.Load, "Load");
+        ctx.LoadFunction(unit.BsdfSample, "BsdfSample");
+        ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
+        ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
+        ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
+        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      case PluginType::Camera: {
+        auto & unit = pluginInfo.camera;
+        ctx.LoadFunction(unit.Dispatch, "Dispatch");
+        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      case PluginType::Random: {
+        auto & unit = pluginInfo.random;
+        ctx.LoadFunction(unit.Initialize, "Initialize");
+        ctx.LoadFunction(unit.Clean, "Clean");
+        ctx.LoadFunction(unit.SampleUniform1, "SampleUniform1");
+        ctx.LoadFunction(unit.SampleUniform2, "SampleUniform2");
+        ctx.LoadFunction(unit.SampleUniform3, "SampleUniform3");
+        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      case PluginType::UserInterface: {
+        auto & unit = pluginInfo.userInterface;
+        ctx.LoadFunction(unit.Dispatch, "Dispatch");
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      case PluginType::Emitter: {
+        auto & unit = pluginInfo.emitters[plugin.plugin->idx];
+        ctx.LoadFunction(unit.IsSkybox, "IsSkybox");
+        ctx.LoadFunction(unit.SampleLi, "SampleLi");
+        ctx.LoadFunction(unit.SampleWo, "SampleWo");
+        ctx.LoadFunction(unit.Precompute, "Precompute");
+        ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      case PluginType::Dispatcher: {
+        auto & unit = pluginInfo.dispatchers[plugin.plugin->idx];
+        ctx.LoadFunction(unit.DispatchBlockRegion, "DispatchBlockRegion");
+        ctx.LoadFunction(unit.PluginType, "PluginType");
+        ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+      } break;
+      default: break;
+    }
   }
 }
 

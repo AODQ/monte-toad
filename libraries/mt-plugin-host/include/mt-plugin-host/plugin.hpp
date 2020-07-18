@@ -21,7 +21,7 @@ namespace mt {
   void FreePlugins();
 
   // checks if plugins need to be reloaded
-  void UpdatePlugins();
+  void UpdatePlugins(mt::PluginInfo & pluginInfo);
 
   // checks that plugin of type is valid
   bool Valid(
