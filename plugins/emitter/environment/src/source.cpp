@@ -10,7 +10,7 @@ namespace {
 
 static float emissionPower = 1.0f;
 
-} // -- end anon namespace
+} // -- namespace
 
 extern "C" {
 

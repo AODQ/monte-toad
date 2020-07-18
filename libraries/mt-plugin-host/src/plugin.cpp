@@ -82,7 +82,7 @@ struct Plugins {
 };
 std::vector<Plugins> plugins;
 
-} // -- end namespace
+} // -- namespace
 
 bool mt::LoadPlugin(
   mt::PluginInfo & pluginInfo

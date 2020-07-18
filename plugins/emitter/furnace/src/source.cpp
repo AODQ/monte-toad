@@ -11,7 +11,7 @@ namespace {
 static glm::vec3 emissionColor = glm::vec3(1.0f);
 static float emissionPower = 1.0f;
 
-} // -- end anon namespace
+} // -- namespace
 
 extern "C" {
 

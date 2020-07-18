@@ -9,6 +9,7 @@ namespace mt { struct Triangle; }
 namespace mt { struct BvhIntersection; }
 
 namespace mt {
+
   struct SurfaceInfo {
     SurfaceInfo() = default;
 

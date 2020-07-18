@@ -26,7 +26,7 @@ size_t FindInterval(size_t const size, Fn const & predicate) {
   return glm::clamp(first - 1, 0lu, size - 2);
 }
 
-} // -- end anon namespace
+} // -- namespace
 
 // -- adapted from PBRT-v3
 /*

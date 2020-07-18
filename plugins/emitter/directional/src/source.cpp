@@ -11,7 +11,7 @@ static glm::vec3 emissionDirection = glm::vec3(0.0f, 0.0f, 1.0f);
 static glm::vec3 emissionColor = glm::vec3(1.0f);
 static float emissionPower = 1.0f;
 
-} // -- end anon namespace
+} // -- namespace
 
 extern "C" {
 

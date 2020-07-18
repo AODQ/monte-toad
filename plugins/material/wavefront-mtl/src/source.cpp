@@ -43,7 +43,7 @@ void UpdateSceneEmission(
   /* } */
 }
 
-} // -- end anon namespace
+} // -- namespace
 
 extern "C" {
 

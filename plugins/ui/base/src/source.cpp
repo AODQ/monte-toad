@@ -477,7 +477,7 @@ void UiEmitters(
   ImGui::End();
 }
 
-} // -- end anon namespace
+} // -- namespace
 
 extern "C" {
 

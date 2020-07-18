@@ -123,6 +123,7 @@ void AllocateGlResources(mt::RenderInfo & renderInfo) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+[[maybe_unused]]
 void UiPluginLoadFile(
   mt::PluginInfo & pluginInfo
 , mt::RenderInfo & render
@@ -157,6 +158,7 @@ void UiPluginLoadFile(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+[[maybe_unused]]
 void UiPluginDisplayInfo(
   mt::PluginInfo const & plugin
 , mt::PluginType pluginType
@@ -446,7 +448,7 @@ void UiEntry(
   ImGui::End();
 }
 
-} // -- end anon namespace
+} // -- namespace
 
 void ui::InitializeLogger() {
   ::imGuiSink = std::make_shared<::GuiSink>();

@@ -941,7 +941,7 @@ glm::vec3 Evaluate(
   return bsdfValue;
 }
 
-} // -- end anon namescape
+} // -- namescape
 
 float mt::material::layered::FresnelMicrofacetTable::Get(
   glm::vec4 const & idx

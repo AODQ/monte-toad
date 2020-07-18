@@ -64,7 +64,7 @@ mt::RenderInfo ParseRenderInfo(cxxopts::ParseResult const & result) {
   return self;
 }
 
-} // -- end anon namespace
+} // -- namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv) {

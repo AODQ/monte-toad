@@ -86,7 +86,7 @@ void LoadPluginRandom(nlohmann::json json) {
 [[maybe_unused]]
 void LoadPluginUserInterface(nlohmann::json json) {
 }
-} // -- end anon namespace
+} // -- namespace
 
 //------------------------------------------------------------------------------
 void fileutil::LoadEditorConfig(

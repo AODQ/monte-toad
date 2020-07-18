@@ -6,7 +6,7 @@ namespace {
   std::mt19937 rng = std::mt19937(std::random_device()());
   std::uniform_real_distribution<float> distribution =
     std::uniform_real_distribution<float>(0.0f, 1.0f);
-} // -- end anon namespace
+} // -- namespace
 
 extern "C" {
 

@@ -110,7 +110,7 @@ void BlockIterate(
     }
   }
 }
-} // end namespace
+} // namespace
 
 void mt::Clear(mt::IntegratorData & self, bool fast) {
   std::fill(

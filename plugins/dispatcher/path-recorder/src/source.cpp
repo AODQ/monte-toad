@@ -81,4 +81,5 @@ void DispatchBlockRegion(
     }
   }
 }
-}
+
+} // -- extern C
