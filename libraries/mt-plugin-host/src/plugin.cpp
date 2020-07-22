@@ -69,12 +69,7 @@ void Plugin::Reload() {
   this->data = dlopen(this->filename.c_str(), RTLD_NOW);
 }
 
-struct Plugins {
-  std::string filename;
-  std::unique_ptr<Plugin> plugin;
-};
-std::vector<Plugins> plugins;
-
+std::vector<std::unique_ptr<Plugin>> plugins;
 
 void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
   switch (ctx.type) {
@@ -167,23 +162,22 @@ bool mt::LoadPlugin(
   // first find if the plugin has already been loaded, if that's the case then
   // error
   for (auto & plugin : plugins)
-    { if (plugin.filename == file) { return false; } }
+    { if (plugin->filename == file) { return false; } }
 
   // -- load plugin
   ::plugins.emplace_back(
-    file, std::make_unique<Plugin>(file.c_str(), pluginType, idx)
+    std::make_unique<Plugin>(file.c_str(), pluginType, idx)
   );
   auto & plugin = ::plugins.back();
-  auto & ctx = *plugin.plugin;
 
   // check plugin loaded
-  if (!ctx.data) {
+  if (!plugin->data) {
     ::plugins.pop_back();
     return false;
   }
 
   // -- load functions to respective plugin type
-  LoadPluginFunctions(pluginInfo, *plugin.plugin);
+  LoadPluginFunctions(pluginInfo, *plugin);
 
   return true;
 }
@@ -203,12 +197,10 @@ void mt::UpdatePlugins(
   mt::PluginInfo & pluginInfo
 ) {
   for (auto & plugin : ::plugins) {
-    plugin.plugin->Reload();
-
-    auto & ctx = *plugin.plugin;
+    plugin->Reload();
 
     // -- load functions to respective plugin type
-    LoadPluginFunctions(pluginInfo, *plugin.plugin);
+    LoadPluginFunctions(pluginInfo, *plugin);
   }
 }
 
