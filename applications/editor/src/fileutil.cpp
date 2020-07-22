@@ -146,6 +146,7 @@ void fileutil::LoadEditorConfig(
         plugin, render, file->get<std::string>(), pluginType
       )
     ) {
+      spdlog::error("Failed to load plugin {}", file->get<std::string>());
       continue;
     }
 
