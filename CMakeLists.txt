@@ -4,10 +4,19 @@ cmake_policy(VERSION 3.0)
 # shut up the OpenGL legacy warning
 cmake_policy (SET CMP0072 NEW)
 
+## add ccache if found
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    ccache)
+  message("*-- CCACHE found, will use")
+endif()
+
+## add include what you use if found
+find_program(iwyu_path "/usr/local/bin/" NAMES include-what-you-use iwyu)
+if(iwyu_path)
+  message("*-- include-what-you-use found, will use")
+  set_property(GLOBAL PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path})
 endif()
 
 ## TODO probably not the best way to handle debug mode
