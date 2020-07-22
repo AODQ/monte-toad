@@ -1,7 +1,9 @@
 #include "ui.hpp"
 
 #include "fileutil.hpp"
+#include "graphicscontext.hpp"
 
+#include <glad/glad.hpp>
 #include <monte-toad/enum.hpp>
 #include <monte-toad/glutil.hpp>
 #include <monte-toad/imagebuffer.hpp>
@@ -13,7 +15,6 @@
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
-#include <glad/glad.hpp>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.hpp>
 #include <imgui/imgui_impl_glfw.hpp>
@@ -25,14 +26,11 @@
 #include <string>
 
 namespace {
-GLFWwindow * window;
 mt::Scene scene;
 
 bool reloadPlugin = false;
 
 mt::GlProgram imageTransitionProgram;
-
-int displayWidth, displayHeight;
 
 struct GuiLogMessage {
   GuiLogMessage() = default;
@@ -390,8 +388,7 @@ void UiEntry(
 , mt::PluginInfo & plugin
 ) {
   ImGui::SetNextWindowPos(ImVec2(0, 0));
-  ImGui::SetNextWindowSize(ImVec2(::displayWidth, ::displayHeight));
-  ImGui::SetNextWindowSize(ImVec2(::displayWidth, ::displayHeight));
+  ImGui::SetNextWindowSize(ImVec2(app::DisplayWidth(), app::DisplayHeight()));
   ImGui::SetNextWindowBgAlpha(0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -480,54 +477,7 @@ bool ui::Initialize(
   mt::RenderInfo & render
 , mt::PluginInfo & plugin
 ) {
-  if (!glfwInit()) { return false; }
-
-  // opengl 4.6
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
-  // set up new window to be as non-intrusive as possible. No maximizing,
-  // floating, no moving cursor, no auto-focus, etc.
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-  glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
-  glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-  glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
-  glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
-  glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
-  glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_FALSE);
-  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-  glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_FALSE);
-  glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
-  glfwWindowHint(GLFW_SAMPLES, 0);
-
-  glfwWindowHint(GLFW_REFRESH_RATE, GLFW_DONT_CARE);
-
-  { // -- get render resolution TODO allow in settings or something
-    int xpos, ypos, width, height;
-    glfwGetMonitorWorkarea(
-      glfwGetPrimaryMonitor(), &xpos, &ypos, &width, &height
-    );
-
-    ::displayWidth = width;
-    ::displayHeight = height;
-  }
-
-  ::window =
-    glfwCreateWindow(
-      ::displayWidth, ::displayHeight
-    , "monte-toad", nullptr, nullptr
-    );
-
-  if (!::window) { glfwTerminate(); return false; }
-  glfwMakeContextCurrent(::window);
-
-  // initialize glad
-  if (!gladLoadGL()) { return false; }
-
-  glfwSwapInterval(0);
+  if (!app::InitializeGraphicsContext()) { return false; }
 
   { // -- initialize imgui
     IMGUI_CHECKVERSION();
@@ -547,7 +497,7 @@ bool ui::Initialize(
       ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
-    ImGui_ImplGlfw_InitForOpenGL(::window, true);
+    ImGui_ImplGlfw_InitForOpenGL(app::DisplayWindow(), true);
     ImGui_ImplOpenGL3_Init("#version 460 core");
   }
 
@@ -566,9 +516,9 @@ bool ui::Initialize(
 void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-  renderInfo.glfwWindow = reinterpret_cast<void*>(window);
+  renderInfo.glfwWindow = reinterpret_cast<void*>(app::DisplayWindow());
 
-  while (!glfwWindowShouldClose(::window)) {
+  while (!glfwWindowShouldClose(app::DisplayWindow())) {
     { // -- event & sleep update
       // check if currently rendering anything
       bool rendering = false; // TODO TOAD set to rendering
@@ -597,8 +547,10 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     ImGui::Render();
 
     // -- validate display size in case of resize
-    glfwGetFramebufferSize(::window, &::displayWidth, &::displayHeight);
-    glViewport(0, 0, ::displayWidth, ::displayHeight);
+    glfwGetFramebufferSize(
+      app::DisplayWindow(), &app::DisplayWidth(), &app::DisplayHeight()
+    );
+    glViewport(0, 0, app::DisplayWidth(), app::DisplayHeight());
 
     // clear screen to initiate imgui rendering
     glClear(GL_COLOR_BUFFER_BIT);
@@ -608,10 +560,10 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
       ImGui::UpdatePlatformWindows();
       ImGui::RenderPlatformWindowsDefault();
-      glfwMakeContextCurrent(::window);
+      glfwMakeContextCurrent(app::DisplayWindow());
     }
 
-    glfwSwapBuffers(::window);
+    glfwSwapBuffers(app::DisplayWindow());
 
     if (reloadPlugin) {
       // update plugins, should be ran every frame with a file checker in the
@@ -625,7 +577,7 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
 
-  glfwDestroyWindow(::window);
+  glfwDestroyWindow(app::DisplayWindow());
   glfwTerminate();
 
   mt::FreePlugins();

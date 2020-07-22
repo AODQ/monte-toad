@@ -155,11 +155,13 @@ int main(int argc, char** argv) {
     mt::material::layered::Data data;
     data.layers = { mt::material::layered::Data::Layer{0.0f, 0.2f, 0.2f, 0.9f} };
 
-  ui::Initialize(render, plugin);
+  if (!ui::Initialize(render, plugin)) {
+    return 1;
+  }
 
   ui::Run(render, plugin);
 
-  printf("\n");
+  spdlog::info("Exitting monte-toad");
 
   return 0;
 }

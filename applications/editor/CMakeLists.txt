@@ -3,7 +3,7 @@ add_executable(monte-toad-editor)
 target_sources(
   monte-toad-editor
   PRIVATE
-    src/ui.cpp src/fileutil.cpp
+    src/ui.cpp src/fileutil.cpp src/graphicscontext.cpp
 
     src/source.cpp
 )
