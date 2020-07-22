@@ -85,7 +85,7 @@ float BsdfPdf(
   /* return glm::max(0.0f, glm::InvPi * glm::dot(wo, surface.normal)); */
 }
 
-std::tuple<glm::vec3 /*wo*/, glm::vec3 /*fs*/, float /*pdf*/> BsdfSample(
+mt::BsdfSampleInfo BsdfSample(
   mt::PluginInfoMaterial const & self
 , mt::PluginInfoRandom const & random
 , mt::SurfaceInfo const & surface
@@ -214,12 +214,13 @@ void UiUpdate(
       uv.y *=
         data.imageResolution[1] / static_cast<float>(data.imageResolution[0]);
 
-      auto [origin, wi] =
+      auto camera =
         plugin.camera.Dispatch(
           plugin.random, render.camera, data.imageResolution, uv
         );
 
-      auto surface = mt::Raycast(scene, origin, wi, nullptr);
+      auto surface =
+        mt::Raycast(scene, camera.origin, camera.direction, nullptr);
 
       currentMtlIdx =
         static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);

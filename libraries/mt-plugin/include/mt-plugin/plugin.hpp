@@ -9,10 +9,6 @@
 
 #include <mt-plugin/enums.hpp>
 
-#include <array>
-#include <functional>
-#include <string>
-#include <tuple>
 #include <vector>
 
 // TODO implement functional instead of ptrs
@@ -99,10 +95,16 @@ namespace mt {
     char const * (*PluginLabel)();
   };
 
+  struct BsdfSampleInfo {
+    glm::vec3 wo;
+    glm::vec3 fs;
+    float pdf;
+  };
+
   struct PluginInfoMaterial {
     void (*Load)(mt::PluginInfoMaterial & self, mt::Scene &) = nullptr;
 
-    std::tuple<glm::vec3 /*wo*/, glm::vec3 /*fs*/, float /*pdf*/> (*BsdfSample)(
+    BsdfSampleInfo (*BsdfSample)(
       mt::PluginInfoMaterial const & self
     , mt::PluginInfoRandom const & random
     , mt::SurfaceInfo const & surface
@@ -138,8 +140,13 @@ namespace mt {
     void * userdata = nullptr;
   };
 
+  struct CameraDispatchInfo {
+    glm::vec3 origin;
+    glm::vec3 direction;
+  };
+
   struct PluginInfoCamera {
-    std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> (*Dispatch)(
+    CameraDispatchInfo (*Dispatch)(
       mt::PluginInfoRandom const & random
     , mt::CameraInfo const & camera
     , glm::u16vec2 imageResolution

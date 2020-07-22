@@ -20,12 +20,12 @@ mt::PixelInfo Dispatch(
 , mt::IntegratorData const & integratorData
 , void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
-  auto [origin, wi] =
+  auto const eye =
     pluginInfo.camera.Dispatch(
       pluginInfo.random, camera, integratorData.imageResolution, uv
     );
 
-  auto surface = mt::Raycast(scene, origin, wi, nullptr);
+  auto surface = mt::Raycast(scene, eye.origin, eye.direction, nullptr);
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   return mt::PixelInfo{surface.normal, true};

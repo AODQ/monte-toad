@@ -46,7 +46,7 @@ void CalculateMatrices(mt::CameraInfo const & camera) {
   ::viewProjectionMatrixDir = glm::mat3(glm::transpose(view)*proj);
 }
 
-glm::vec3 LookAt(mt::CameraInfo const & camera, glm::vec2 uv) {
+glm::vec3 LookAt(mt::CameraInfo const & /*camera*/, glm::vec2 uv) {
   return glm::normalize(::viewProjectionMatrixDir * glm::vec3(uv, 1.0f));
 }
 }
@@ -56,7 +56,7 @@ extern "C" {
 char const * PluginLabel() { return "pinhole camera"; }
 mt::PluginType PluginType() { return mt::PluginType::Camera; }
 
-std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> Dispatch(
+mt::CameraDispatchInfo Dispatch(
   mt::PluginInfoRandom const & random
 , mt::CameraInfo const & camera
 , glm::u16vec2 imageResolution
@@ -68,10 +68,7 @@ std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> Dispatch(
     / glm::vec2(imageResolution[0], imageResolution[1])
   ;
 
-  std::tuple<glm::vec3, glm::vec3> results;
-  std::get<0>(results) = camera.origin;
-  std::get<1>(results) = ::LookAt(camera, uv);
-  return results;
+  return { camera.origin, ::LookAt(camera, uv)};
 }
 
 void UpdateCamera(mt::CameraInfo const & camera) {

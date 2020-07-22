@@ -153,15 +153,15 @@ PropagationStatus Propagate(
   auto propagationStatus = PropagationStatus::Continue;
 
   // generate bsdf sample (this will also be used for next propagation)
-  auto [bsdfWo, bsdfFs, bsdfPdf] =
+  auto bsdf =
     plugin.material.BsdfSample(plugin.material, plugin.random, surface);
 
   // delta-dirac correct pdfs, valid only for direct emissions
-  bsdfPdf = bsdfPdf == 0.0f ? 1.0f : bsdfPdf;
+  bsdf.pdf = bsdf.pdf == 0.0f ? 1.0f : bsdf.pdf;
 
   // grab information of next surface
   mt::SurfaceInfo nextSurface =
-    mt::Raycast(scene, surface.origin, bsdfWo, surface.triangle);
+    mt::Raycast(scene, surface.origin, bsdf.wo, surface.triangle);
 
   // check if an emitter or skybox (which could be a blackbody) was hit
   if (nextSurface.triangle == nullptr) {
@@ -171,11 +171,11 @@ PropagationStatus Propagate(
       float pdf;
       auto & emitter =
         plugin.emitters[scene.emissionSource.skyboxEmitterPluginIdx];
-      auto color = emitter.SampleWo(scene, plugin, surface, bsdfWo, pdf);
+      auto color = emitter.SampleWo(scene, plugin, surface, bsdf.wo, pdf);
 
       if (color.valid) {
         // TODO use pdf
-        accumulatedIrradiance += color.color * radiance * bsdfFs / bsdfPdf;
+        accumulatedIrradiance += color.color * radiance * bsdf.fs / bsdf.pdf;
         Join(propagationStatus, PropagationStatus::DirectAccumulation);
       } else {
         Join(propagationStatus, PropagationStatus::End);
@@ -183,18 +183,18 @@ PropagationStatus Propagate(
     }
 
     // even tho we didn't hit a surface still record the origin
-    nextSurface.origin = surface.origin + bsdfWo*100.0f;
+    nextSurface.origin = surface.origin + bsdf.wo*100.0f;
 
   } else if (
       plugin.material.IsEmitter(plugin.material, scene, *nextSurface.triangle)
   ) {
     auto emissiveColor =
-      plugin.material.BsdfFs(plugin.material, nextSurface, bsdfWo);
+      plugin.material.BsdfFs(plugin.material, nextSurface, bsdf.wo);
 
     /* float emitPdf = EmitterPdf(surface, nextSurface); */
 
     accumulatedIrradiance +=
-      emissiveColor * radiance * bsdfFs / bsdfPdf;
+      emissiveColor * radiance * bsdf.fs / bsdf.pdf;
       // TODO use below
       /* emissiveColor * radiance * bsdfFs / (bsdfPdf/(emitPdf + bsdfPdf)); */
 
@@ -212,7 +212,7 @@ PropagationStatus Propagate(
   // contribute to radiance only after emission values are calculated, as it is
   // invalid for indirect emission, and the direct emission might need to handle
   // the PDF in a specific manner anyways
-  radiance *= bsdfFs / bsdfPdf;
+  radiance *= bsdf.fs / bsdf.pdf;
 
   // -- save raycastinfo
   surface = nextSurface;
@@ -238,7 +238,7 @@ mt::PixelInfo Dispatch(
 
   mt::SurfaceInfo surface;
   { // -- apply initial raycast
-    auto [origin, wi] =
+    auto const eye =
       plugin.camera.Dispatch(
         plugin.random, camera, integratorData.imageResolution, uv
       );
@@ -250,14 +250,14 @@ mt::PixelInfo Dispatch(
       cameraSurface.exitting = false;
       cameraSurface.incomingAngle = glm::vec3(0);
       cameraSurface.normal = glm::vec3(0);
-      cameraSurface.origin = origin;
+      cameraSurface.origin = eye.origin;
       debugPathRecorder({
         glm::vec3(1), glm::vec3(0)
       , mt::TransportMode::Radiance, 0, cameraSurface
       });
     }
 
-    surface = mt::Raycast(scene, origin, wi, nullptr);
+    surface = mt::Raycast(scene, eye.origin, eye.direction, nullptr);
   }
 
   // return skybox

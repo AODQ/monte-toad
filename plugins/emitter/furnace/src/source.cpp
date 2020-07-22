@@ -26,10 +26,10 @@ mt::PixelInfo SampleLi(
 , float & pdf
 ) {
   {
-    auto [wo0, _, pdf0] =
+    auto bsdf =
       plugin.material.BsdfSample(plugin.material, plugin.random, surface);
-    wo = wo0;
-    pdf = pdf0;
+    wo = bsdf.wo;
+    pdf = bsdf.pdf;
   }
   auto testSurface = mt::Raycast(scene, surface.origin, wo, surface.triangle);
   if (testSurface.Valid()) { return { glm::vec3(0.0f), false }; }
