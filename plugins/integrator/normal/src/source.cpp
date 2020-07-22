@@ -18,7 +18,7 @@ mt::PixelInfo Dispatch(
 , mt::CameraInfo const & camera
 , mt::PluginInfo const & pluginInfo
 , mt::IntegratorData const & integratorData
-, void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
+, void (*)(mt::debugutil::IntegratorPathUnit)
 ) {
   auto const eye =
     pluginInfo.camera.Dispatch(

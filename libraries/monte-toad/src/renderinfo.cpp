@@ -165,7 +165,7 @@ bool mt::DispatchRender(
         self.bufferCleared = false;
         return false;
       }
-    // [[fallthrough]]
+    [[fallthrough]];
     case mt::RenderingState::OnChange:
       ++ self.dispatchedCycles;
     break;
