@@ -272,6 +272,11 @@ void UiLog() {
       ImGui::Text(msg.postLevel.c_str());
     }
 
+    ImGui::Separator();
+    if (ImGui::Button("Clear log")) {
+      ::imGuiSink->logMessages.clear();
+    }
+
     if (::imGuiSink->newMessage && !ImGui::IsAnyMouseDown()) {
       ::imGuiSink->newMessage = false;
       ImGui::SetScrollHere(1.0f);
