@@ -223,8 +223,6 @@ glm::vec3 BsdfFs(
   auto const & material =
     reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material];
 
-  glm::vec3 fs = material.albedo * glm::dot(surface.normal, wo) * glm::InvPi;
-
   // for fresnel call, make sure wh is in same hemisphere as surface normal for
   // TIR
   glm::vec3 const F =
@@ -247,7 +245,7 @@ glm::vec3 BsdfFs(
 
 
 float BsdfPdf(
-  mt::PluginInfoMaterial const & self
+  mt::PluginInfoMaterial const & /*self*/
 , mt::SurfaceInfo const & surface
 , glm::vec3 const & wo
 ) {
@@ -277,8 +275,6 @@ std::tuple<glm::vec3 /*wo*/, glm::vec3 /*fs*/, float /*pdf*/> BsdfSample(
 ) {
   auto const & material =
     reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material];
-
-  glm::vec3 const wi = -surface.incomingAngle;
 
   glm::vec2 const u = random.SampleUniform2();
 
@@ -312,8 +308,8 @@ std::tuple<glm::vec3 /*wo*/, glm::vec3 /*fs*/, float /*pdf*/> BsdfSample(
 }
 
 bool IsEmitter(
-  mt::PluginInfoMaterial const & self
-, mt::Triangle const & triangle
+  mt::PluginInfoMaterial const & /*self*/
+, mt::Triangle const & /*triangle*/
 ) {
   return false;
   /* auto const & mtl = */

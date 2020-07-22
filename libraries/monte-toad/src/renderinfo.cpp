@@ -113,7 +113,7 @@ void BlockIterate(
 }
 } // namespace
 
-void mt::Clear(mt::IntegratorData & self, bool fast) {
+void mt::Clear(mt::IntegratorData & self) {
   std::fill(
     self.pixelCountBuffer.begin()
   , self.pixelCountBuffer.end()
@@ -170,7 +170,7 @@ bool mt::DispatchRender(
       ++ self.dispatchedCycles;
     break;
     case mt::RenderingState::OnAlways:
-      mt::Clear(self, true);
+      mt::Clear(self);
     break;
   }
 
@@ -266,7 +266,7 @@ void mt::DispatchImageCopy(mt::IntegratorData & self) {
 
 void mt::AllocateGlResources(
   mt::IntegratorData & self
-, mt::RenderInfo const & renderInfo
+, mt::RenderInfo const & /*renderInfo*/
 ) {
   spdlog::info("Allocating gl resources to {}", self.imageResolution);
   size_t const

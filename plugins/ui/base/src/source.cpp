@@ -185,7 +185,7 @@ void ApplyImageResolutionConstraint(
 }
 
 void UiImageOutput(
-  mt::Scene & scene
+  mt::Scene & /*scene*/
 , mt::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {

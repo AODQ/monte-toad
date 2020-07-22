@@ -16,7 +16,7 @@ namespace mt { struct PluginInfo; }
 
 namespace mt {
 
-  void Clear(mt::IntegratorData & self, bool fast = false);
+  void Clear(mt::IntegratorData & self);
 
   bool DispatchRender(
     mt::IntegratorData & self

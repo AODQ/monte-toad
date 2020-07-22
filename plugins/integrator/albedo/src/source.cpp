@@ -21,7 +21,7 @@ mt::PixelInfo Dispatch(
 , mt::CameraInfo const & camera
 , mt::PluginInfo const & pluginInfo
 , mt::IntegratorData const & integratorData
-, void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
+, void (*)(mt::debugutil::IntegratorPathUnit)
 ) {
   auto [origin, wi] =
     pluginInfo.camera.Dispatch(
@@ -47,10 +47,10 @@ mt::PixelInfo Dispatch(
 }
 
 void UiUpdate(
-  mt::Scene & scene
-, mt::RenderInfo & render
-, mt::PluginInfo const & plugin
-, mt::IntegratorData & integratorData
+  mt::Scene & /*scene*/
+, mt::RenderInfo & /*render*/
+, mt::PluginInfo const & /*plugin*/
+, mt::IntegratorData & /*integratorData*/
 ) {
   ImGui::Begin("albedo integrator (config)");
     /* if (ImGui::Checkbox("apply fog", &applyFogging)) */

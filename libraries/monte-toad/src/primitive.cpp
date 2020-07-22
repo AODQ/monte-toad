@@ -18,8 +18,8 @@
 std::optional<mt::BvhIntersection> mt::RayTriangleIntersection(
   bvh::Ray<float> const & ray
 , Triangle const & triangle
-, CullFace cullFace
-, float epsilon
+, CullFace /*cullFace*/
+, float /*epsilon*/
 ) {
   // Adapted from BVH triangle intersection code, as my personal intersection
   // code doesn't seem to work with the library (neither does replacing these
@@ -146,7 +146,6 @@ mt::Triangle::~Triangle() {}
 ////////////////////////////////////////////////////////////////////////////////
 std::unique_ptr<mt::AccelerationStructure> mt::AccelerationStructure::Construct(
   std::vector<Triangle> && trianglesMv
-, bool optimize
 ) {
   auto self = std::make_unique<AccelerationStructure>();
 

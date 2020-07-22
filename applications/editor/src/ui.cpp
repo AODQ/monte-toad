@@ -129,7 +129,7 @@ void UiPluginLoadFile(
   mt::PluginInfo & pluginInfo
 , mt::RenderInfo & render
 , mt::PluginType pluginType
-, std::string & file
+, std::string & /*file*/
 ) {
   std::string tempFile =
     fileutil::FilePicker(" --file-filter=\"mt-plugin | *.mt-plugin\"");
@@ -265,11 +265,11 @@ void UiLog() {
           col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
         break;
       }
-      ImGui::Text(msg.preLevel.c_str());
+      ImGui::Text("%s", msg.preLevel.c_str());
       ImGui::SameLine(0, 0);
-      ImGui::TextColored(col, msg.colorLevel.c_str());
+      ImGui::TextColored(col, "%s", msg.colorLevel.c_str());
       ImGui::SameLine(0, 0);
-      ImGui::Text(msg.postLevel.c_str());
+      ImGui::Text("%s", msg.postLevel.c_str());
     }
 
     ImGui::Separator();

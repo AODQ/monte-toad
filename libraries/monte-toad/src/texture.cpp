@@ -159,7 +159,9 @@ mt::Texture mt::Texture::Construct(std::string const & filename) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-mt::Texture mt::Texture::Construct(int width, int height, void * data) {
+mt::Texture mt::Texture::Construct(
+  int /*width*/, int /*height*/, void * /*data*/
+) {
   return mt::Texture{};
 }
 
@@ -228,7 +230,9 @@ glm::vec4 mt::SampleBilinear(mt::Texture const & texture, glm::vec2 uvCoords) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-glm::vec4 mt::Sample(mt::CubemapTexture const & texture, glm::vec3 dir) {
+glm::vec4 mt::Sample(
+  mt::CubemapTexture const & /*texture*/, glm::vec3 /*dir*/
+) {
   // TODO
   return glm::vec4(1.0f);
 }

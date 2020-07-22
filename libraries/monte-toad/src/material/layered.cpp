@@ -880,7 +880,7 @@ std::tuple<
 , std::vector<glm::vec3> /* kappas */
 > EvaluateTextureMaps(
   mt::material::layered::Data const & structure
-, mt::SurfaceInfo const & surface
+, mt::SurfaceInfo const & /*surface*/
 ) {
   std::vector<float>     alphas; alphas.resize(structure.layers.size());
   std::vector<glm::vec3> etas;   etas.resize(structure.layers.size()+1);
@@ -1000,7 +1000,7 @@ float mt::material::layered::TotalInternalReflectionTable::Get(
 float mt::material::layered::BsdfPdf(
   mt::material::layered::Data const & structure
 , mt::SurfaceInfo const & surface
-, glm::vec3 const & wo
+, glm::vec3 const & /*wo*/
 ) {
   auto const wi = -surface.incomingAngle;
   /* glm::vec3 const h = glm::normalize(wo + wi); */

@@ -15,7 +15,7 @@ mt::SurfaceInfo mt::SurfaceInfo::Construct(
 }
 
 mt::SurfaceInfo mt::SurfaceInfo::Construct(
-  mt::Scene const & scene
+  mt::Scene const & /*scene*/
 , mt::Triangle const * triangle
 , mt::BvhIntersection const & intersection
 , glm::vec3 origin

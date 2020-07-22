@@ -79,7 +79,6 @@ namespace mt {
 
     static std::unique_ptr<AccelerationStructure> Construct(
       std::vector<Triangle> && triangles
-    , bool optimize = false
     );
   };
 

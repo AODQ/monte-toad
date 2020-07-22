@@ -255,7 +255,7 @@ mt::Scene mt::Scene::Construct(
   // load models & parse into BVH tree
   scene.accelStructure =
     AccelerationStructure::Construct(
-      std::move(LoadAssetIntoScene(scene, filename))
+      LoadAssetIntoScene(scene, filename)
     );
 
   if(environmentMapFilename != "") {

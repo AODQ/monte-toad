@@ -35,7 +35,7 @@ bool AttemptJsonStore(
 }
 
 void LoadPluginIntegrator(
-  mt::PluginInfoIntegrator & integrator
+  mt::PluginInfoIntegrator & /*integrator*/
 , mt::IntegratorData & data
 , nlohmann::json const & info
 ) {
@@ -65,27 +65,27 @@ void LoadPluginIntegrator(
 }
 
 [[maybe_unused]]
-void LoadPluginEmitter(nlohmann::json json) {
+void LoadPluginEmitter(nlohmann::json /*json*/) {
 }
 
 [[maybe_unused]]
-void LoadPluginKernel(nlohmann::json json) {
+void LoadPluginKernel(nlohmann::json /*json*/) {
 }
 
 [[maybe_unused]]
-void LoadPluginMaterial(nlohmann::json json) {
+void LoadPluginMaterial(nlohmann::json /*json*/) {
 }
 
 [[maybe_unused]]
-void LoadPluginCamera(nlohmann::json json) {
+void LoadPluginCamera(nlohmann::json /*json*/) {
 }
 
 [[maybe_unused]]
-void LoadPluginRandom(nlohmann::json json) {
+void LoadPluginRandom(nlohmann::json /*json*/) {
 }
 
 [[maybe_unused]]
-void LoadPluginUserInterface(nlohmann::json json) {
+void LoadPluginUserInterface(nlohmann::json /*json*/) {
 }
 } // -- namespace
 
@@ -170,8 +170,8 @@ void fileutil::LoadEditorConfig(
 
 //------------------------------------------------------------------------------
 void fileutil::SaveEditorConfig(
-  mt::RenderInfo const & render
-, mt::PluginInfo const & plugin
+  mt::RenderInfo const & /*render*/
+, mt::PluginInfo const & /*plugin*/
 ) {
 }
 
