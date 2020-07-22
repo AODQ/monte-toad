@@ -44,6 +44,38 @@ template<> struct fmt::formatter<glm::u16vec2> {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+template<> struct fmt::formatter<glm::ivec2> {
+  std::string p = "{}";
+  auto parse(format_parse_context & ctx) { return ::StandardFormat(p, ctx); }
+
+  template <typename FmtCtx> auto format(glm::ivec2 const & vec, FmtCtx & ctx)
+  {
+    return
+      format_to(
+        ctx.out()
+      , "(" + p + ", " + p + ")"
+      , vec.x, vec.y
+      );
+  }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+template<> struct fmt::formatter<glm::uvec2> {
+  std::string p = "{}";
+  auto parse(format_parse_context & ctx) { return ::StandardFormat(p, ctx); }
+
+  template <typename FmtCtx> auto format(glm::uvec2 const & vec, FmtCtx & ctx)
+  {
+    return
+      format_to(
+        ctx.out()
+      , "(" + p + ", " + p + ")"
+      , vec.x, vec.y
+      );
+  }
+};
+
+////////////////////////////////////////////////////////////////////////////////
 template<> struct fmt::formatter<glm::vec3> {
   std::string p = "{}";
   auto parse(format_parse_context & ctx) { return ::StandardFormat(p, ctx); }

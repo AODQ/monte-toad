@@ -5,6 +5,7 @@
 #include <monte-toad/enum.hpp>
 #include <monte-toad/glutil.hpp>
 #include <monte-toad/imagebuffer.hpp>
+#include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
@@ -297,7 +298,8 @@ void UiRenderInfo(
         renderInfo.modelFile = tempFilename;
         LoadScene(renderInfo, pluginInfo);
         // reset camera origin
-        renderInfo.cameraOrigin = glm::vec3(0.0f);
+        renderInfo.camera.origin = glm::vec3(0.0f);
+        mt::UpdateCamera(pluginInfo, renderInfo);
       }
     }
 
@@ -419,6 +421,19 @@ void UiEntry(
 
   if (plugin.userInterface.Dispatch)
     { plugin.userInterface.Dispatch(scene, render, plugin); }
+
+  for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
+    auto & integrator = plugin.integrators[idx];
+    if (integrator.UiUpdate) {
+      integrator.UiUpdate(scene, render, plugin, render.integratorData[idx]);
+    }
+  }
+
+  if (plugin.dispatchers[render.primaryDispatcher].UiUpdate) {
+    plugin
+      .dispatchers[render.primaryDispatcher]
+      .UiUpdate(scene, render, plugin);
+  }
 
   for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
     auto & integrator = plugin.integrators[idx];

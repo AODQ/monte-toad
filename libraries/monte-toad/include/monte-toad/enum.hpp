@@ -14,11 +14,19 @@ constexpr std::underlying_type<EnumType>::type & Idx(EnumType & v) {
 }
 
 namespace mt {
-  enum class RenderingState {
+  enum struct RenderingState {
     Off      // never renders
   , OnChange // renders up to N samples only when something has changed
   , AfterChange  // Same as on change but only happens after movement is done
   , OnAlways  // renders only 1 sample all the time
+  , Size
+  };
+
+  enum struct IntegratorTypeHint {
+    Primary
+  , Albedo
+  , Normal
+  , Depth
   , Size
   };
 
@@ -35,4 +43,6 @@ namespace mt {
   RenderingState ToRenderingState(char const * label);
   AspectRatio ToAspectRatio(char const * label);
   void ApplyAspectRatioY(mt::AspectRatio ratio, uint16_t const x, uint16_t & y);
+
+  char const * ToString(mt::IntegratorTypeHint hint);
 }

@@ -4,13 +4,14 @@ target_include_directories(monte-toad PUBLIC "include/")
 target_sources(
   monte-toad
   PRIVATE
+    src/camerainfo.cpp
     src/enum.cpp
     src/geometry.cpp
     src/glutil.cpp
     src/imagebuffer.cpp
     src/imgui.cpp
-    src/material/layered.cpp
     src/log.cpp
+    src/material/layered.cpp
     src/math.cpp
     src/primitive.cpp
     src/renderinfo.cpp

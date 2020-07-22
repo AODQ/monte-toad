@@ -1,5 +1,6 @@
 #include <monte-toad/renderinfo.hpp>
 
+#include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <mt-plugin/plugin.hpp>
 

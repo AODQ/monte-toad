@@ -1,5 +1,6 @@
+#include <monte-toad/camerainfo.hpp>
+#include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
-#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 
 #include <mt-plugin/plugin.hpp>
@@ -12,13 +13,14 @@ mt::PluginType PluginType() { return mt::PluginType::Integrator; }
 mt::PixelInfo Dispatch(
   glm::vec2 const & uv
 , mt::Scene const & scene
-, mt::RenderInfo const & renderInfo
+, mt::CameraInfo const & camera
 , mt::PluginInfo const & pluginInfo
 , mt::IntegratorData const & integratorData
+, void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
   auto [origin, wi] =
     pluginInfo.camera.Dispatch(
-      pluginInfo.random, renderInfo, integratorData.imageResolution, uv
+      pluginInfo.random, camera, integratorData.imageResolution, uv
     );
 
   auto surface = mt::Raycast(scene, origin, wi, nullptr);

@@ -145,6 +145,9 @@ int main(int argc, char** argv) {
 
   omp_set_num_threads(render.numThreads);
 
+  // -- load up integrator type hints
+  for (auto & idx : render.integratorIndices) { idx = -1ul; }
+
   // -- load up renderinfo & plugin from config file
   mt::PluginInfo plugin;
   fileutil::LoadEditorConfig(render, plugin);

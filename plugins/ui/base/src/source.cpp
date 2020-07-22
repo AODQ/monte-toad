@@ -1,5 +1,6 @@
 #include <monte-toad/enum.hpp>
 #include <monte-toad/imgui.hpp>
+#include <monte-toad/integratordata.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <mt-plugin/plugin.hpp>
@@ -26,90 +27,88 @@ std::array<size_t, 4> constexpr blockIteratorStrides = {{
   32ul, 64ul, 128ul, 256ul
 }};
 
-void UiCameraControls(mt::Scene const & scene, mt::RenderInfo & renderInfo) {
-  // clamp to prevent odd ms time (like if scene were to load)
-  msTime = glm::clamp(msTime, 1.0f, 10055.5f);
+void UiCameraControls(
+  mt::Scene const & scene
+, mt::PluginInfo const & plugin
+, mt::RenderInfo & renderInfo
+) {
 
-  auto const cameraRight =
-    glm::normalize(
-      glm::cross(renderInfo.cameraDirection, renderInfo.cameraUpAxis)
-    );
-  auto const & cameraForward = renderInfo.cameraDirection;
-  auto const & cameraUp = renderInfo.cameraUpAxis;
-
-  auto const cameraVelocity =
-    glm::length(scene.bboxMax - scene.bboxMin)
-  * 0.001f * cameraRelativeVelocity;
+  static double prevX = -1.0, prevY = -1.0;
 
   auto window = reinterpret_cast<GLFWwindow *>(renderInfo.glfwWindow);
 
-  bool cameraHasMoved = false;
+  // only get to control camera by right clicking
+  if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+    prevX = -1.0;
+    return;
+  }
+
+  // clamp to prevent odd ms time (like if scene were to load)
+  ::msTime = glm::clamp(::msTime, 0.01f, 15.5f);
+
+  auto const cameraRight =
+    glm::normalize(
+      glm::cross(renderInfo.camera.direction, renderInfo.camera.upAxis)
+    );
+  auto const & cameraForward = renderInfo.camera.direction;
+  auto const & cameraUp = renderInfo.camera.upAxis;
+
+  auto const cameraVelocity =
+    glm::length(scene.bboxMax - scene.bboxMin)
+  * 0.001f * cameraRelativeVelocity * ::msTime;
 
   if (glfwGetKey(window, GLFW_KEY_A)) {
-    renderInfo.cameraOrigin -= msTime * cameraRight * cameraVelocity;
-    cameraHasMoved = true;
+    renderInfo.camera.origin -= cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_D)) {
-    renderInfo.cameraOrigin += msTime * cameraRight * cameraVelocity;
-    cameraHasMoved = true;
+    renderInfo.camera.origin += cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_W)) {
-    renderInfo.cameraOrigin += msTime * cameraForward * cameraVelocity;
-    cameraHasMoved = true;
+    renderInfo.camera.origin += cameraForward * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_S)) {
-    renderInfo.cameraOrigin -= msTime * cameraForward * cameraVelocity;
-    cameraHasMoved = true;
+    renderInfo.camera.origin -= cameraForward * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-    renderInfo.cameraOrigin -= msTime * cameraUp * cameraVelocity;
-    cameraHasMoved = true;
+    renderInfo.camera.origin -= cameraUp * cameraVelocity;
   }
 
   if (
       glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)
    && glfwGetKey(window, GLFW_KEY_SPACE)
   ) {
-    renderInfo.cameraOrigin += msTime * 2.0f * cameraUp * cameraVelocity;
-    cameraHasMoved = true;
+    renderInfo.camera.origin += 2.0f * cameraUp * cameraVelocity;
   }
 
-  static double prevX = -1.0, prevY = -1.0;
-  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+  // hide as mouse will spaz around screen being teleported
+  ImGui::SetMouseCursor(ImGuiMouseCursor_None);
 
-    // hide as mouse will spaz around screen being teleported
-    ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+  if (prevX == -1.0) {
+    glfwGetCursorPos(window, &prevX, &prevY);
+  }
 
-    if (prevX == -1.0) {
-      glfwGetCursorPos(window, &prevX, &prevY);
-    }
+  double deltaX, deltaY;
+  glfwGetCursorPos(window, &deltaX, &deltaY);
 
-    double deltaX, deltaY;
-    glfwGetCursorPos(window, &deltaX, &deltaY);
+  glm::vec2 delta = glm::vec2(deltaX - prevX, deltaY - prevY);
 
-    glm::vec2 delta = glm::vec2(deltaX - prevX, deltaY - prevY);
+  renderInfo.camera.direction +=
+    (delta.x * cameraRight + delta.y * cameraUp)
+  * 0.00025f * ::mouseSensitivity * ::msTime
+  ;
+  renderInfo.camera.direction = glm::normalize(renderInfo.camera.direction);
 
-    renderInfo.cameraDirection +=
-      (delta.x * cameraRight + delta.y * cameraUp)
-    * ::msTime * 0.00025f * ::mouseSensitivity
-    ;
-    renderInfo.cameraDirection = glm::normalize(renderInfo.cameraDirection);
+  if (std::isnan(renderInfo.camera.direction.x)) {
+    renderInfo.camera.direction = glm::vec3(1.0f, 0.0f, 0.0f);
+  }
 
-    if (std::isnan(renderInfo.cameraDirection.x)) {
-      renderInfo.cameraDirection = glm::vec3(1.0f, 0.0f, 0.0f);
-    }
+  glfwSetCursorPos(window, prevX, prevY);
 
-    glfwSetCursorPos(window, prevX, prevY);
-
-    cameraHasMoved = true;
-
-  } else { prevX = -1.0; }
-
-  if (cameraHasMoved) { renderInfo.ClearImageBuffers(); }
+  mt::UpdateCamera(plugin, renderInfo);
 }
 
 void UiPluginInfo(
@@ -127,30 +126,34 @@ void UiPluginInfo(
   min -= glm::abs(min)*1.5f;
   max += glm::abs(max)*1.5f;
 
-  if (ImGui::SliderFloat3("Origin", &renderInfo.cameraOrigin.x, min, max)) {
-    renderInfo.ClearImageBuffers();
+  if (ImGui::SliderFloat3("Origin", &renderInfo.camera.origin.x, min, max)) {
+    mt::UpdateCamera(pluginInfo, renderInfo);
+  }
+  if (ImGui::Button("Clear Origin")) {
+    renderInfo.camera.origin = glm::vec3(0.0f);
+    mt::UpdateCamera(pluginInfo, renderInfo);
   }
 
-  if (ImGui::InputFloat3("Camera up axis", &renderInfo.cameraUpAxis.x)) {
-    renderInfo.ClearImageBuffers();
+  if (ImGui::InputFloat3("Camera up axis", &renderInfo.camera.upAxis.x)) {
+    mt::UpdateCamera(pluginInfo, renderInfo);
   }
   if (ImGui::Button("Normalize camera up")) {
-    renderInfo.cameraUpAxis = glm::normalize(renderInfo.cameraUpAxis);
-    renderInfo.ClearImageBuffers();
+    renderInfo.camera.upAxis = glm::normalize(renderInfo.camera.upAxis);
+    mt::UpdateCamera(pluginInfo, renderInfo);
   }
 
   if (
     ImGui::SliderFloat3(
-      "Direction", &renderInfo.cameraDirection.x, -1.0f, +1.0f
+      "Direction", &renderInfo.camera.direction.x, -1.0f, +1.0f
     )
   ) {
-    renderInfo.cameraDirection = glm::normalize(renderInfo.cameraDirection);
-    renderInfo.ClearImageBuffers();
+    renderInfo.camera.direction = glm::normalize(renderInfo.camera.direction);
+    mt::UpdateCamera(pluginInfo, renderInfo);
   }
   ImGui::SliderFloat("Mouse Sensitivity", &::mouseSensitivity, 0.1f, 3.0f);
   ImGui::SliderFloat("Camera Velocity", &::cameraRelativeVelocity, 0.1f, 2.0f);
-  if (ImGui::SliderFloat("FOV", &renderInfo.cameraFieldOfView, 0.0f, 140.0f)) {
-    renderInfo.ClearImageBuffers();
+  if (ImGui::SliderFloat("FOV", &renderInfo.camera.fieldOfView, 0.0f, 140.0f)) {
+    mt::UpdateCamera(pluginInfo, renderInfo);
   }
 
   static std::chrono::high_resolution_clock timer;
@@ -429,16 +432,46 @@ void UiDispatchers(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
       return;
     }
 
+    auto const IntegratorLabel = [&](size_t idx) -> char const * {
+      return idx == -1lu ? "N/A" : plugin.integrators[idx].PluginLabel();
+    };
+
+    for (size_t it = 0; it < Idx(mt::IntegratorTypeHint::Size); ++ it) {
+      auto & idx = render.integratorIndices[it];
+
+      auto comboStr =
+        fmt::format(
+          "Integrator {}"
+        , mt::ToString(static_cast<mt::IntegratorTypeHint>(it))
+        );
+      if (!ImGui::BeginCombo(comboStr.c_str(), IntegratorLabel(idx)))
+        { continue; }
+
+      if (ImGui::Selectable("None", idx == -1lu)) {
+        idx = -1lu;
+        render.ClearImageBuffers();
+      }
+
+      for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
+        bool isSelected = idx == i;
+        if (ImGui::Selectable(IntegratorLabel(i), isSelected)) {
+          idx = i;
+          render.ClearImageBuffers();
+        }
+      }
+      ImGui::EndCombo();
+    }
+
     auto const DispatcherLabel = [&](size_t idx) -> char const * {
       return plugin.dispatchers[idx].PluginLabel();
     };
 
     { // select a primary dispatcher
       auto & idx = render.primaryDispatcher;
-      if (ImGui::BeginCombo("Primary", DispatcherLabel(idx))) {
+      if (ImGui::BeginCombo("Dispatcher", DispatcherLabel(idx))) {
         for (size_t i = 0; i < plugin.dispatchers.size(); ++ i) {
           bool isSelected = idx == i;
-          if (ImGui::Selectable(DispatcherLabel(idx), isSelected)) {
+          if (ImGui::Selectable(DispatcherLabel(i), isSelected)) {
             idx = i;
             render.ClearImageBuffers();
           }
@@ -489,7 +522,7 @@ void Dispatch(
 , mt::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
-  ::UiCameraControls(scene, renderInfo);
+  ::UiCameraControls(scene, pluginInfo, renderInfo);
   ::UiPluginInfo(scene, renderInfo, pluginInfo);
   ::UiImageOutput(scene, renderInfo, pluginInfo);
   ::UiEmitters(scene, renderInfo, pluginInfo);

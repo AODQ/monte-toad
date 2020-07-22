@@ -51,3 +51,13 @@ void mt::ApplyAspectRatioY(
   y = x / aspectRatioConversion[Idx(ratio)];
   if (y == 0) { y = 1; }
 }
+
+char const * mt::ToString(mt::IntegratorTypeHint hint) {
+  switch (hint) {
+    default: return "";
+    case mt::IntegratorTypeHint::Primary: return "Primary";
+    case mt::IntegratorTypeHint::Albedo:  return "Albedo";
+    case mt::IntegratorTypeHint::Normal:  return "Normal";
+    case mt::IntegratorTypeHint::Depth:   return "Depth";
+  }
+}

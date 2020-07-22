@@ -108,6 +108,12 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
     case mt::PluginType::Camera: {
       auto & unit = plugin.camera;
       ctx.LoadFunction(unit.Dispatch, "Dispatch");
+      ctx.LoadFunction(
+        unit.WorldCoordToUv, "WorldCoordToUv", Plugin::Optional::Yes
+      );
+      ctx.LoadFunction(
+        unit.UpdateCamera, "UpdateCamera", Plugin::Optional::Yes
+      );
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -142,6 +148,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
     case mt::PluginType::Dispatcher: {
       auto & unit = plugin.dispatchers[ctx.idx];
       ctx.LoadFunction(unit.DispatchBlockRegion, "DispatchBlockRegion");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate");
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
     } break;
@@ -357,6 +364,7 @@ void mt::Clean(
     break;
     case mt::PluginType::Dispatcher:
       pluginInfo.dispatchers[idx].DispatchBlockRegion = nullptr;
+      pluginInfo.dispatchers[idx].UiUpdate = nullptr;
       pluginInfo.dispatchers[idx].PluginType = nullptr;
       pluginInfo.dispatchers[idx].PluginLabel = nullptr;
     break;

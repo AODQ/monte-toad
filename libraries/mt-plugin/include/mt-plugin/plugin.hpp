@@ -17,10 +17,12 @@
 
 // TODO implement functional instead of ptrs
 
+namespace mt::debugutil { struct IntegratorPathUnit; }
+namespace mt { struct CameraInfo; }
+namespace mt { struct IntegratorData; }
 namespace mt { struct PluginInfo; }
 namespace mt { struct RenderInfo; }
 namespace mt { struct Scene; }
-namespace mt { struct IntegratorData; }
 namespace mt { struct SurfaceInfo; }
 namespace mt { struct Triangle; }
 
@@ -35,9 +37,10 @@ namespace mt {
     PixelInfo (*Dispatch)(
       glm::vec2 const & uv
     , mt::Scene const & scene
-    , mt::RenderInfo const & renderInfo
+    , mt::CameraInfo const & camera
     , mt::PluginInfo const & pluginInfo
     , mt::IntegratorData const & integratorData
+    , void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
     ) = nullptr;
 
     void (*UiUpdate)(
@@ -138,9 +141,17 @@ namespace mt {
   struct PluginInfoCamera {
     std::tuple<glm::vec3 /*ori*/, glm::vec3 /*dir*/> (*Dispatch)(
       mt::PluginInfoRandom const & random
-    , mt::RenderInfo const & renderInfo
+    , mt::CameraInfo const & camera
     , glm::u16vec2 imageResolution
     , glm::vec2 uv
+    ) = nullptr;
+
+    // optional, used to update plugin data when camera changes
+    void (*UpdateCamera)(mt::CameraInfo const & camera) = nullptr;
+
+    // optional, but used in order to draw debug rendering lines
+    glm::vec2 (*WorldCoordToUv)(
+      mt::CameraInfo const & camera, glm::vec3 worldCoord
     ) = nullptr;
 
     void (*UiUpdate)(
@@ -209,10 +220,16 @@ namespace mt {
     , size_t const minX, size_t const minY
     , size_t const maxX, size_t const maxY
     , size_t strideX, size_t strideY
-    );
+    ) = nullptr;
 
-    mt::PluginType (*PluginType)();
-    char const * (*PluginLabel)();
+    void (*UiUpdate)(
+      mt::Scene & scene
+    , mt::RenderInfo & render
+    , mt::PluginInfo const & plugin
+    ) = nullptr;
+
+    mt::PluginType (*PluginType)() = nullptr;
+    char const * (*PluginLabel)() = nullptr;
   };
 
   struct PluginInfo {

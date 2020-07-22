@@ -1,4 +1,5 @@
 #include <monte-toad/geometry.hpp>
+#include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/material/layered.hpp>
 #include <monte-toad/math.hpp>
@@ -215,7 +216,7 @@ void UiUpdate(
 
       auto [origin, wi] =
         plugin.camera.Dispatch(
-          plugin.random, render, data.imageResolution, uv
+          plugin.random, render.camera, data.imageResolution, uv
         );
 
       auto surface = mt::Raycast(scene, origin, wi, nullptr);

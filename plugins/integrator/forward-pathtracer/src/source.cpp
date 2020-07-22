@@ -1,8 +1,10 @@
+#include <monte-toad/camerainfo.hpp>
+#include <monte-toad/debugutil/IntegratorPathUnit.hpp>
 #include <monte-toad/enum.hpp>
 #include <monte-toad/geometry.hpp>
+#include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
-#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <monte-toad/surfaceinfo.hpp>
 #include <monte-toad/texture.hpp>
@@ -44,6 +46,8 @@ PropagationStatus ApplyIndirectEmission(
 , mt::SurfaceInfo const & surface
 , glm::vec3 const & radiance
 , glm::vec3 & accumulatedIrradiance
+, size_t it
+, void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
   auto propagationStatus = PropagationStatus::Continue;
 
@@ -116,6 +120,14 @@ PropagationStatus ApplyIndirectEmission(
     * plugin.material.BsdfFs(plugin.material, surface, emissionWo)
     / (emitPdf/(emitPdf + bsdfEmitPdf))
     ;
+
+
+    if (debugPathRecorder) {
+      debugPathRecorder({
+        radiance, accumulatedIrradiance
+      , mt::TransportMode::Importance, it+2, surface
+      });
+    }
   }
 
   return propagationStatus;
@@ -127,11 +139,17 @@ PropagationStatus Propagate(
 , glm::vec3 & radiance
 , glm::vec3 & accumulatedIrradiance
 , size_t const it
-, mt::RenderInfo const & render
 , mt::PluginInfo const & plugin
+, void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
 
-  // store a vlaue for current propagation status, which could be overwritten
+  if (debugPathRecorder) {
+    debugPathRecorder({
+      radiance, accumulatedIrradiance, mt::TransportMode::Radiance, it, surface
+    });
+  }
+
+  // store a value for current propagation status, which could be overwritten
   auto propagationStatus = PropagationStatus::Continue;
 
   // generate bsdf sample (this will also be used for next propagation)
@@ -163,6 +181,10 @@ PropagationStatus Propagate(
         Join(propagationStatus, PropagationStatus::End);
       }
     }
+
+    // even tho we didn't hit a surface still record the origin
+    nextSurface.origin = surface.origin + bsdfWo*100.0f;
+
   } else if (
       plugin.material.IsEmitter(plugin.material, scene, *nextSurface.triangle)
   ) {
@@ -183,6 +205,7 @@ PropagationStatus Propagate(
     propagationStatus,
     ApplyIndirectEmission(
       scene, plugin, surface, radiance, accumulatedIrradiance
+    , it+1, debugPathRecorder
     )
   );
 
@@ -191,9 +214,8 @@ PropagationStatus Propagate(
   // the PDF in a specific manner anyways
   radiance *= bsdfFs / bsdfPdf;
 
-  // -- save raycastinfo if intersection was valid
-  if (nextSurface.triangle)
-    { surface = nextSurface; }
+  // -- save raycastinfo
+  surface = nextSurface;
 
   return propagationStatus;
 }
@@ -208,16 +230,33 @@ mt::PluginType PluginType() { return mt::PluginType::Integrator; }
 mt::PixelInfo Dispatch(
   glm::vec2 const & uv
 , mt::Scene const & scene
-, mt::RenderInfo const & renderInfo
+, mt::CameraInfo const & camera
 , mt::PluginInfo const & plugin
 , mt::IntegratorData const & integratorData
+, void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
+
   mt::SurfaceInfo surface;
   { // -- apply initial raycast
     auto [origin, wi] =
       plugin.camera.Dispatch(
-        plugin.random, renderInfo, integratorData.imageResolution, uv
+        plugin.random, camera, integratorData.imageResolution, uv
       );
+
+    // store camera info
+    if (debugPathRecorder) {
+      mt::SurfaceInfo cameraSurface;
+      cameraSurface.distance = 0.0f;
+      cameraSurface.exitting = false;
+      cameraSurface.incomingAngle = glm::vec3(0);
+      cameraSurface.normal = glm::vec3(0);
+      cameraSurface.origin = origin;
+      debugPathRecorder({
+        glm::vec3(1), glm::vec3(0)
+      , mt::TransportMode::Radiance, 0, cameraSurface
+      });
+    }
+
     surface = mt::Raycast(scene, origin, wi, nullptr);
   }
 
@@ -248,7 +287,8 @@ mt::PixelInfo Dispatch(
   bool hit = false;
   glm::vec3 radiance = glm::vec3(1.0f), accumulatedIrradiance = glm::vec3(0.0f);
 
-  for (size_t it = 0; it < integratorData.pathsPerSample; ++ it) {
+  size_t it = 0;
+  for (; it < integratorData.pathsPerSample; ++ it) {
     PropagationStatus status =
       Propagate(
         scene
@@ -256,8 +296,8 @@ mt::PixelInfo Dispatch(
       , radiance
       , accumulatedIrradiance
       , it
-      , renderInfo
       , plugin
+      , debugPathRecorder
       );
 
     if (status == PropagationStatus::End) { break; }
@@ -268,6 +308,14 @@ mt::PixelInfo Dispatch(
       hit = true;
       break;
     }
+  }
+
+  // store final surface info
+  if (hit && debugPathRecorder) {
+    debugPathRecorder({
+      radiance, accumulatedIrradiance
+    , mt::TransportMode::Radiance, it+1, surface
+    });
   }
 
   return mt::PixelInfo { accumulatedIrradiance, hit };
