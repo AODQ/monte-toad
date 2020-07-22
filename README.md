@@ -1,6 +1,7 @@
 # Monte Toad
 
-Ongoing WIP project animation renderer
+Ongoing WIP project animation renderer. The majority of the feature-set is
+C-ABI plugin-based with native support for hot-reloading.
 
 # External Dependencies
 
@@ -17,9 +18,40 @@ Ongoing WIP project animation renderer
 - stb\_image.hpp
 - cxxopts
 
+# Support
+
+To run the editor, OpenGL3.2 is required. Image processing can still be done
+without a GPU.
+
+Minimum of CMake 3.0 is necessary
+
+The following compilers/toolsets are tested/supported:
+
+  * GCC
+  * Clang
+  * ccache
+
+# Current Feature List
+
+* forward next-event-estimation path-tracer
+* real-time visualizer/editor
+* multiple integrator visualization
+* multi-threaded
+* cameras, integrators, ray dispatchers, emitters, denoisers/post-processing,
+    random generators, and UI are all configurable plugins
+
+# Future Feature List
+
+* Windows support
+* OpenImageDenoiser support
+* RTX support (probably through Vulkan)
+* material & layered material editor
+* bidirectional path tracing
+* animation support
+
 # Installation (Linux)
 
-Installation is trivial if you have used CMake before. For redundancy, here is how to install it locally:
+Installation uses standard CMake procedure. Here is how to install it locally:
 
 ```
 mkdir monte-toad
