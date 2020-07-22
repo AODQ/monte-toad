@@ -10,7 +10,7 @@ namespace {
     p = "{:" + std::string{ctx.begin(), it} + "}";
     return it;
   }
-};
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 template<> struct fmt::formatter<glm::vec2> {

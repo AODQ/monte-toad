@@ -8,19 +8,6 @@
 // simple RAII opengl utils
 
 namespace mt {
-  struct GlBuffer {
-    GlBuffer() = default;
-    GlBuffer(GlBuffer const &) = delete;
-    GlBuffer(GlBuffer &&);
-    ~GlBuffer();
-
-    uint32_t handle;
-
-    void Construct();
-
-    void Free();
-  };
-
   struct GlTexture {
     GlTexture() = default;
     GlTexture(GlTexture const &) = delete;

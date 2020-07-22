@@ -90,35 +90,6 @@ void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
 void AllocateGlResources(mt::RenderInfo & renderInfo) {
   for (auto & integrator : renderInfo.integratorData)
     { mt::AllocateGlResources(integrator, renderInfo); }
-
-  // -- construct program
-  std::string const imageTransitionSource =
-    "#version 460 core\n"
-    "layout(local_size_x = 8, local_size_y = 8, local_size_x = 1) in;\n"
-    "\n"
-    "uniform layout(rgba8, binding = 0) writeonly image2D outputImg;\n"
-    "uniform layout(location = 0) int  stride;\n"
-    "uniform layout(location = 1) bool forceClearImage;\n"
-    "layout(std430, binding = 0) buffer TransitionBuffer {\n"
-    "  vec4 color[];\n"
-    "} transition;\n"
-    "\n"
-    "void main(void) {\n"
-    "  ivec2 compCoord = ivec2(gl_GlobalInvocationID.xy);\n"
-    "  ivec2 sampleCompCoord = compCoord - (compCoord % ivec2(stride));\n"
-    "  vec4 color = \n"
-    "    transition.color[\n"
-    "      sampleCompCoord.y*(gl_NumWorkGroups*gl_WorkGroupSize).x\n"
-    "    + sampleCompCoord.x\n"
-    "  ];\n"
-    "  if (forceClearImage || color.a > 0.0f) {\n"
-    "      imageStore(outputImg, compCoord, vec4(color));\n"
-    "  }\n"
-    "}\n"
-  ;
-
-  ::imageTransitionProgram
-    .Construct({{imageTransitionSource, GL_COMPUTE_SHADER}});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -431,7 +402,10 @@ void UiEntry(
     }
   }
 
-  if (plugin.dispatchers[render.primaryDispatcher].UiUpdate) {
+  if (
+      plugin.dispatchers.size() > 0
+   && plugin.dispatchers[render.primaryDispatcher].UiUpdate
+ ) {
     plugin
       .dispatchers[render.primaryDispatcher]
       .UiUpdate(scene, render, plugin);
@@ -498,7 +472,7 @@ bool ui::Initialize(
     }
 
     ImGui_ImplGlfw_InitForOpenGL(app::DisplayWindow(), true);
-    ImGui_ImplOpenGL3_Init("#version 460 core");
+    ImGui_ImplOpenGL3_Init("#version 330 core");
   }
 
   if (render.modelFile != "")

@@ -238,30 +238,39 @@ size_t mt::BlockIteratorMax(mt::IntegratorData & self) {
   * static_cast<size_t>(std::ceil(resolution.y/static_cast<float>(stride)));
 }
 
-void mt::FlushTransitionBuffer(mt::IntegratorData & self) {
-  glFlushMappedBufferRange(
-    self.imageTransitionBuffer.handle
-  , 0, sizeof(glm::vec4) * self.mappedImageTransitionBuffer.size()
-  );
+void mt::FlushTransitionBuffer(mt::IntegratorData & /*self*/) {
+  /* glFlushMappedBufferRange( */
+  /*   self.imageTransitionBuffer.handle */
+  /* , 0, sizeof(glm::vec4) * self.mappedImageTransitionBuffer.size() */
+  /* ); */
 }
 
 void mt::DispatchImageCopy(mt::IntegratorData & self) {
-  glBindTextureUnit(0, self.renderedTexture.handle);
-  glBindBufferBase(
-    GL_SHADER_STORAGE_BUFFER, 0, self.imageTransitionBuffer.handle
+  glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle);
+  glTexImage2D(
+    GL_TEXTURE_2D
+  , 0
+  , GL_RGBA8
+  , self.imageResolution.x, self.imageResolution.y
+  , 0, GL_RGBA, GL_FLOAT
+  , self.mappedImageTransitionBuffer.data()
   );
-  glBindImageTexture(
-    0, self.renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8
-  );
+  /* glBindTextureUnit(0, self.renderedTexture.handle); */
+  /* glBindBufferBase( */
+  /*   GL_SHADER_STORAGE_BUFFER, 0, self.imageTransitionBuffer.handle */
+  /* ); */
+  /* glBindImageTexture( */
+  /*   0, self.renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8 */
+  /* ); */
 
-  glUniform1i(0, self.imageStride);
-  glUniform1i(1, self.dispatchedCycles == 1);
+  /* glUniform1i(0, self.imageStride); */
+  /* glUniform1i(1, self.dispatchedCycles == 1); */
 
-  glDispatchCompute(
-    self.imageResolution.x / 8
-  , self.imageResolution.y / 8
-  , 1
-  );
+  /* glDispatchCompute( */
+  /*   self.imageResolution.x / 8 */
+  /* , self.imageResolution.y / 8 */
+  /* , 1 */
+  /* ); */
 }
 
 void mt::AllocateGlResources(
@@ -271,51 +280,26 @@ void mt::AllocateGlResources(
   spdlog::info("Allocating gl resources to {}", self.imageResolution);
   size_t const
     imagePixelLength = self.imageResolution.x * self.imageResolution.y
-  , imageByteLength  = imagePixelLength * sizeof(glm::vec4)
   ;
 
   // -- construct transition buffer
-  self.imageTransitionBuffer.Construct();
-  glNamedBufferStorage(
-    self.imageTransitionBuffer.handle
-  , imageByteLength
-  , nullptr
-  , GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT
-  );
-
-  self.mappedImageTransitionBuffer =
-    span<glm::vec4>(
-      reinterpret_cast<glm::vec4*>(
-        glMapNamedBufferRange(
-          self.imageTransitionBuffer.handle
-        , 0, imageByteLength
-        , ( GL_MAP_WRITE_BIT
-          | GL_MAP_PERSISTENT_BIT
-          | GL_MAP_INVALIDATE_RANGE_BIT
-          | GL_MAP_INVALIDATE_BUFFER_BIT
-          | GL_MAP_FLUSH_EXPLICIT_BIT
-          )
-        )
-      )
-    , imagePixelLength
-    );
+  self.mappedImageTransitionBuffer.resize(imagePixelLength);
 
   self.pixelCountBuffer.resize(imagePixelLength);
 
   // -- construct texture
   self.renderedTexture.Construct(GL_TEXTURE_2D);
-  glTextureStorage2D(
-    self.renderedTexture.handle
-  , 1, GL_RGBA8
-  , self.imageResolution.x, self.imageResolution.y
-  );
+  /* glTextureStorage2D( */
+  /*   self.renderedTexture.handle */
+  /* , 1, GL_RGBA8 */
+  /* , self.imageResolution.x, self.imageResolution.y */
+  /* ); */
 
   { // -- set parameters
-    auto const & handle = self.renderedTexture.handle;
-    glTextureParameteri(handle, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTextureParameteri(handle, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameteri(handle, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(handle, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   }
 
   // set unfinishedPixels
