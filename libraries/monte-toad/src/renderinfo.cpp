@@ -250,7 +250,7 @@ void mt::DispatchImageCopy(mt::IntegratorData & self) {
   glTexImage2D(
     GL_TEXTURE_2D
   , 0
-  , GL_RGBA8
+  , GL_RGBA32F
   , self.imageResolution.x, self.imageResolution.y
   , 0, GL_RGBA, GL_FLOAT
   , self.mappedImageTransitionBuffer.data()
