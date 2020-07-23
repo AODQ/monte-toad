@@ -6,6 +6,7 @@ add_subdirectory(glad)
 add_subdirectory(imgui)
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
+set(JSON_Install OFF CACHE INTERNAL "")
 add_subdirectory(json)
 
 ## STB

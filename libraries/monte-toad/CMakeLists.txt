@@ -33,10 +33,10 @@ find_package(glm REQUIRED FATAL_ERROR)
 find_package(assimp REQUIRED)
 find_package(OpenMP)
 
-
 set_target_properties(monte-toad PROPERTIES COMPILE_FLAGS "-Wall")
 set_target_properties(monte-toad PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries(monte-toad PUBLIC
-  glm glad spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp mt-plugin imgui
+target_link_libraries(monte-toad
+  PUBLIC
+    glm glad spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp mt-plugin imgui
 )
