@@ -153,7 +153,9 @@ int main(int argc, char** argv) {
   fileutil::LoadEditorConfig(render, plugin);
 
     mt::material::layered::Data data;
-    data.layers = { mt::material::layered::Data::Layer{0.0f, 0.2f, 0.2f, 0.9f} };
+    data.layers = {
+      mt::material::layered::Data::Layer{0.0f, 0.2f, 0.2f, 0.9f, {}}
+    };
 
   if (!ui::Initialize(render, plugin)) {
     return 1;

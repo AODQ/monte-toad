@@ -13,7 +13,7 @@
 namespace {
 
 mt::material::layered::Data data = {
-  {{0.0f, 0.5f, 0.5f, 1.8f}},
+  {{0.0f, 0.5f, 0.5f, 1.8f, {}}},
   {},
   {}
 };
@@ -29,7 +29,7 @@ struct MaterialInfo {
 // TODO TOAD this should be taken care of by an emitter plugin
 void UpdateSceneEmission(
   mt::Scene & scene
-, mt::PluginInfoMaterial const & self
+, mt::PluginInfoMaterial const & /*self*/
 ) {
   if (!scene.accelStructure) { return; }
   scene.emissionSource.triangles.resize(0);
@@ -73,7 +73,7 @@ void Load(mt::PluginInfoMaterial & self, mt::Scene & scene) {
 }
 
 float BsdfPdf(
-  mt::PluginInfoMaterial const & self
+  mt::PluginInfoMaterial const & /*self*/
 , mt::SurfaceInfo const & surface
 , glm::vec3 const & wo
 ) {
@@ -86,7 +86,7 @@ float BsdfPdf(
 }
 
 mt::BsdfSampleInfo BsdfSample(
-  mt::PluginInfoMaterial const & self
+  mt::PluginInfoMaterial const & /*self*/
 , mt::PluginInfoRandom const & random
 , mt::SurfaceInfo const & surface
 ) {
@@ -151,7 +151,7 @@ mt::BsdfSampleInfo BsdfSample(
 
 bool IsEmitter(
   mt::PluginInfoMaterial const & self
-, mt::Scene const & scene
+, mt::Scene const & /*scene*/
 , mt::Triangle const & triangle
 ) {
   auto const & mtl =
@@ -160,7 +160,7 @@ bool IsEmitter(
 }
 
 glm::vec3 BsdfFs(
-  mt::PluginInfoMaterial const & self
+  mt::PluginInfoMaterial const & /*self*/
 , mt::SurfaceInfo const & surface
 , glm::vec3 const & wo
 ) {

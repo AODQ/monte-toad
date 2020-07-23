@@ -41,8 +41,8 @@ mt::PixelInfo SampleLi(
 
 mt::PixelInfo SampleWo(
   mt::Scene const & scene
-, mt::PluginInfo const & plugin
-, mt::SurfaceInfo const & surface
+, mt::PluginInfo const & /*plugin*/
+, mt::SurfaceInfo const & /*surface*/
 , glm::vec3 const & wo
 , float & pdf
 ) {
@@ -59,9 +59,9 @@ mt::PixelInfo SampleWo(
 }
 
 void Precompute(
-  mt::Scene const & scene
-, mt::RenderInfo const & render
-, mt::PluginInfo const & plugin
+  mt::Scene const & /*scene*/
+, mt::RenderInfo const & /*render*/
+, mt::PluginInfo const & /*plugin*/
 ) {
 }
 

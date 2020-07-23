@@ -48,14 +48,14 @@ namespace mt::material::layered {
 
   struct Data {
     struct Layer {
-      float depth;
-      float sigmaA;
-      float sigmaS;
-      float g;
+      float depth = 0.0f;
+      float sigmaA = 0.0f;
+      float sigmaS = 0.0f;
+      float g = 0.0f;
 
-      glm::vec3 ior;
-      glm::vec3 kappa;
-      float alpha;
+      glm::vec3 ior = glm::vec3(1.0f);
+      glm::vec3 kappa = glm::vec3(1.0f);
+      float alpha = 0.0f;
     };
 
     std::vector<Layer> layers;

@@ -20,7 +20,7 @@ mt::PluginType PluginType() { return mt::PluginType::Emitter; }
 
 mt::PixelInfo SampleLi(
   mt::Scene const & scene
-, mt::PluginInfo const & plugin
+, mt::PluginInfo const & /*plugin*/
 , mt::SurfaceInfo const & surface
 , glm::vec3 & wo
 , float & pdf
@@ -34,19 +34,19 @@ mt::PixelInfo SampleLi(
 }
 
 mt::PixelInfo SampleWo(
-  mt::Scene const & scene
-, mt::PluginInfo const & plugin
-, mt::SurfaceInfo const & surface
-, glm::vec3 const & wo
+  mt::Scene const & /*scene*/
+, mt::PluginInfo const & /*plugin*/
+, mt::SurfaceInfo const & /*surface*/
+, glm::vec3 const & /*wo*/
 , float & pdf
 ) {
   pdf = 0.0f; return { glm::vec3(0.0f), false };
 }
 
 void Precompute(
-  mt::Scene const & scene
-, mt::RenderInfo const & render
-, mt::PluginInfo const & plugin
+  mt::Scene const & /*scene*/
+, mt::RenderInfo const & /*render*/
+, mt::PluginInfo const & /*plugin*/
 ) {
 }
 

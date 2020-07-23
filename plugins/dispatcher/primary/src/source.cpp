@@ -58,10 +58,6 @@ void BresenhamLine(glm::ivec2 f0, glm::ivec2 f1, Fn && fn) {
 }
 
 void DrawPath(mt::PluginInfo const & plugin, mt::RenderInfo & render) {
-  auto & primaryIntegratorData =
-    render.integratorData[
-      render.integratorIndices[Idx(mt::IntegratorTypeHint::Primary)]
-    ];
   auto & depthIntegratorData =
     render.integratorData[
       render.integratorIndices[Idx(mt::IntegratorTypeHint::Depth)]
@@ -119,7 +115,7 @@ char const * PluginLabel() { return "primary dispatcher"; }
 mt::PluginType PluginType() { return mt::PluginType::Dispatcher; }
 
 void UiUpdate(
-  mt::Scene & scene
+  mt::Scene & /*scene*/
 , mt::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
@@ -131,8 +127,6 @@ void UiUpdate(
   , depthIntegratorIdx =
       render.integratorIndices[Idx(mt::IntegratorTypeHint::Depth)]
   ;
-
-  auto & primaryIntegratorData = render.integratorData[primaryIntegratorIdx];
 
   if (primaryIntegratorIdx != -1lu && depthIntegratorIdx != -1lu) {
     if (ImGui::Button("Record path")) {
@@ -147,6 +141,7 @@ void UiUpdate(
       /*       glm::vec2(0.0f), scene, render.camera, plugin, primaryIntegratorData */
       /*     , ::RecordPath */
       /*     ); */
+      (void)RecordPath;
       ::storedPathRecorder = {{
         glm::vec3(1.0f), glm::vec3(0.0f), mt::TransportMode::Radiance,
         0, mt::SurfaceInfo::Construct(glm::vec3(-0.3f, 1.4f, 3.0f), glm::vec3(0.0f))
@@ -176,7 +171,8 @@ void UiUpdate(
     auto const & unit = ::storedPathRecorder[i];
     ImGui::Separator();
     ImGui::Text(
-      fmt::format(
+      "%s"
+    , fmt::format(
         "origin: {}"
       , unit.surface.origin
       ).c_str()

@@ -84,7 +84,8 @@ glm::vec2 WorldCoordToUv(
   view[3][1] = -camera.origin.y;
   view[3][2] = -camera.origin.z;
 
-  auto vec = glm::inverse(::projectionMatrix*glm::transpose(::viewMatrix)) * glm::vec4(worldCoord, -1.0f);
+  auto vec =
+    glm::inverse(proj*glm::transpose(view)) * glm::vec4(worldCoord, -1.0f);
   vec /= vec.z;
   glm::vec2 ndc = glm::vec2(vec.x, vec.y);
 
