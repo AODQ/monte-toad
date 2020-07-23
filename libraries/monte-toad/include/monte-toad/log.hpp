@@ -1,8 +1,7 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-
-#include <glm/glm.hpp>
+#include <monte-toad/math.hpp>
 
 namespace {
   auto StandardFormat(std::string & p, fmt::format_parse_context & ctx) {

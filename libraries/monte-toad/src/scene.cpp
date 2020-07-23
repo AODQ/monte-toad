@@ -1,11 +1,11 @@
 #include <monte-toad/scene.hpp>
 
 #include <monte-toad/log.hpp>
+#include <monte-toad/math.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <glm/ext.hpp>
 
 namespace {
 ////////////////////////////////////////////////////////////////////////////////

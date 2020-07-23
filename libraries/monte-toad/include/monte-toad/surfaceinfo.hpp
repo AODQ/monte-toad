@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <monte-toad/math.hpp>
 
 namespace mt { struct Scene; }
 namespace mt { struct Triangle; }

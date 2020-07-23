@@ -29,7 +29,6 @@ target_compile_definitions(
     JSON_NOEXCEPTION=1
 )
 
-find_package(glm REQUIRED FATAL_ERROR)
 find_package(assimp REQUIRED)
 find_package(OpenMP)
 

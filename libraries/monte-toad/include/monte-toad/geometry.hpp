@@ -1,12 +1,9 @@
 #pragma once
 
-#include <glm/detail/type_vec2.hpp>  // for vec2
-#include <glm/ext/vector_float2.hpp> // for vec2 float specialization
-#include <glm/ext/vector_float3.hpp> // for vec3 float specialization
+#include <monte-toad/math.hpp>
 
 #include <tuple>
 
-#include <monte-toad/math.hpp>
 template <typename U>
 U BarycentricInterpolation(
   U const & v0, U const & v1, U const & v2

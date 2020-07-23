@@ -2,10 +2,11 @@
 
 #include <monte-toad/camerainfo.hpp>
 #include <monte-toad/log.hpp>
-
-#include <glm/gtc/matrix_transform.hpp>
+#include <monte-toad/math.hpp>
 
 #include <mt-plugin/plugin.hpp>
+
+#include <glm/ext/matrix_transform.hpp>
 
 namespace {
 

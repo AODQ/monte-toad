@@ -5,12 +5,12 @@
 #include "ui.hpp"
 
 #include <monte-toad/log.hpp>
-#include <monte-toad/renderinfo.hpp>
 #include <monte-toad/material/layered.hpp>
+#include <monte-toad/math.hpp>
+#include <monte-toad/renderinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <cxxopts.hpp>
-#include <glm/glm.hpp>
 #include <omp.h>
 #include <spdlog/spdlog.h>
 

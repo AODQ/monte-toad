@@ -1,6 +1,6 @@
 #pragma once
 
-#include "math.hpp"
+#include <monte-toad/math.hpp>
 
 #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wshadow"

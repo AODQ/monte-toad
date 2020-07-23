@@ -5,9 +5,13 @@
 // hence its inclusion in the cr library itself though it will probably be moved
 // to its own library in the future
 
-#include <glm/glm.hpp>
-
 #include <mt-plugin/enums.hpp>
+
+#pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wvolatile"
+  #pragma GCC diagnostic ignored "-Wshadow"
+    #include <glm/glm.hpp>
+#pragma GCC diagnostic pop
 
 #include <vector>
 

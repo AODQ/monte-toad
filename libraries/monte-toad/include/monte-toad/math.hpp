@@ -1,6 +1,10 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wvolatile"
+  #pragma GCC diagnostic ignored "-Wshadow"
+    #include <glm/glm.hpp>
+#pragma GCC diagnostic pop
 
 namespace glm {
 constexpr static float Pi     = 3.141592653589793f;

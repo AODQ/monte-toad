@@ -1,8 +1,6 @@
 add_library(white-noise SHARED)
 target_sources(white-noise PRIVATE src/source.cpp)
 
-find_package(glm REQUIRED FATAL_ERROR)
-
 target_link_libraries(
   white-noise
   PRIVATE

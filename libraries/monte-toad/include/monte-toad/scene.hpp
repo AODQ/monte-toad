@@ -1,10 +1,9 @@
 #pragma once
 
+#include <monte-toad/math.hpp>
 #include <monte-toad/primitive.hpp>
 #include <monte-toad/surfaceinfo.hpp>
 #include <monte-toad/texture.hpp>
-
-#include <glm/glm.hpp>
 
 #include <any>
 #include <filesystem>
