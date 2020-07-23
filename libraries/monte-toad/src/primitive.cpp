@@ -5,12 +5,8 @@
 #include <monte-toad/span.hpp>
 #include <monte-toad/span.hpp>
 
-#include <bvh/binned_sah_builder.hpp>
-#include <bvh/heuristic_primitive_splitter.hpp>
-#include <bvh/intersectors.hpp>
-#include <bvh/locally_ordered_clustering_builder.hpp>
-#include <bvh/parallel_reinsertion_optimization.hpp>
-#include <bvh/spatial_split_bvh_builder.hpp>
+#include <bvh/parallel_reinsertion_optimizer.hpp>
+#include <bvh/primitive_intersectors.hpp>
 #include <bvh/sweep_sah_builder.hpp>
 #include <bvh/utilities.hpp>
 
@@ -173,10 +169,10 @@ std::unique_ptr<mt::AccelerationStructure> mt::AccelerationStructure::Construct(
   }
 
   { // -- optimizer
-    bvh::ParallelReinsertionOptimization<bvh::Bvh<float>> optimization(
+    bvh::ParallelReinsertionOptimizer<bvh::Bvh<float>> optimizer(
       self->boundingVolume
     );
-    optimization.optimize();
+    optimizer.optimize();
   }
 
   /* bvh::optimize_bvh_layout(self->boundingVolume, referenceCount); */
@@ -216,7 +212,7 @@ namespace {
       , ignoredTriangle(ignoredTriangle_)
     {}
 
-    std::optional<Result> operator()(size_t idx, bvh::Ray<float> const & ray)
+    std::optional<Result> intersect(size_t idx, bvh::Ray<float> const & ray)
       const
     {
       auto const & triangle = triangles[idx];
@@ -239,7 +235,7 @@ mt::IntersectClosest(
   Intersector intersector(
     self.boundingVolume, make_span(self.triangles), ignoredTriangle
   );
-  bvh::SingleRayTraversal<bvh::Bvh<float>> traversal(self.boundingVolume);
+  bvh::SingleRayTraverser<bvh::Bvh<float>> traversal(self.boundingVolume);
 
   // weird hack to make sure none of the components are 0, as BVH doesn't seem
   // to work with it (or maybe how I interact with BVH)
@@ -250,5 +246,5 @@ mt::IntersectClosest(
   if (dir.y == 0.0f)
     { dir = glm::normalize(dir + glm::vec3(0.0, 0.0f, 0.00001f)); }
 
-  return traversal.intersect(bvh::Ray(ToBvh(ori), ToBvh(dir)), intersector);
+  return traversal.traverse(bvh::Ray(ToBvh(ori), ToBvh(dir)), intersector);
 }

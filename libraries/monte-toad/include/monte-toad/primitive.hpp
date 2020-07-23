@@ -3,8 +3,7 @@
 #include "math.hpp"
 
 #include <bvh/bvh.hpp>
-#include <bvh/bounding_box.hpp.hpp>
-#include <bvh/single_ray_traversal.hpp>
+#include <bvh/single_ray_traverser.hpp>
 
 #include <memory>
 
@@ -75,7 +74,7 @@ namespace mt {
 
     std::vector<Triangle> triangles;
     bvh::Bvh<float> boundingVolume;
-    bvh::SingleRayTraversal<decltype(boundingVolume)>
+    bvh::SingleRayTraverser<decltype(boundingVolume)>
       boundingVolumeTraversal { boundingVolume };
 
     static std::unique_ptr<AccelerationStructure> Construct(
