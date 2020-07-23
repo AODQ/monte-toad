@@ -11,14 +11,11 @@
 #include "span.hpp"
 #include <string>
 #include <vector>
-#include <variant>
 
 namespace mt { struct Triangle; }
 namespace mt { struct PluginInfoRandom; }
 
 namespace mt {
-  struct Scene;
-
   struct Mesh {
     size_t idx;
   };

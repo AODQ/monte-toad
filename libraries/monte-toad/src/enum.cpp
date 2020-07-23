@@ -2,11 +2,13 @@
 
 #include <spdlog/spdlog.h>
 
-#include <string>
+#include <array>   // for std::array
+#include <ctype.h> // for ::tolower
+#include <string>  // for std::string
 
 mt::RenderingState mt::ToRenderingState(char const * label) {
   auto fixLabel = std::string{label};
-  for (auto & c : fixLabel) { c = tolower(c); }
+  for (auto & c : fixLabel) { c = ::tolower(c); }
 
   if (fixLabel == "off")          { return mt::RenderingState::Off;         }
   if (fixLabel == "on-change")    { return mt::RenderingState::OnChange;    }
@@ -20,7 +22,7 @@ mt::RenderingState mt::ToRenderingState(char const * label) {
 
 mt::AspectRatio mt::ToAspectRatio(char const * label) {
   auto fixLabel = std::string{label};
-  for (auto & c : fixLabel) { c = tolower(c); }
+  for (auto & c : fixLabel) { c = ::tolower(c); }
 
   if (fixLabel == "1x1")   { return mt::AspectRatio::e1_1; }
   if (fixLabel == "3x2")   { return mt::AspectRatio::e3_2; }

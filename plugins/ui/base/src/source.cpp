@@ -1,13 +1,14 @@
+// base ui
+
 #include <monte-toad/enum.hpp>
 #include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
+#include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-#include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
 
 #include <chrono>

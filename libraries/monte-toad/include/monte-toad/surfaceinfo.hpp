@@ -2,8 +2,6 @@
 
 #include <glm/glm.hpp>
 
-#include <any>
-
 namespace mt { struct Scene; }
 namespace mt { struct Triangle; }
 namespace mt { struct BvhIntersection; }

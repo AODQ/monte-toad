@@ -1,16 +1,14 @@
+// primary dispatcher
+
 #include <monte-toad/camerainfo.hpp>
 #include <monte-toad/debugutil/IntegratorPathUnit.hpp>
-#include <monte-toad/imagebuffer.hpp>
 #include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
 #include <monte-toad/renderinfo.hpp>
-#include <monte-toad/scene.hpp>
 
 #include <mt-plugin/plugin.hpp>
-
-#include <omp.h>
 
 namespace mt { struct Scene; }
 namespace mt { struct PluginInfo; }

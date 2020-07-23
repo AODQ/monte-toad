@@ -7,8 +7,6 @@
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/material/layered.hpp>
-#include <monte-toad/scene.hpp>
-#include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <cxxopts.hpp>
@@ -16,7 +14,6 @@
 #include <omp.h>
 #include <spdlog/spdlog.h>
 
-#include <atomic>
 #include <string>
 #include <vector>
 

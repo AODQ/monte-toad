@@ -1,7 +1,5 @@
 #include <monte-toad/log.hpp>
 
-#include <fstream>
-
 ////////////////////////////////////////////////////////////////////////////////
 void PrintProgress(float progress) {
   printf("[");

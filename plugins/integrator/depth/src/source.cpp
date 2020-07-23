@@ -1,9 +1,12 @@
-#include <monte-toad/camerainfo.hpp>
+// depth integrator
+
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/scene.hpp>
 
 #include <mt-plugin/plugin.hpp>
+
+namespace mt { struct CameraInfo; }
 
 extern "C" {
 

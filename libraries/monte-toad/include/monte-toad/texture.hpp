@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace mt {
+  ////////////////////////////////////////////////////////////////////////////////
   struct Texture {
     uint64_t width, height;
     std::vector<glm::vec4> data;

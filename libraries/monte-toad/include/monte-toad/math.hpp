@@ -2,11 +2,6 @@
 
 #include <glm/glm.hpp>
 
-// TODO remove bvh vector from this header
-#include <bvh/vector.hpp>
-
-#include <tuple>
-
 namespace glm {
 constexpr static float Pi     = 3.141592653589793f;
 constexpr static float Pi2    = Pi*Pi;
@@ -31,6 +26,3 @@ inline float Sin2Theta(glm::vec3 const & w) {
 }
 
 #define SQR(X) ((X)*(X))
-
-bvh::Vector3<float> ToBvh(glm::vec3 vertex);
-glm::vec3 ToGlm(bvh::Vector3<float> vertex);

@@ -1,9 +1,7 @@
 #pragma once
 
-#include <monte-toad/enum.hpp>
 #include <monte-toad/math.hpp>
 
-#include <array>
 #include <vector>
 
 // implements layered material as laid out in

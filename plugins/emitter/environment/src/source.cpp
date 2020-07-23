@@ -1,3 +1,5 @@
+// environmental emitter
+
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>

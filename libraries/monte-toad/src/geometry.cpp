@@ -1,5 +1,7 @@
 #include <monte-toad/geometry.hpp>
 
+#include <monte-toad/math.hpp>
+
 //------------------------------------------------------------------------------
 std::tuple<glm::vec3 /*tangent*/, glm::vec3 /*binormal*/> OrthogonalVectors(
   glm::vec3 const & normal
@@ -9,7 +11,7 @@ std::tuple<glm::vec3 /*tangent*/, glm::vec3 /*binormal*/> OrthogonalVectors(
   ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
   tangent = glm::normalize(glm::cross(normal, tangent));
   glm::vec3 binormal = glm::cross(normal, tangent);
-  return std::make_pair(tangent, binormal);
+  return { tangent, binormal };
 }
 
 //------------------------------------------------------------------------------

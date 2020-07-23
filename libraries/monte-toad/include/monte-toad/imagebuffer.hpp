@@ -1,9 +1,11 @@
 #pragma once
 
-#include "math.hpp"
-#include "span.hpp"
+#include <monte-toad/math.hpp>
 
 #include <string>
+
+// -- fwd decl
+template <typename ElementType> struct span;
 
 namespace mt {
   void SaveImage(

@@ -1,4 +1,5 @@
-#include <monte-toad/camerainfo.hpp>
+// foward path tracer
+
 #include <monte-toad/debugutil/IntegratorPathUnit.hpp>
 #include <monte-toad/enum.hpp>
 #include <monte-toad/geometry.hpp>
@@ -10,6 +11,8 @@
 #include <monte-toad/texture.hpp>
 
 #include <mt-plugin/plugin.hpp>
+
+namespace mt { struct CameraInfo; }
 
 namespace {
 

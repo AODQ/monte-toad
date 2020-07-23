@@ -3,6 +3,7 @@
 #include "math.hpp"
 
 #include <bvh/bvh.hpp>
+#include <bvh/bounding_box.hpp.hpp>
 #include <bvh/single_ray_traversal.hpp>
 
 #include <memory>

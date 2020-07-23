@@ -1,6 +1,7 @@
+// pinhole camera
+
 #include <monte-toad/camerainfo.hpp>
 #include <monte-toad/log.hpp>
-#include <monte-toad/scene.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
 

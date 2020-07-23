@@ -14,6 +14,12 @@
 #include <bvh/sweep_sah_builder.hpp>
 #include <bvh/utilities.hpp>
 
+namespace {
+bvh::Vector3<float> ToBvh(glm::vec3 v) {
+  return bvh::Vector3<float>(v.x, v.y, v.z);
+}
+} // -- end anon namespace
+
 ////////////////////////////////////////////////////////////////////////////////
 std::optional<mt::BvhIntersection> mt::RayTriangleIntersection(
   bvh::Ray<float> const & ray

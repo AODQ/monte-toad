@@ -1,6 +1,7 @@
 #include <monte-toad/imagebuffer.hpp>
 
 #include <monte-toad/log.hpp>
+#include <monte-toad/span.hpp>
 
 #include <fstream>
 

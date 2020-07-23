@@ -4,14 +4,11 @@
 #include "graphicscontext.hpp"
 
 #include <glad/glad.hpp>
-#include <monte-toad/enum.hpp>
 #include <monte-toad/glutil.hpp>
-#include <monte-toad/imagebuffer.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
-#include <monte-toad/span.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 

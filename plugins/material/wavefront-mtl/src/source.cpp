@@ -1,4 +1,5 @@
-#include <monte-toad/geometry.hpp>
+// wavefront mtl
+
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/material/layered.hpp>

@@ -6,7 +6,8 @@ find_package(glm REQUIRED FATAL_ERROR)
 target_link_libraries(
   white-noise
   PRIVATE
-    mt-plugin glm
+    monte-toad mt-plugin
+    glm
 )
 
 set_target_properties(white-noise PROPERTIES COMPILE_FLAGS "-Wall")

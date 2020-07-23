@@ -3,8 +3,6 @@
 #include <monte-toad/camerainfo.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/math.hpp>
-#include <monte-toad/renderinfo.hpp>
-#include <monte-toad/span.hpp>
 
 #include <array>
 #include <string>

@@ -1,7 +1,8 @@
+// ggx material
+
 #include <monte-toad/geometry.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
-#include <monte-toad/material/layered.hpp>
 #include <monte-toad/math.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>

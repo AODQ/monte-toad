@@ -4,8 +4,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include <array>
 #include <memory>
+#include <vector>
 
 #ifdef __unix__
 #include <dlfcn.h>
