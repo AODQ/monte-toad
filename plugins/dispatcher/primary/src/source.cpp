@@ -161,7 +161,7 @@ void UiUpdate(
   ImGui::Text(
     "%s"
   , fmt::format(
-      "Recorded path valid {} | value {}"
+      "Recorded path valid ({}) | value ({})"
     , ::storedPixelInfo.valid ? "yes" : "no"
     , ::storedPixelInfo.color
     ).c_str()

@@ -41,7 +41,8 @@ set_target_properties(
       POSITION_INDEPENDENT_CODE ON
 )
 
-target_link_libraries(monte-toad
+target_link_libraries(
+  monte-toad
   PUBLIC
     glm glad spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp mt-plugin imgui
 )

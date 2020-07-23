@@ -26,3 +26,9 @@ target_include_directories(
   INTERFACE
     glm/include
 )
+target_precompile_headers(
+  glm
+  INTERFACE
+    glm/include/glm/glm.hpp
+    glm/include/glm/ext/matrix_transform.hpp
+)
