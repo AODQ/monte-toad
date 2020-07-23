@@ -17,3 +17,12 @@ target_include_directories(stb INTERFACE stb/include)
 add_library(cxxopts INTERFACE)
 target_compile_definitions(cxxopts INTERFACE CXXOPTS_NO_EXCEPTIONS)
 target_include_directories(cxxopts INTERFACE cxxopts/include)
+
+
+## GLM
+add_library(glm INTERFACE)
+target_include_directories(
+  glm
+  INTERFACE
+    glm/include
+)
