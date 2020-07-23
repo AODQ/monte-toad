@@ -8,7 +8,7 @@
 
 mt::RenderingState mt::ToRenderingState(char const * label) {
   auto fixLabel = std::string{label};
-  for (auto & c : fixLabel) { c = ::tolower(c); }
+  for (auto & c : fixLabel) { c = static_cast<char>(::tolower(c)); }
 
   if (fixLabel == "off")          { return mt::RenderingState::Off;         }
   if (fixLabel == "on-change")    { return mt::RenderingState::OnChange;    }
@@ -22,7 +22,7 @@ mt::RenderingState mt::ToRenderingState(char const * label) {
 
 mt::AspectRatio mt::ToAspectRatio(char const * label) {
   auto fixLabel = std::string{label};
-  for (auto & c : fixLabel) { c = ::tolower(c); }
+  for (auto & c : fixLabel) { c = static_cast<char>(::tolower(c)); }
 
   if (fixLabel == "1x1")   { return mt::AspectRatio::e1_1; }
   if (fixLabel == "3x2")   { return mt::AspectRatio::e3_2; }
@@ -50,7 +50,7 @@ void mt::ApplyAspectRatioY(
 
   if (ratio == mt::AspectRatio::eNone) { return; }
 
-  y = x / aspectRatioConversion[Idx(ratio)];
+  y = static_cast<uint16_t>(x / aspectRatioConversion[Idx(ratio)]);
   if (y == 0) { y = 1; }
 }
 

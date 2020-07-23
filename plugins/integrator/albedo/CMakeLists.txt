@@ -8,9 +8,15 @@ target_link_libraries(
     imgui
 )
 
-set_target_properties(integrator-albedo PROPERTIES COMPILE_FLAGS "-Wall")
-set_target_properties(integrator-albedo PROPERTIES SUFFIX ".mt-plugin")
-set_target_properties(integrator-albedo PROPERTIES PREFIX "")
+set_target_properties(
+  integrator-albedo
+    PROPERTIES
+      COMPILE_FLAGS
+        "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
+         -Wundef"
+      SUFFIX ".mt-plugin"
+      PREFIX ""
+)
 
 install(
   TARGETS integrator-albedo

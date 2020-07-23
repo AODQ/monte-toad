@@ -33,8 +33,14 @@ find_package(glm REQUIRED FATAL_ERROR)
 find_package(assimp REQUIRED)
 find_package(OpenMP)
 
-set_target_properties(monte-toad PROPERTIES COMPILE_FLAGS "-Wall")
-set_target_properties(monte-toad PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(
+  monte-toad
+    PROPERTIES
+      COMPILE_FLAGS
+        "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
+         -Wundef"
+      POSITION_INDEPENDENT_CODE ON
+)
 
 target_link_libraries(monte-toad
   PUBLIC

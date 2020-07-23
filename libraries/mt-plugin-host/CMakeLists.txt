@@ -10,6 +10,12 @@ target_compile_definitions(
     SPDLOG_FMT_EXTERNAL=1
 )
 
-set_target_properties(mt-plugin-host PROPERTIES COMPILE_FLAGS "-Wall")
+set_target_properties(
+  mt-plugin-host
+    PROPERTIES
+      COMPILE_FLAGS
+        "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
+         -Wundef"
+)
 
 target_link_libraries(mt-plugin-host PUBLIC mt-plugin spdlog)

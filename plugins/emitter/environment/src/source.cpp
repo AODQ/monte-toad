@@ -1,12 +1,11 @@
 // environmental emitter
 
+#include <monte-toad/imgui.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
 #include <monte-toad/scene.hpp>
 #include <monte-toad/texture.hpp>
 #include <mt-plugin/plugin.hpp>
-
-#include <imgui/imgui.hpp>
 
 namespace {
 
@@ -72,8 +71,8 @@ void UiUpdate(
 , mt::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
-  auto idx = scene.emissionSource.skyboxEmitterPluginIdx;
-  if (idx == -1 || plugin.emitters[idx].PluginLabel() != PluginLabel())
+  auto const idx = scene.emissionSource.skyboxEmitterPluginIdx;
+  if (idx == -1lu || plugin.emitters[idx].PluginLabel() != PluginLabel())
     { return; }
 
   ImGui::Begin("emitters");

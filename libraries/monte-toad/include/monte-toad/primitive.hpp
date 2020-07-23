@@ -2,8 +2,11 @@
 
 #include "math.hpp"
 
-#include <bvh/bvh.hpp>
-#include <bvh/single_ray_traverser.hpp>
+#pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #include <bvh/bvh.hpp>
+  #include <bvh/single_ray_traverser.hpp>
+#pragma GCC diagnostic pop
 
 #include <memory>
 

@@ -54,7 +54,7 @@ PropagationStatus ApplyIndirectEmission(
 ) {
   auto propagationStatus = PropagationStatus::Continue;
 
-  if (scene.emissionSource.skyboxEmitterPluginIdx != -1)
+  if (scene.emissionSource.skyboxEmitterPluginIdx != -1lu)
   { // apply indirect emission from skybox if available
     glm::vec3 emissionWo;
     float emissionPdf;
@@ -168,7 +168,7 @@ PropagationStatus Propagate(
 
   // check if an emitter or skybox (which could be a blackbody) was hit
   if (nextSurface.triangle == nullptr) {
-    if (scene.emissionSource.skyboxEmitterPluginIdx == -1) {
+    if (scene.emissionSource.skyboxEmitterPluginIdx == -1lu) {
       Join(propagationStatus, PropagationStatus::End);
     } else {
       float pdf;
@@ -265,7 +265,7 @@ mt::PixelInfo Dispatch(
 
   // return skybox
   if (!surface.Valid()) {
-    if (scene.emissionSource.skyboxEmitterPluginIdx != -1) {
+    if (scene.emissionSource.skyboxEmitterPluginIdx != -1lu) {
       auto & emitter =
         plugin.emitters[scene.emissionSource.skyboxEmitterPluginIdx];
       float pdf;

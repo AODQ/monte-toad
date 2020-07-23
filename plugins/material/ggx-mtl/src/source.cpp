@@ -1,6 +1,7 @@
 // ggx material
 
 #include <monte-toad/geometry.hpp>
+#include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
@@ -8,8 +9,6 @@
 #include <monte-toad/scene.hpp>
 #include <monte-toad/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
-
-#include <imgui/imgui.hpp>
 
 namespace {
 
@@ -139,8 +138,8 @@ glm::vec2 TrowbridgeReitzSample11(float cosTheta, glm::vec2 u) {
   float const
     sinTheta = glm::sqrt(glm::max(0.0f, 1.0f - cosTheta*cosTheta))
   , tanTheta = sinTheta/cosTheta
-  , a        = 1.0f/tanTheta
-  , g1       = 2.0f/(1.0f + glm::sqrt(1.0f + 1.0f/(a*a)))
+  , g1_a     = 1.0f/tanTheta
+  , g1       = 2.0f/(1.0f + glm::sqrt(1.0f + 1.0f/(g1_a*g1_a)))
   ;
 
   glm::vec2 slope;
@@ -327,7 +326,7 @@ void UiUpdate(
 ) {
 
   // -- if an image is clicked then update where it was clicked
-  if (render.lastIntegratorImageClicked != -1) {
+  if (render.lastIntegratorImageClicked != -1lu) {
     auto & data = render.integratorData[render.lastIntegratorImageClicked];
     auto uv =
       glm::vec2(data.imagePixelClickedCoord)
@@ -348,7 +347,7 @@ void UiUpdate(
       static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);
 
     // TODO move below elsewhere
-    render.lastIntegratorImageClicked = -1;
+    render.lastIntegratorImageClicked = -1lu;
   }
 
   if (ImGui::Begin("Material")) {

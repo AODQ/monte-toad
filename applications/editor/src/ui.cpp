@@ -5,6 +5,7 @@
 
 #include <glad/glad.hpp>
 #include <monte-toad/glutil.hpp>
+#include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/renderinfo.hpp>
@@ -13,7 +14,6 @@
 #include <mt-plugin/plugin.hpp>
 
 #include <GLFW/glfw3.h>
-#include <imgui/imgui.hpp>
 #include <imgui/imgui_impl_glfw.hpp>
 #include <imgui/imgui_impl_opengl3.hpp>
 #include <spdlog/sinks/base_sink.h>
@@ -324,7 +324,7 @@ void UiRenderInfo(
     int tempNumThreads = static_cast<int>(renderInfo.numThreads);
     if (ImGui::InputInt("# threads", &tempNumThreads)) {
       renderInfo.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
-      omp_set_num_threads(renderInfo.numThreads);
+      omp_set_num_threads(static_cast<int32_t>(renderInfo.numThreads));
     }
 
   ImGui::End();
@@ -351,8 +351,7 @@ void DispatchRender(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
 
 ////////////////////////////////////////////////////////////////////////////////
 void UiEntry(
-  mt::Scene & scene
-, mt::RenderInfo & render
+  mt::RenderInfo & render
 , mt::PluginInfo & plugin
 ) {
   ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -511,7 +510,7 @@ void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ::UiEntry(::scene, renderInfo, pluginInfo);
+    ::UiEntry(renderInfo, pluginInfo);
 
     ::DispatchRender(renderInfo, pluginInfo);
 

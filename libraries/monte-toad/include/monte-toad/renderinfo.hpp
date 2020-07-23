@@ -47,7 +47,7 @@ namespace mt {
     size_t numThreads = 0;
     bool displayProgress = true;
 
-    int32_t lastIntegratorImageClicked = -1;
+    size_t lastIntegratorImageClicked = -1lu;
 
     void * glfwWindow;
 

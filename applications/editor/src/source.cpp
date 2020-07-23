@@ -56,7 +56,13 @@ mt::RenderInfo ParseRenderInfo(cxxopts::ParseResult const & result) {
     if (value) { spdlog::set_level(spdlog::level::debug); }
   }
 
-  if (self.numThreads == 0) { self.numThreads = omp_get_max_threads()-1; }
+  // if number of threads not chosen, select one based on current hardware,
+  // with at least 1 thread. Leave one thread open to not halt the entire
+  // system, and allow monte-toad main thread to continue working
+  if (self.numThreads == 0lu) {
+    self.numThreads =
+      glm::max(1ul, static_cast<size_t>(omp_get_max_threads()-1));
+  }
 
   return self;
 }
@@ -140,7 +146,7 @@ int main(int argc, char** argv) {
     render = ParseRenderInfo(result);
   }
 
-  omp_set_num_threads(render.numThreads);
+  omp_set_num_threads(static_cast<int32_t>(render.numThreads));
 
   // -- load up integrator type hints
   for (auto & idx : render.integratorIndices) { idx = -1ul; }

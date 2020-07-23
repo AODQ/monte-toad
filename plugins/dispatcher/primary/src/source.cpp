@@ -40,17 +40,17 @@ void BresenhamLine(glm::ivec2 f0, glm::ivec2 f1, Fn && fn) {
   int32_t
     dx = f1.x-f0.x
   , dy = f1.y-f0.y
-  , derror2 = glm::abs(dy)*2.0f
-  , error2 = 0.0f
+  , derror = glm::abs(dy)*2
+  , error = 0.0f
   , stepy = f1.y > f0.y ? +1.0f : -1.0f
   ;
 
   for (glm::ivec2 f = f0; f.x <= f1.x; ++ f.x) {
     if (steep) { fn(f.y, f.x); } else { fn(f.x, f.y); }
-    error2 += derror2;
-    if (error2 > dx) {
+    error += derror;
+    if (error > dx) {
       f.y += stepy;
-      error2 -= dx*2.0f;
+      error -= dx*2;
     }
   }
 }
@@ -159,10 +159,12 @@ void UiUpdate(
   }
 
   ImGui::Text(
-    "Recorded path valid %s | value <%f, %f, %f>"
-  , ::storedPixelInfo.valid ? "yes" : "no"
-  , ::storedPixelInfo.color.r, ::storedPixelInfo.color.g
-  , ::storedPixelInfo.color.b
+    "%s"
+  , fmt::format(
+      "Recorded path valid {} | value {}"
+    , ::storedPixelInfo.valid ? "yes" : "no"
+    , ::storedPixelInfo.color
+    ).c_str()
   );
 
   for (size_t i = 0; i < ::storedPathRecorder.size(); ++ i) {

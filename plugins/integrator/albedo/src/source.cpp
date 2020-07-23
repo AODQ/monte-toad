@@ -1,5 +1,6 @@
 // albedo integrator
 
+#include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
@@ -7,8 +8,6 @@
 #include <monte-toad/surfaceinfo.hpp>
 #include <monte-toad/texture.hpp>
 #include <mt-plugin/plugin.hpp>
-
-#include <imgui/imgui.hpp>
 
 namespace mt { struct CameraInfo; }
 namespace mt { struct RenderInfo; }

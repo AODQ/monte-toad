@@ -5,10 +5,13 @@
 #include <monte-toad/span.hpp>
 #include <monte-toad/span.hpp>
 
-#include <bvh/parallel_reinsertion_optimizer.hpp>
-#include <bvh/primitive_intersectors.hpp>
-#include <bvh/sweep_sah_builder.hpp>
-#include <bvh/utilities.hpp>
+#pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #include <bvh/parallel_reinsertion_optimizer.hpp>
+  #include <bvh/primitive_intersectors.hpp>
+  #include <bvh/sweep_sah_builder.hpp>
+  #include <bvh/utilities.hpp>
+#pragma GCC diagnostic pop
 
 namespace {
 bvh::Vector3<float> ToBvh(glm::vec3 v) {

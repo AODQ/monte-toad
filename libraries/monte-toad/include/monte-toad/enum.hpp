@@ -30,7 +30,7 @@ namespace mt {
   , Size
   };
 
-  enum struct AspectRatio : int {
+  enum struct AspectRatio : uint8_t {
     e1_1, e3_2, e4_3, e5_4, e16_9, e16_10, e21_9, eNone, size
   };
 

@@ -8,9 +8,15 @@ target_link_libraries(
     imgui glfw
 )
 
-set_target_properties(ui-base PROPERTIES COMPILE_FLAGS "-Wall")
-set_target_properties(ui-base PROPERTIES SUFFIX ".mt-plugin")
-set_target_properties(ui-base PROPERTIES PREFIX "")
+set_target_properties(
+  ui-base
+    PROPERTIES
+      COMPILE_FLAGS
+        "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
+         -Wundef"
+      SUFFIX ".mt-plugin"
+      PREFIX ""
+)
 
 install(
   TARGETS ui-base

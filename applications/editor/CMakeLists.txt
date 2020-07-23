@@ -10,7 +10,13 @@ target_sources(
 
 #target_compile_features(monte-toad-editor PRIVATE cxx_std_20)
 
-set_target_properties(monte-toad-editor PROPERTIES COMPILE_FLAGS "-Wall")
+set_target_properties(
+  monte-toad-editor
+  PROPERTIES
+    COMPILE_FLAGS
+      "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
+       -Wundef"
+)
 
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)

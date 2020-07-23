@@ -10,9 +10,15 @@ target_link_libraries(
     glm
 )
 
-set_target_properties(white-noise PROPERTIES COMPILE_FLAGS "-Wall")
-set_target_properties(white-noise PROPERTIES SUFFIX ".mt-plugin")
-set_target_properties(white-noise PROPERTIES PREFIX "")
+set_target_properties(
+  white-noise
+    PROPERTIES
+      COMPILE_FLAGS
+        "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
+         -Wundef"
+      SUFFIX ".mt-plugin"
+      PREFIX ""
+)
 
 install(
   TARGETS white-noise

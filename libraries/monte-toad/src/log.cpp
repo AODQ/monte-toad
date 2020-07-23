@@ -9,6 +9,6 @@ void PrintProgress(float progress) {
     if (i >  static_cast<int>(40.0f*progress)) printf(" ");
   }
   // leading spaces in case of terminal/text corruption
-  printf("] %0.1f%%   \r", progress*100.0f);
+  printf("] %0.1f%%   \r", static_cast<double>(progress)*100.0);
   fflush(stdout);
 }

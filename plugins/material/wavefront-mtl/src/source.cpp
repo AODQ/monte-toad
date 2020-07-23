@@ -1,5 +1,6 @@
 // wavefront mtl
 
+#include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/material/layered.hpp>
@@ -9,15 +10,7 @@
 #include <monte-toad/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
-#include <imgui/imgui.hpp>
-
 namespace {
-
-mt::material::layered::Data data = {
-  {{0.0f, 0.5f, 0.5f, 1.8f, {}}},
-  {},
-  {}
-};
 
 struct MaterialInfo {
   glm::vec3 diffuse = glm::vec3(0.5f);
@@ -75,10 +68,11 @@ void Load(mt::PluginInfoMaterial & self, mt::Scene & scene) {
 
 float BsdfPdf(
   mt::PluginInfoMaterial const & /*self*/
-, mt::SurfaceInfo const & surface
-, glm::vec3 const & wo
+, mt::SurfaceInfo const & /*surface*/
+, glm::vec3 const & /*wo*/
 ) {
-  return mt::material::layered::BsdfPdf(data, surface, wo);
+  return 0.0f;
+  /* return mt::material::layered::BsdfPdf(data, surface, wo); */
   /* auto const & material = */
   /*   reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material]; */
 
@@ -88,13 +82,14 @@ float BsdfPdf(
 
 mt::BsdfSampleInfo BsdfSample(
   mt::PluginInfoMaterial const & /*self*/
-, mt::PluginInfoRandom const & random
-, mt::SurfaceInfo const & surface
+, mt::PluginInfoRandom const & /*random*/
+, mt::SurfaceInfo const & /*surface*/
 ) {
-  auto [wo, bsdfFs, pdf] =
-    mt::material::layered::BsdfSample(data, random, surface);
+  /* auto [wo, bsdfFs, pdf] = */
+  /*   mt::material::layered::BsdfSample(data, random, surface); */
 
-  return { wo, bsdfFs, pdf };
+  /* return { wo, bsdfFs, pdf }; */
+  return { glm::vec3(0.0f), glm::vec3(0.0f), 0.0f };
   /* glm::vec3 wo; */
 
   /* auto const & material = */
@@ -162,10 +157,11 @@ bool IsEmitter(
 
 glm::vec3 BsdfFs(
   mt::PluginInfoMaterial const & /*self*/
-, mt::SurfaceInfo const & surface
-, glm::vec3 const & wo
+, mt::SurfaceInfo const & /*surface*/
+, glm::vec3 const & /*wo*/
 ) {
-  return mt::material::layered::BsdfFs(data, surface, wo);
+  return glm::vec3(0.0f);
+  /* return mt::material::layered::BsdfFs(data, surface, wo); */
   /* auto const & material = */
   /*   reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material]; */
 
@@ -204,8 +200,7 @@ void UiUpdate(
       }
     }
 
-    // TODO
-    if (render.lastIntegratorImageClicked != -1) {
+    if (render.lastIntegratorImageClicked != -1lu) {
       auto & data = render.integratorData[render.lastIntegratorImageClicked];
       auto uv =
         glm::vec2(data.imagePixelClickedCoord)
@@ -227,7 +222,7 @@ void UiUpdate(
         static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);
 
       // TODO move below elsewhere
-      render.lastIntegratorImageClicked = -1;
+      render.lastIntegratorImageClicked = -1lu;
     }
 
     ImGui::End();
@@ -237,74 +232,74 @@ void UiUpdate(
   if (currentMtlIdx >= scene.meshes.size())
     { currentMtlIdx = static_cast<size_t>(-1); }
 
-  if (ImGui::Begin("Material Editor")) {
+  /* if (ImGui::Begin("Material Editor")) { */
 
-    if (ImGui::SliderFloat("Depth",  &data.layers[0].depth, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::SliderFloat("sigmaA", &data.layers[0].sigmaA, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::SliderFloat("sigmaS", &data.layers[0].sigmaS, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::SliderFloat("g",      &data.layers[0].g, -2.0f, 2.0f)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::SliderFloat("alpha",  &data.layers[0].alpha, 0.0f, 2.0f)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::SliderFloat3("ior", &data.layers[0].ior.x, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-    }
-    if (ImGui::SliderFloat3("kappa", &data.layers[0].kappa.x, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-    }
+  /*   if (ImGui::SliderFloat("Depth",  &data.layers[0].depth, 0.0f, 1.0f)) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
+  /*   if (ImGui::SliderFloat("sigmaA", &data.layers[0].sigmaA, 0.0f, 1.0f)) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
+  /*   if (ImGui::SliderFloat("sigmaS", &data.layers[0].sigmaS, 0.0f, 1.0f)) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
+  /*   if (ImGui::SliderFloat("g",      &data.layers[0].g, -2.0f, 2.0f)) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
+  /*   if (ImGui::SliderFloat("alpha",  &data.layers[0].alpha, 0.0f, 2.0f)) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
+  /*   if (ImGui::SliderFloat3("ior", &data.layers[0].ior.x, 0.0f, 1.0f)) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
+  /*   if (ImGui::SliderFloat3("kappa", &data.layers[0].kappa.x, 0.0f, 1.0f)) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
 
-    if (
-      ImGui::SliderFloat3(
-        "fresnel", &data.fresnelTable.fresnelConstant.x, 0.0f, 1.0f
-      )
-    ) {
-      render.ClearImageBuffers();
-    }
+  /*   if ( */
+  /*     ImGui::SliderFloat3( */
+  /*       "fresnel", &data.fresnelTable.fresnelConstant.x, 0.0f, 1.0f */
+  /*     ) */
+  /*   ) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
 
-    if (
-      ImGui::SliderFloat(
-        "total internal reflection", &data.tirTable.tirConstant, 0.0f, 1.0f
-      )
-    ) {
-      render.ClearImageBuffers();
-    }
+  /*   if ( */
+  /*     ImGui::SliderFloat( */
+  /*       "total internal reflection", &data.tirTable.tirConstant, 0.0f, 1.0f */
+  /*     ) */
+  /*   ) { */
+  /*     render.ClearImageBuffers(); */
+  /*   } */
 
-    /* if (currentMtlIdx != static_cast<size_t>(-1)) { */
-    /*   auto & material = */
-    /*     reinterpret_cast<MaterialInfo *>(plugin.material.userdata)[ */
-    /*       currentMtlIdx */
-    /*     ]; */
-    /*   ImGui::PushID(std::to_string(currentMtlIdx).c_str()); */
-    /*   ImGui::Text("Mtl %lu", currentMtlIdx); */
-    /*   if (ImGui::ColorPicker3("diffuse", &material.diffuse.x)) { */
-    /*     render.ClearImageBuffers(); */
-    /*   } */
-    /*   if (ImGui::SliderFloat("roughness", &material.roughness, 0.0f, 1.0f)) { */
-    /*     render.ClearImageBuffers(); */
-    /*   } */
-    /*   if (ImGui::InputFloat("emission", &material.emission)) { */
-    /*     UpdateSceneEmission(scene, plugin.material); */
-    /*     render.ClearImageBuffers(); */
-    /*   } */
-    /*   if ( */
-    /*       ImGui::InputFloat("transmittive", &material.transmittive) */
-    /*    || ImGui::InputFloat("ior", &material.indexOfRefraction) */
-    /*   ) { */
-    /*     render.ClearImageBuffers(); */
-    /*   } */
-    /*   ImGui::PopID(); */
-    /* } */
+  /*   /1* if (currentMtlIdx != static_cast<size_t>(-1)) { *1/ */
+  /*   /1*   auto & material = *1/ */
+  /*   /1*     reinterpret_cast<MaterialInfo *>(plugin.material.userdata)[ *1/ */
+  /*   /1*       currentMtlIdx *1/ */
+  /*   /1*     ]; *1/ */
+  /*   /1*   ImGui::PushID(std::to_string(currentMtlIdx).c_str()); *1/ */
+  /*   /1*   ImGui::Text("Mtl %lu", currentMtlIdx); *1/ */
+  /*   /1*   if (ImGui::ColorPicker3("diffuse", &material.diffuse.x)) { *1/ */
+  /*   /1*     render.ClearImageBuffers(); *1/ */
+  /*   /1*   } *1/ */
+  /*   /1*   if (ImGui::SliderFloat("roughness", &material.roughness, 0.0f, 1.0f)) { *1/ */
+  /*   /1*     render.ClearImageBuffers(); *1/ */
+  /*   /1*   } *1/ */
+  /*   /1*   if (ImGui::InputFloat("emission", &material.emission)) { *1/ */
+  /*   /1*     UpdateSceneEmission(scene, plugin.material); *1/ */
+  /*   /1*     render.ClearImageBuffers(); *1/ */
+  /*   /1*   } *1/ */
+  /*   /1*   if ( *1/ */
+  /*   /1*       ImGui::InputFloat("transmittive", &material.transmittive) *1/ */
+  /*   /1*    || ImGui::InputFloat("ior", &material.indexOfRefraction) *1/ */
+  /*   /1*   ) { *1/ */
+  /*   /1*     render.ClearImageBuffers(); *1/ */
+  /*   /1*   } *1/ */
+  /*   /1*   ImGui::PopID(); *1/ */
+  /*   /1* } *1/ */
 
-    ImGui::End();
-  }
+  /*   ImGui::End(); */
+  /* } */
 }
 
 } // -- end extern "C"

@@ -2,8 +2,11 @@
 
 #include <spdlog/spdlog.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.hpp>
+#pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdouble-promotion"
+  #define STB_IMAGE_IMPLEMENTATION
+  #include <stb_image.hpp>
+#pragma GCC diagnostic pop
 
 #include <filesystem>
 

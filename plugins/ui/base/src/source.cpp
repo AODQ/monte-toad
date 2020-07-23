@@ -165,7 +165,7 @@ void UiPluginInfo(
     std::chrono::duration_cast<std::chrono::duration<float, std::micro>>
       (curFrame - prevFrame).count() / 1000.0f;
 
-  ImGui::Text("%.2f ms / frame", ::msTime);
+  ImGui::Text("%s", fmt::format("{} ms / frame", ::msTime).c_str());
 
   prevFrame = curFrame;
 
@@ -204,13 +204,14 @@ void UiImageOutput(
       "Off", "On Change", "After Change", "On Always"
     }};
 
-    int value = static_cast<int>(data.renderingState);
-
-    if (ImGui::BeginCombo("State", stateStrings[value])) {
-      for (size_t i = 0; i < stateStrings.size(); ++ i) {
-        bool isSelected = value == static_cast<int>(i);
-        if (ImGui::Selectable(stateStrings[i], isSelected)) {
-          data.renderingState = static_cast<mt::RenderingState>(i);
+    if (
+      size_t value = static_cast<size_t>(data.renderingState);
+      ImGui::BeginCombo("State", stateStrings[value])
+    ) {
+      for (size_t stateIt = 0; stateIt < stateStrings.size(); ++ stateIt) {
+        bool isSelected = value == stateIt;
+        if (ImGui::Selectable(stateStrings[stateIt], isSelected)) {
+          data.renderingState = static_cast<mt::RenderingState>(stateIt);
 
           // don't clear out data if set to off
           if (data.renderingState != mt::RenderingState::Off)
@@ -255,14 +256,18 @@ void UiImageOutput(
         , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
         )
       ) {
-        for (size_t i = 0; i < ::blockIteratorStrides.size(); ++ i) {
-          bool isSelected = iteratorIdx == i;
+        for (
+          size_t blockIt = 0;
+          blockIt < ::blockIteratorStrides.size();
+          ++ blockIt
+        ) {
+          bool isSelected = iteratorIdx == blockIt;
           if (
             ImGui::Selectable(
-              std::to_string(::blockIteratorStrides[i]).c_str()
+              std::to_string(::blockIteratorStrides[blockIt]).c_str()
             , isSelected)
           ) {
-            data.blockIteratorStride = ::blockIteratorStrides[i];
+            data.blockIteratorStride = ::blockIteratorStrides[blockIt];
             mt::Clear(data);
           }
         }
@@ -275,12 +280,12 @@ void UiImageOutput(
       auto previousResolution = data.imageResolution;
 
       { // aspect ratio
-        int value = static_cast<int>(data.imageAspectRatio);
+        size_t value = static_cast<size_t>(data.imageAspectRatio);
         if (ImGui::BeginCombo("aspect ratio", ::aspectRatioLabels[value])) {
-          for (size_t i = 0; i < ::aspectRatioLabels.size(); ++ i) {
-            bool isSelected = value == static_cast<int>(i);
-            if (ImGui::Selectable(::aspectRatioLabels[i], isSelected)) {
-              data.imageAspectRatio = static_cast<mt::AspectRatio>(i);
+          for (size_t arIt = 0; arIt < ::aspectRatioLabels.size(); ++ arIt) {
+            bool isSelected = value == arIt;
+            if (ImGui::Selectable(::aspectRatioLabels[arIt], isSelected)) {
+              data.imageAspectRatio = static_cast<mt::AspectRatio>(arIt);
 
               ApplyImageResolutionConstraint(
                 data.imageResolution
@@ -350,10 +355,10 @@ void UiImageOutput(
       );
 
       size_t finishedBlocks = 0;
-      for (auto & i : data.blockPixelsFinished) {
+      for (auto & blockIt : data.blockPixelsFinished) {
         finishedBlocks +=
           static_cast<size_t>(
-            i >= data.blockIteratorStride*data.blockIteratorStride
+            blockIt >= data.blockIteratorStride*data.blockIteratorStride
           );
       }
       ImGui::Text(
@@ -491,17 +496,17 @@ void UiEmitters(
 ) {
   ImGui::Begin("emitters");
     { // select skybox emitter
-      auto GetEmissionLabel = [&](int32_t idx) -> char const * {
-        return idx == -1 ? "none" : pluginInfo.emitters[idx].PluginLabel();
+      auto GetEmissionLabel = [&](size_t idx) -> char const * {
+        return idx == -1lu ? "none" : pluginInfo.emitters[idx].PluginLabel();
       };
 
-      int32_t & emissionIdx = scene.emissionSource.skyboxEmitterPluginIdx;
+      size_t & emissionIdx = scene.emissionSource.skyboxEmitterPluginIdx;
       if (ImGui::BeginCombo("Skybox", GetEmissionLabel(emissionIdx))) {
         for (size_t i = 0; i < pluginInfo.emitters.size(); ++ i) {
           if (!pluginInfo.emitters[i].IsSkybox()) { continue; }
-          bool isSelected = emissionIdx == static_cast<int32_t>(i);
+          bool isSelected = emissionIdx == i;
           if (ImGui::Selectable(GetEmissionLabel(i), isSelected)) {
-            emissionIdx = static_cast<int32_t>(i);
+            emissionIdx = i;
             renderInfo.ClearImageBuffers();
           }
         }

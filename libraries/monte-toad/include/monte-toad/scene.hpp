@@ -25,7 +25,7 @@ namespace mt {
 
     mt::Texture environmentMap;
 
-    int32_t skyboxEmitterPluginIdx = -1;
+    size_t skyboxEmitterPluginIdx = -1lu;
   };
 
   struct Scene {
