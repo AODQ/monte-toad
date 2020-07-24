@@ -2,6 +2,7 @@
 
 #include <monte-toad/math.hpp>
 #include <monte-toad/span.hpp>
+#include <monte-toad/util/pimpl.hpp>
 
 #include <memory>
 #include <vector>
@@ -75,14 +76,8 @@ namespace mt {
   );
 
   struct AccelerationStructure {
-    AccelerationStructure();
-    ~AccelerationStructure();
-
-    AccelerationStructure(AccelerationStructure&&);
-    AccelerationStructure(AccelerationStructure const&) = delete;
-    // pimpl idiom to allow forwarding of BVH
     struct Impl;
-    std::unique_ptr<Impl> impl;
+    mt::util::pimpl<Impl> impl;
 
     static void Construct(
       mt::AccelerationStructure & self
@@ -90,7 +85,7 @@ namespace mt {
     );
 
     span<mt::Triangle> Triangles();
-    span<mt::Triangle> Triangles() const;
+    span<mt::Triangle const> Triangles() const;
   };
 
   std::optional<BvhIntersection> IntersectClosest(

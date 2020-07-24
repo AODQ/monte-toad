@@ -158,22 +158,15 @@ struct mt::AccelerationStructure::Impl {
     boundingVolumeTraversal { boundingVolume };
 };
 
-mt::AccelerationStructure::AccelerationStructure() {}
-mt::AccelerationStructure::~AccelerationStructure() {}
-mt::AccelerationStructure::AccelerationStructure(
-  mt::AccelerationStructure&& other
-) {
-  this->impl = std::move(other.impl);
-  other.impl = nullptr;
-}
+// can now specialize the pimpl type
+#define PIMPL_SPECIALIZE mt::AccelerationStructure::Impl
+#include <monte-toad/util/pimpl_impl.inl>
 
 ////////////////////////////////////////////////////////////////////////////////
 void mt::AccelerationStructure::Construct(
   mt::AccelerationStructure & self
 , std::vector<Triangle> && trianglesMv
 ) {
-  self.impl = std::make_unique<mt::AccelerationStructure::Impl>();
-
   self.impl->triangles = std::move(trianglesMv);
 
   auto & triangles = self.impl->triangles;
@@ -219,7 +212,7 @@ span<mt::Triangle> mt::AccelerationStructure::Triangles() {
   return make_span(this->impl->triangles);
 }
 
-span<mt::Triangle> mt::AccelerationStructure::Triangles() const {
+span<mt::Triangle const> mt::AccelerationStructure::Triangles() const {
   return make_span(this->impl->triangles);
 }
 
