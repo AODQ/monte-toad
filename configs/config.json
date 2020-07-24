@@ -1,0 +1,65 @@
+{
+  "plugins": [
+    {
+      "type": "integrator",
+      "file": "plugins/integrator-depth.mt-plugin",
+      "state": "on-change",
+      "aspect-ratio": "4x3",
+      "resolution": 64,
+      "imgui-resolution": 256
+    }
+  , {
+      "type": "integrator",
+      "file": "plugins/integrator-normal.mt-plugin",
+      "state": "on-change",
+      "aspect-ratio": "4x3",
+      "resolution": 64,
+      "imgui-resolution": 128
+    }
+  , {
+      "type": "integrator",
+      "file": "plugins/integrator-forward-pt.mt-plugin",
+      "state": "on-change",
+      "samples-per-pixel": 256,
+      "paths-per-sample": 8,
+      "iterations-per-block": 1,
+      "block-stride": 128,
+      "aspect-ratio": "4x3",
+      "resolution": 512,
+      "imgui-resolution": 1024
+    }
+  , {
+      "type": "dispatcher"
+    , "file": "plugins/dispatcher-primary.mt-plugin"
+    }
+  , {
+      "type": "material",
+      "file": "plugins/ggx-mtl.mt-plugin"
+    }
+  , {
+      "type": "camera",
+      "file": "plugins/camera-pinhole.mt-plugin"
+    }
+  , {
+      "type": "random",
+      "file": "plugins/white-noise.mt-plugin"
+    }
+  , {
+      "type": "userinterface",
+      "file": "plugins/ui-base.mt-plugin"
+    }
+  , {
+      "type": "emitter",
+      "file": "plugins/emitter-directional.mt-plugin"
+    }
+  , {
+      "type": "emitter",
+      "file": "plugins/emitter-environment.mt-plugin"
+    }
+  , {
+      "type": "emitter",
+      "file": "plugins/emitter-furnace.mt-plugin"
+    }
+  ]
+, "scene": [ "test-models/mcguire/cornell-box/CornellBox-Sphere.obj" ]
+}

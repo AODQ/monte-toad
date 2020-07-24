@@ -1,0 +1,15 @@
+
+
+if (NOT EXISTS ${CMAKE_INSTALL_BINDIR}/config.json)
+  file (
+    COPY ${CMAKE_CURRENT_SOURCE_DIR}/config.json
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+  )
+endif()
+
+if (NOT EXISTS ${CMAKE_INSTALL_BINDIR}/imgui.ini)
+  file (
+    COPY ${CMAKE_CURRENT_SOURCE_DIR}/imgui.ini
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+  )
+endif()
