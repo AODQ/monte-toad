@@ -244,26 +244,24 @@ std::vector<mt::Triangle> LoadAssetIntoScene(
 /* } */
 
 ////////////////////////////////////////////////////////////////////////////////
-mt::Scene mt::Scene::Construct(
-  std::string const & filename
+void mt::Scene::Construct(
+  mt::Scene & self
+, std::string const & filename
 , std::string const & environmentMapFilename
 ) {
-  mt::Scene scene;
-  scene.bboxMin = glm::vec3(std::numeric_limits<float>::max());
-  scene.bboxMax = glm::vec3(std::numeric_limits<float>::min());
+  self.bboxMin = glm::vec3(std::numeric_limits<float>::max());
+  self.bboxMax = glm::vec3(std::numeric_limits<float>::min());
 
   // load models & parse into BVH tree
-  scene.accelStructure =
-    AccelerationStructure::Construct(
-      LoadAssetIntoScene(scene, filename)
-    );
+  AccelerationStructure::Construct(
+    self.accelStructure
+  , LoadAssetIntoScene(self, filename)
+  );
 
   if(environmentMapFilename != "") {
-    scene.emissionSource.environmentMap =
+    self.emissionSource.environmentMap =
       mt::Texture::Construct(environmentMapFilename);
   }
-
-  return scene;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -272,7 +270,8 @@ mt::SurfaceInfo mt::Raycast(
 , glm::vec3 ori, glm::vec3 dir
 , mt::Triangle const * ignoredTriangle
 ) {
-  auto hit = IntersectClosest(*scene.accelStructure, ori, dir, ignoredTriangle);
+  auto const hit =
+    mt::IntersectClosest(scene.accelStructure, ori, dir, ignoredTriangle);
 
   if (!hit.has_value()) {
     return mt::SurfaceInfo::Construct(ori, dir);
@@ -281,7 +280,7 @@ mt::SurfaceInfo mt::Raycast(
   return
     mt::SurfaceInfo::Construct(
       scene
-    , scene.accelStructure->triangles.data() + hit->triangleIdx
+    , scene.accelStructure.Triangles().data() + hit->triangleIdx
     , *hit
     , ori + dir*hit->length, dir
     );
@@ -301,7 +300,7 @@ std::tuple<mt::Triangle const *, glm::vec2> mt::EmissionSourceTriangle(
   // this needs to take into account triangle surface area as that plays heavily
   // into which ones need to be sampled
   auto const & tri =
-    scene.accelStructure->triangles[
+    scene.accelStructure.Triangles()[
       scene.emissionSource.triangles[
         random.SampleUniform1() * scene.emissionSource.triangles.size()
       ]

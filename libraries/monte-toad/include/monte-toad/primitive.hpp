@@ -1,14 +1,17 @@
 #pragma once
 
 #include <monte-toad/math.hpp>
-
-#pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wshadow"
-  #include <bvh/bvh.hpp>
-  #include <bvh/single_ray_traverser.hpp>
-#pragma GCC diagnostic pop
+#include <monte-toad/span.hpp>
 
 #include <memory>
+#include <vector>
+
+// fwd decl
+namespace bvh {
+  template <typename T> struct BoundingBox;
+  template <typename T, size_t N> struct Vector;
+  template <typename T> struct Ray;
+}
 
 namespace mt {
   struct BvhIntersection {
@@ -51,10 +54,9 @@ namespace mt {
 
     // Required by BVH if splitting is to be performed
     bvh::BoundingBox<float> bounding_box() const;
-    auto BoundingBox() const { return bounding_box(); }
 
     // Required by BVH if splitting is to be performed
-    bvh::Vector3<float> center() const;
+    bvh::Vector<float, 3> center() const;
     glm::vec3 Center() const;
 
     // Required by BVH if splitting is to be performed
@@ -73,16 +75,22 @@ namespace mt {
   );
 
   struct AccelerationStructure {
-    AccelerationStructure() = default;
+    AccelerationStructure();
+    ~AccelerationStructure();
 
-    std::vector<Triangle> triangles;
-    bvh::Bvh<float> boundingVolume;
-    bvh::SingleRayTraverser<decltype(boundingVolume)>
-      boundingVolumeTraversal { boundingVolume };
+    AccelerationStructure(AccelerationStructure&&);
+    AccelerationStructure(AccelerationStructure const&) = delete;
+    // pimpl idiom to allow forwarding of BVH
+    struct Impl;
+    std::unique_ptr<Impl> impl;
 
-    static std::unique_ptr<AccelerationStructure> Construct(
-      std::vector<Triangle> && triangles
+    static void Construct(
+      mt::AccelerationStructure & self
+    , std::vector<Triangle> && triangles
     );
+
+    span<mt::Triangle> Triangles();
+    span<mt::Triangle> Triangles() const;
   };
 
   std::optional<BvhIntersection> IntersectClosest(

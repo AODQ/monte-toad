@@ -7,8 +7,10 @@
 
 #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wshadow"
+  #include <bvh/bvh.hpp>
   #include <bvh/parallel_reinsertion_optimizer.hpp>
   #include <bvh/primitive_intersectors.hpp>
+  #include <bvh/single_ray_traverser.hpp>
   #include <bvh/sweep_sah_builder.hpp>
   #include <bvh/utilities.hpp>
 #pragma GCC diagnostic pop
@@ -149,14 +151,32 @@ std::optional<mt::BvhIntersection> mt::Triangle::intersect(
 mt::Triangle::~Triangle() {}
 
 ////////////////////////////////////////////////////////////////////////////////
-std::unique_ptr<mt::AccelerationStructure> mt::AccelerationStructure::Construct(
-  std::vector<Triangle> && trianglesMv
+struct mt::AccelerationStructure::Impl {
+  std::vector<Triangle> triangles;
+  bvh::Bvh<float> boundingVolume;
+  bvh::SingleRayTraverser<decltype(boundingVolume)>
+    boundingVolumeTraversal { boundingVolume };
+};
+
+mt::AccelerationStructure::AccelerationStructure() {}
+mt::AccelerationStructure::~AccelerationStructure() {}
+mt::AccelerationStructure::AccelerationStructure(
+  mt::AccelerationStructure&& other
 ) {
-  auto self = std::make_unique<AccelerationStructure>();
+  this->impl = std::move(other.impl);
+  other.impl = nullptr;
+}
 
-  self->triangles = std::move(trianglesMv);
+////////////////////////////////////////////////////////////////////////////////
+void mt::AccelerationStructure::Construct(
+  mt::AccelerationStructure & self
+, std::vector<Triangle> && trianglesMv
+) {
+  self.impl = std::make_unique<mt::AccelerationStructure::Impl>();
 
-  auto & triangles = self->triangles;
+  self.impl->triangles = std::move(trianglesMv);
+
+  auto & triangles = self.impl->triangles;
 
   auto [bboxes, centers] =
     bvh::compute_bounding_boxes_and_centers(triangles.data(), triangles.size());
@@ -167,13 +187,13 @@ std::unique_ptr<mt::AccelerationStructure> mt::AccelerationStructure::Construct(
   auto referenceCount = triangles.size();
 
   { // -- build SAH
-    bvh::SweepSahBuilder<bvh::Bvh<float>> builder(self->boundingVolume);
+    bvh::SweepSahBuilder<bvh::Bvh<float>> builder(self.impl->boundingVolume);
     builder.build(global_bbox, bboxes.get(), centers.get(), referenceCount);
   }
 
   { // -- optimizer
     bvh::ParallelReinsertionOptimizer<bvh::Bvh<float>> optimizer(
-      self->boundingVolume
+      self.impl->boundingVolume
     );
     optimizer.optimize();
   }
@@ -183,7 +203,7 @@ std::unique_ptr<mt::AccelerationStructure> mt::AccelerationStructure::Construct(
   auto shuffledTriangles =
     bvh::shuffle_primitives(
       triangles.data(),
-      self->boundingVolume.primitive_indices.get(),
+      self.impl->boundingVolume.primitive_indices.get(),
       referenceCount
     );
 
@@ -193,8 +213,14 @@ std::unique_ptr<mt::AccelerationStructure> mt::AccelerationStructure::Construct(
     reinterpret_cast<void*>(shuffledTriangles.get()),
     referenceCount * sizeof(Triangle)
   );
+}
 
-  return self;
+span<mt::Triangle> mt::AccelerationStructure::Triangles() {
+  return make_span(this->impl->triangles);
+}
+
+span<mt::Triangle> mt::AccelerationStructure::Triangles() const {
+  return make_span(this->impl->triangles);
 }
 
 namespace {
@@ -235,10 +261,11 @@ mt::IntersectClosest(
   AccelerationStructure const & self
 , glm::vec3 ori, glm::vec3 dir, Triangle const * ignoredTriangle
 ) {
+  auto const & impl = *self.impl;
   Intersector intersector(
-    self.boundingVolume, make_span(self.triangles), ignoredTriangle
+    impl.boundingVolume, make_span(impl.triangles), ignoredTriangle
   );
-  bvh::SingleRayTraverser<bvh::Bvh<float>> traversal(self.boundingVolume);
+  bvh::SingleRayTraverser<bvh::Bvh<float>> traversal(impl.boundingVolume);
 
   // weird hack to make sure none of the components are 0, as BVH doesn't seem
   // to work with it (or maybe how I interact with BVH)

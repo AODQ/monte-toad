@@ -25,7 +25,6 @@ void UpdateSceneEmission(
   mt::Scene & scene
 , mt::PluginInfoMaterial const & /*self*/
 ) {
-  if (!scene.accelStructure) { return; }
   scene.emissionSource.triangles.resize(0);
   /* for (size_t i = 0; i < scene.accelStructure->triangles.size(); ++ i) { */
   /*   auto & material = */

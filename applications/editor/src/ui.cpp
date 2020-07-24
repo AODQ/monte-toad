@@ -18,9 +18,12 @@
 #include <imgui/imgui_impl_opengl3.hpp>
 #include <spdlog/sinks/base_sink.h>
 
+#include <deque>
 #include <filesystem>
 #include <mutex>
 #include <string>
+
+#include <omp.h>
 
 namespace {
 mt::Scene scene;
@@ -69,11 +72,11 @@ public:
 std::shared_ptr<GuiSink> imGuiSink;
 
 void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
-  ::scene =
-    mt::Scene::Construct(
-      render.modelFile
-    , render.environmentMapFile
-    );
+  mt::Scene::Construct(
+    ::scene
+  , render.modelFile
+  , render.environmentMapFile
+  );
 
   for (auto & emitter : plugin.emitters)
     { emitter.Precompute(scene, render, plugin); }

@@ -24,12 +24,11 @@ void UpdateSceneEmission(
   mt::Scene & scene
 , mt::PluginInfoMaterial const & self
 ) {
-  if (!scene.accelStructure) { return; }
   scene.emissionSource.triangles.resize(0);
-  for (size_t i = 0; i < scene.accelStructure->triangles.size(); ++ i) {
+  for (size_t i = 0; i < scene.accelStructure.Triangles().size(); ++ i) {
     auto & material =
       reinterpret_cast<MaterialInfo *>(self.userdata)[
-        scene.accelStructure->triangles[i].meshIdx
+        scene.accelStructure.Triangles()[i].meshIdx
       ];
 
     if (material.emission > 0.00001f)

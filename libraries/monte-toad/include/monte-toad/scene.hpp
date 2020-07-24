@@ -28,10 +28,9 @@ namespace mt {
   };
 
   struct Scene {
-    Scene() = default;
-
-    static Scene Construct(
-      std::string const & filename
+    static void Construct(
+      Scene & self
+    , std::string const & filename
     , std::string const & environmentMapFilename = ""
     );
 
@@ -41,7 +40,7 @@ namespace mt {
 
     std::any environmentData;
 
-    std::unique_ptr<mt::AccelerationStructure> accelStructure;
+    mt::AccelerationStructure accelStructure;
     EmissionSource emissionSource;
 
     glm::vec3 bboxMin, bboxMax;
