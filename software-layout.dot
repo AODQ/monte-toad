@@ -10,15 +10,18 @@ digraph G {
   "monte-toad" -> "interactive-editor"
   "monte-toad" -> "offline-renderer"
 
+  "monte-toad-util" -> "monte-toad-core"
+
   "plugins" -> "monte-toad"
 
   "third-party/bvh" -> "monte-toad-core"
 
   "third-party/cxxopts" -> "interactive-editor"
   "third-party/cxxopts" -> "offline-renderer"
-  "third-party/glad" -> "monte-toad-core"
+  "third-party/glad" -> "interactive-editor"
   "third-party/glm" -> "monte-toad-core"
-  "third-party/imgui" -> "monte-toad-core"
+  "third-party/imgui" -> "plugins"
+  "third-party/imgui" -> "interactive-editor"
   "third-party/json" -> "monte-toad"
   "third-party/stb" -> "monte-toad"
 
