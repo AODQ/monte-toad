@@ -191,7 +191,8 @@ bool mt::core::DispatchRender(
   self.imageStride = 1;
   glm::u16vec2 minRange = glm::uvec2(0);
   glm::u16vec2 maxRange = self.imageResolution;
-  if (!plugin.integrators[integratorIdx].RealTime()) {
+  const bool realtime = plugin.integrators[integratorIdx].RealTime();
+  if (!realtime) {
     switch (self.dispatchedCycles) {
       case 1: self.imageStride = 8; break;
       default:
@@ -208,7 +209,26 @@ bool mt::core::DispatchRender(
     , self.imageStride, self.imageStride
     );
 
+  // blit transition buffer for 8 pixels, thus generating an 8x lower resolution
+  //  image without gaps
+  if (!realtime && self.dispatchedCycles == 1) {
+    #pragma omp parallel for
+    for (size_t x = minRange.x; x < maxRange.x; ++ x)
+    for (size_t y = minRange.y; y < maxRange.y; ++ y) {
+      auto const yy = y - (y % 8);
+      auto const xx = x - (x % 8);
+      self.mappedImageTransitionBuffer[y*self.imageResolution.x + x] =
+          self.mappedImageTransitionBuffer[yy*self.imageResolution.x + xx];
+    }
+  }
+
   ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
+
+  // apply image copy
+  mt::core::DispatchImageCopy(
+    self
+  , minRange.x, maxRange.x, minRange.y, maxRange.y
+  );
 
   return true;
 }
@@ -238,7 +258,10 @@ size_t mt::core::BlockIteratorMax(mt::core::IntegratorData & self) {
   * static_cast<size_t>(std::ceil(resolution.y/static_cast<float>(stride)));
 }
 
-void mt::core::DispatchImageCopy(mt::core::IntegratorData & self) {
+void mt::core::DispatchImageCopy(
+  mt::core::IntegratorData & self
+  , size_t, size_t, size_t, size_t
+) {
   glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle);
   glTexImage2D(
     GL_TEXTURE_2D
@@ -263,6 +286,17 @@ void mt::core::AllocateResources(mt::core::IntegratorData & self) {
 
   // -- construct texture
   self.renderedTexture.Construct(GL_TEXTURE_2D);
+
+  // generate texture memory
+  glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle);
+  glTexImage2D(
+    GL_TEXTURE_2D
+  , 0
+  , GL_RGBA32F
+  , self.imageResolution.x, self.imageResolution.y
+  , 0, GL_RGBA, GL_FLOAT
+  , nullptr
+  );
 
   { // -- set parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

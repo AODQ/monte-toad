@@ -373,10 +373,7 @@ void DispatchRender(
   for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
     auto & integratorData = render.integratorData[idx];
 
-    if (mt::core::DispatchRender(integratorData, ::scene, render, plugin, idx))
-    {
-      mt::core::DispatchImageCopy(integratorData);
-    }
+    mt::core::DispatchRender(integratorData, ::scene, render, plugin, idx);
   }
 }
 

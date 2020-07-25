@@ -102,7 +102,11 @@ void DrawPath(mt::PluginInfo const & plugin, mt::core::RenderInfo & render) {
     );
   }
 
-  mt::core::DispatchImageCopy(depthIntegratorData);
+  mt::core::DispatchImageCopy(
+    depthIntegratorData
+  , 0, depthIntegratorData.imageResolution.x
+  , 0, depthIntegratorData.imageResolution.y
+  );
 }
 }
 

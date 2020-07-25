@@ -29,7 +29,10 @@ namespace mt::core {
 
   size_t BlockIteratorMax(mt::core::IntegratorData & self);
 
-  void DispatchImageCopy(mt::core::IntegratorData & self);
+  void DispatchImageCopy(
+    mt::core::IntegratorData & self
+  , size_t minX, size_t maxX, size_t minY, size_t maxY
+  );
 
   void AllocateResources(mt::core::IntegratorData & self);
 

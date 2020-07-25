@@ -191,7 +191,7 @@ void UiPluginInfo(
     std::chrono::duration_cast<std::chrono::duration<float, std::micro>>
       (curFrame - prevFrame).count() / 1000.0f;
 
-  ImGui::Text("%s", fmt::format("{} ms / frame", ::msTime).c_str());
+  ImGui::Text("%s", fmt::format("{:.2f} ms / frame", ::msTime).c_str());
 
   prevFrame = curFrame;
 
