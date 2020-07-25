@@ -3,7 +3,6 @@
 #include <monte-toad/enum.hpp>
 #include <monte-toad/glutil.hpp>
 #include <monte-toad/math.hpp>
-#include <monte-toad/span.hpp>
 
 namespace mt {
   struct IntegratorData {

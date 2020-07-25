@@ -1,7 +1,7 @@
 #pragma once
 
 #include <monte-toad/camerainfo.hpp>
-#include <monte-toad/integratordata.hpp>
+#include <monte-toad/enum.hpp>
 #include <monte-toad/math.hpp>
 
 #include <array>
@@ -9,6 +9,7 @@
 #include <vector>
 
 namespace mt { struct RenderInfo; }
+namespace mt { struct IntegratorData; }
 namespace mt { struct Scene; }
 namespace mt { struct PluginInfo; }
 

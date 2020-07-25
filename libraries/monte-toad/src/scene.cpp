@@ -1,7 +1,11 @@
 #include <monte-toad/scene.hpp>
 
+#include <monte-toad/core/accelerationstructure.hpp>
+#include <monte-toad/core/intersection.hpp>
+#include <monte-toad/core/triangle.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
+#include <monte-toad/surfaceinfo.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -9,7 +13,7 @@
 
 namespace {
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<mt::Triangle> LoadAssetIntoScene(
+std::vector<mt::core::Triangle> LoadAssetIntoScene(
   mt::Scene & model
 , std::string const & filename
 ) {
@@ -45,7 +49,7 @@ std::vector<mt::Triangle> LoadAssetIntoScene(
     return {};
   }
 
-  std::vector<mt::Triangle> triangles;
+  std::vector<mt::core::Triangle> triangles;
 
   for (size_t meshIt = 0; meshIt < asset->mNumMeshes; ++ meshIt) {
     auto const & mesh = *asset->mMeshes[meshIt];
@@ -86,7 +90,7 @@ std::vector<mt::Triangle> LoadAssetIntoScene(
       // add to scene
       triangles
         .emplace_back(
-          mt::Triangle (
+          mt::core::Triangle (
             meshIt
           , glm::vec3{v0.x, v0.y, v0.z}
           , glm::vec3{v1.x, v1.y, v1.z}
@@ -253,7 +257,7 @@ void mt::Scene::Construct(
   self.bboxMax = glm::vec3(std::numeric_limits<float>::min());
 
   // load models & parse into BVH tree
-  AccelerationStructure::Construct(
+  mt::core::AccelerationStructure::Construct(
     self.accelStructure
   , LoadAssetIntoScene(self, filename)
   );
@@ -268,10 +272,10 @@ void mt::Scene::Construct(
 mt::SurfaceInfo mt::Raycast(
   mt::Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
-, mt::Triangle const * ignoredTriangle
+, mt::core::Triangle const * ignoredTriangle
 ) {
   auto const hit =
-    mt::IntersectClosest(scene.accelStructure, ori, dir, ignoredTriangle);
+    mt::core::IntersectClosest(scene.accelStructure, ori, dir, ignoredTriangle);
 
   if (!hit.has_value()) {
     return mt::SurfaceInfo::Construct(ori, dir);
@@ -290,7 +294,7 @@ mt::SurfaceInfo mt::Raycast(
 #include <mt-plugin/plugin.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
-std::tuple<mt::Triangle const *, glm::vec2> mt::EmissionSourceTriangle(
+std::tuple<mt::core::Triangle const *, glm::vec2> mt::EmissionSourceTriangle(
   mt::Scene const & scene
 , mt::PluginInfoRandom const & random
 ) {

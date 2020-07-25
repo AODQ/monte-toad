@@ -4,6 +4,7 @@
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>
 #include <monte-toad/scene.hpp>
+#include <monte-toad/surfaceinfo.hpp>
 
 #include <mt-plugin/plugin.hpp>
 

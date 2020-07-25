@@ -4,6 +4,7 @@
 #include "fileutil.hpp"
 #include "ui.hpp"
 
+#include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/material/layered.hpp>
 #include <monte-toad/math.hpp>

@@ -3,15 +3,15 @@
 #include <monte-toad/math.hpp>
 
 namespace mt { struct Scene; }
-namespace mt { struct Triangle; }
-namespace mt { struct BvhIntersection; }
+namespace mt::core { struct Triangle; }
+namespace mt::core { struct BvhIntersection; }
 
 namespace mt {
 
   struct SurfaceInfo {
     SurfaceInfo() = default;
 
-    mt::Triangle const * triangle = nullptr;
+    mt::core::Triangle const * triangle = nullptr;
     float distance = 0.0f;
     glm::vec2 barycentricUv = glm::vec2(0.0f);
 
@@ -34,8 +34,8 @@ namespace mt {
     // incoming angle.
     static SurfaceInfo Construct(
       mt::Scene const & scene
-    , mt::Triangle const * triangle
-    , mt::BvhIntersection const & intersection
+    , mt::core::Triangle const * triangle
+    , mt::core::BvhIntersection const & intersection
     , glm::vec3 origin
     , glm::vec3 incomingAngle
     );

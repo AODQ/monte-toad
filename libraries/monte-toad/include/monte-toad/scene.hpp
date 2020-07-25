@@ -1,8 +1,7 @@
 #pragma once
 
+#include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/math.hpp>
-#include <monte-toad/primitive.hpp>
-#include <monte-toad/surfaceinfo.hpp>
 #include <monte-toad/texture.hpp>
 
 #include <any>
@@ -11,8 +10,9 @@
 #include <string>
 #include <vector>
 
-namespace mt { struct Triangle; }
+namespace mt::core { struct Triangle; }
 namespace mt { struct PluginInfoRandom; }
+namespace mt { struct SurfaceInfo; }
 
 namespace mt {
   struct Mesh {
@@ -40,7 +40,7 @@ namespace mt {
 
     std::any environmentData;
 
-    mt::AccelerationStructure accelStructure;
+    mt::core::AccelerationStructure accelStructure;
     EmissionSource emissionSource;
 
     glm::vec3 bboxMin, bboxMax;
@@ -49,10 +49,10 @@ namespace mt {
   mt::SurfaceInfo Raycast(
     Scene const & scene
   , glm::vec3 ori, glm::vec3 dir
-  , Triangle const * ignoredTriangle
+  , mt::core::Triangle const * ignoredTriangle
   );
 
-  std::tuple<Triangle const *, glm::vec2> EmissionSourceTriangle(
+  std::tuple<mt::core::Triangle const *, glm::vec2> EmissionSourceTriangle(
     Scene const & scene
   , mt::PluginInfoRandom const & random
   );

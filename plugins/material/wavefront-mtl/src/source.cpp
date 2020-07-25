@@ -3,6 +3,7 @@
 #include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
+#include <monte-toad/core/triangle.hpp>
 #include <monte-toad/material/layered.hpp>
 #include <monte-toad/math.hpp>
 #include <monte-toad/renderinfo.hpp>
@@ -147,7 +148,7 @@ mt::BsdfSampleInfo BsdfSample(
 bool IsEmitter(
   mt::PluginInfoMaterial const & self
 , mt::Scene const & /*scene*/
-, mt::Triangle const & triangle
+, mt::core::Triangle const & triangle
 ) {
   auto const & mtl =
     reinterpret_cast<MaterialInfo const *>(self.userdata)[triangle.meshIdx];

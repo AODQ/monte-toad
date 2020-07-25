@@ -3,7 +3,8 @@
 #include <array>
 #include <tuple>
 
-template <typename ElementType> struct span; // fwd decl
+// -- fwd decl
+template <typename ElementType> struct span;
 
 namespace mt::interpolation {
 

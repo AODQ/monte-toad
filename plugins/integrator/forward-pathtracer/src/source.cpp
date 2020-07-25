@@ -3,6 +3,7 @@
 #include <monte-toad/debugutil/IntegratorPathUnit.hpp>
 #include <monte-toad/enum.hpp>
 #include <monte-toad/geometry.hpp>
+#include <monte-toad/core/triangle.hpp>
 #include <monte-toad/integratordata.hpp>
 #include <monte-toad/log.hpp>
 #include <monte-toad/math.hpp>

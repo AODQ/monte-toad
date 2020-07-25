@@ -1,5 +1,7 @@
 // ggx material
 
+#include <monte-toad/core/accelerationstructure.hpp>
+#include <monte-toad/core/triangle.hpp>
 #include <monte-toad/geometry.hpp>
 #include <monte-toad/imgui.hpp>
 #include <monte-toad/integratordata.hpp>
@@ -308,7 +310,7 @@ mt::BsdfSampleInfo BsdfSample(
 
 bool IsEmitter(
   mt::PluginInfoMaterial const & /*self*/
-, mt::Triangle const & /*triangle*/
+, mt::core::Triangle const & /*triangle*/
 ) {
   return false;
   /* auto const & mtl = */

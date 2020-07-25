@@ -17,6 +17,7 @@
 
 // TODO implement functional instead of ptrs
 
+namespace mt::core { struct Triangle; }
 namespace mt::debugutil { struct IntegratorPathUnit; }
 namespace mt { struct CameraInfo; }
 namespace mt { struct IntegratorData; }
@@ -24,7 +25,6 @@ namespace mt { struct PluginInfo; }
 namespace mt { struct RenderInfo; }
 namespace mt { struct Scene; }
 namespace mt { struct SurfaceInfo; }
-namespace mt { struct Triangle; }
 
 namespace mt {
 
@@ -129,7 +129,7 @@ namespace mt {
     bool (*IsEmitter)(
       mt::PluginInfoMaterial const & self
     , mt::Scene const & scene
-    , mt::Triangle const & triangle
+    , mt::core::Triangle const & triangle
     );
 
     void (*UiUpdate)(

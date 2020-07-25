@@ -5,6 +5,8 @@ target_sources(
   monte-toad
   PRIVATE
     src/camerainfo.cpp
+    src/core/accelerationstructure.cpp
+    src/core/triangle.cpp
     src/enum.cpp
     src/geometry.cpp
     src/glutil.cpp
@@ -13,7 +15,6 @@ target_sources(
     src/log.cpp
     src/material/layered.cpp
     src/math.cpp
-    src/primitive.cpp
     src/renderinfo.cpp
     src/scene.cpp
     src/surfaceinfo.cpp

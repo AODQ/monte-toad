@@ -6,8 +6,6 @@
 
 #include <mt-plugin/plugin.hpp>
 
-#include <glm/ext/matrix_transform.hpp>
-
 namespace {
 
 glm::mat3 viewProjectionMatrixDir;

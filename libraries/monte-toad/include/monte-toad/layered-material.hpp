@@ -3,14 +3,12 @@
 #include <monte-toad/enum.hpp>
 #include <monte-toad/math.hpp>
 
-#include <vector>
 #include <cstdint>
 #include <tuple>
+#include <vector>
 
 // -- fwd decl
 namespace mt { struct PluginInfoRandom; struct SurfaceInfo; }
-
-// -- decl
 
 namespace mt::material {
 

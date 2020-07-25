@@ -1,7 +1,8 @@
 #include <monte-toad/surfaceinfo.hpp>
 
+#include <monte-toad/core/intersection.hpp>
+#include <monte-toad/core/triangle.hpp>
 #include <monte-toad/geometry.hpp>
-#include <monte-toad/primitive.hpp>
 #include <monte-toad/scene.hpp>
 
 mt::SurfaceInfo mt::SurfaceInfo::Construct(
@@ -16,8 +17,8 @@ mt::SurfaceInfo mt::SurfaceInfo::Construct(
 
 mt::SurfaceInfo mt::SurfaceInfo::Construct(
   mt::Scene const & /*scene*/
-, mt::Triangle const * triangle
-, mt::BvhIntersection const & intersection
+, mt::core::Triangle const * triangle
+, mt::core::BvhIntersection const & intersection
 , glm::vec3 origin
 , glm::vec3 incomingAngle
 ) {
