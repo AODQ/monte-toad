@@ -1,8 +1,8 @@
 #include "fileutil.hpp"
 
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/renderinfo.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/renderinfo.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -36,7 +36,7 @@ bool AttemptJsonStore(
 
 void LoadPluginIntegrator(
   mt::PluginInfoIntegrator & /*integrator*/
-, mt::IntegratorData & data
+, mt::core::IntegratorData & data
 , nlohmann::json const & info
 ) {
   if (auto s = info.find("state"); s != info.end() && s->is_string()) {
@@ -91,7 +91,7 @@ void LoadPluginUserInterface(nlohmann::json /*json*/) {
 
 //------------------------------------------------------------------------------
 void fileutil::LoadEditorConfig(
-  mt::RenderInfo & render
+  mt::core::RenderInfo & render
 , mt::PluginInfo & plugin
 ) {
   nlohmann::json json;
@@ -171,7 +171,7 @@ void fileutil::LoadEditorConfig(
 
 //------------------------------------------------------------------------------
 void fileutil::SaveEditorConfig(
-  mt::RenderInfo const & /*render*/
+  mt::core::RenderInfo const & /*render*/
 , mt::PluginInfo const & /*plugin*/
 ) {
 }
@@ -179,7 +179,7 @@ void fileutil::SaveEditorConfig(
 //------------------------------------------------------------------------------
 bool fileutil::LoadPlugin(
   mt::PluginInfo & plugin
-, mt::RenderInfo & render
+, mt::core::RenderInfo & render
 , std::string const & file
 , mt::PluginType type
 ) {

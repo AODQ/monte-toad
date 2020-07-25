@@ -1,14 +1,15 @@
 #pragma once
 
-#include <monte-toad/enum.hpp>
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/enum.hpp>
+#include <monte-toad/core/math.hpp>
 
 #include <cstdint>
 #include <tuple>
 #include <vector>
 
 // -- fwd decl
-namespace mt { struct PluginInfoRandom; struct SurfaceInfo; }
+namespace mt { struct PluginInfoRandom; }
+namespace mt::core { struct SurfaceInfo; }
 
 namespace mt::material {
 
@@ -87,14 +88,14 @@ namespace mt::material {
 
   glm::vec3 BsdfFs(
     mt::material::FourierBsdfTable const & fourierBsdf
-  , mt::SurfaceInfo const & surface
+  , mt::core::SurfaceInfo const & surface
   , glm::vec3 const & outgoingAngle
   , mt::TransportMode transportMode
   );
 
   float BsdfPdf(
     mt::material::FourierBsdfTable const & fourierBsdf
-  , mt::SurfaceInfo const & surface
+  , mt::core::SurfaceInfo const & surface
   , glm::vec3 const & outgoingAngle
   );
 
@@ -102,7 +103,7 @@ namespace mt::material {
   BsdfSample(
     mt::material::FourierBsdfTable const & fourierBsdf
   , mt::PluginInfoRandom const & random
-  , mt::SurfaceInfo const & surface
+  , mt::core::SurfaceInfo const & surface
   , mt::TransportMode transportMode
   );
 }

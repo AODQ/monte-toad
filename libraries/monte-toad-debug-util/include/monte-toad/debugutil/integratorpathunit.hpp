@@ -1,8 +1,8 @@
 #pragma once
 
-#include <monte-toad/enum.hpp>
-#include <monte-toad/math.hpp>
-#include <monte-toad/surfaceinfo.hpp>
+#include <monte-toad/core/enum.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 
 namespace mt::debugutil {
   struct IntegratorPathUnit {
@@ -10,6 +10,6 @@ namespace mt::debugutil {
     glm::vec3 accumulatedIrradiance;
     mt::TransportMode transportMode;
     size_t it;
-    mt::SurfaceInfo surface;
+    mt::core::SurfaceInfo surface;
   };
 }

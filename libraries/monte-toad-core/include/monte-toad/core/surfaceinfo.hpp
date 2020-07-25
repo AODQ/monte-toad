@@ -1,13 +1,12 @@
 #pragma once
 
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/math.hpp>
 
-namespace mt { struct Scene; }
+namespace mt::core { struct Scene; }
 namespace mt::core { struct Triangle; }
 namespace mt::core { struct BvhIntersection; }
 
-namespace mt {
-
+namespace mt::core {
   struct SurfaceInfo {
     SurfaceInfo() = default;
 
@@ -33,7 +32,7 @@ namespace mt {
     // creates a valid surface; specificying a single point on a triangle at an
     // incoming angle.
     static SurfaceInfo Construct(
-      mt::Scene const & scene
+      mt::core::Scene const & scene
     , mt::core::Triangle const * triangle
     , mt::core::BvhIntersection const & intersection
     , glm::vec3 origin

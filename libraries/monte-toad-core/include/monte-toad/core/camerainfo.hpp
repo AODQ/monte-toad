@@ -1,11 +1,9 @@
 #pragma once
 
-#include <monte-toad/math.hpp>
-
 namespace mt { struct PluginInfo; }
-namespace mt { struct RenderInfo; }
+namespace mt::core { struct RenderInfo; }
 
-namespace mt {
+namespace mt::core {
   struct CameraInfo {
     glm::vec3 origin { 1.0f, 0.0f, 0.0f };
     glm::vec3 direction { 0.0f, 0.0f, 1.0f };
@@ -16,6 +14,6 @@ namespace mt {
   // updates camera for plugin and clears image buffer
   void UpdateCamera(
     mt::PluginInfo const & plugin
-  , mt::RenderInfo & render
+  , mt::core::RenderInfo & render
   );
 }

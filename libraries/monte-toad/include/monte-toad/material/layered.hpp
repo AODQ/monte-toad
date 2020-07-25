@@ -1,6 +1,6 @@
 #pragma once
 
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/math.hpp>
 
 #include <vector>
 
@@ -8,7 +8,7 @@
 //  "efficient rendering of layered materials using an atomic decomposition
 //   with statistical operators"
 
-namespace mt { struct SurfaceInfo; }
+namespace mt::core { struct SurfaceInfo; }
 namespace mt { struct PluginInfoRandom; }
 
 namespace mt::material::layered {
@@ -66,18 +66,18 @@ namespace mt::material::layered {
   BsdfSample(
     mt::material::layered::Data const & structure
   , mt::PluginInfoRandom const & random
-  , mt::SurfaceInfo const & surface
+  , mt::core::SurfaceInfo const & surface
   );
 
   glm::vec3 BsdfFs(
     mt::material::layered::Data const & structure
-  , mt::SurfaceInfo const & surface
+  , mt::core::SurfaceInfo const & surface
   , glm::vec3 const & wo
   );
 
   float BsdfPdf(
     mt::material::layered::Data const & structure
-  , mt::SurfaceInfo const & surface
+  , mt::core::SurfaceInfo const & surface
   , glm::vec3 const & wo
   );
 }

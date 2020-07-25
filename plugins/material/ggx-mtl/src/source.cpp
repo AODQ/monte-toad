@@ -1,16 +1,17 @@
 // ggx material
 
 #include <monte-toad/core/accelerationstructure.hpp>
+#include <monte-toad/core/geometry.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/core/scene.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/triangle.hpp>
-#include <monte-toad/geometry.hpp>
-#include <monte-toad/imgui.hpp>
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/math.hpp>
-#include <monte-toad/renderinfo.hpp>
-#include <monte-toad/scene.hpp>
-#include <monte-toad/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
+
+#include <imgui/imgui.hpp>
 
 namespace {
 
@@ -23,7 +24,7 @@ struct MaterialInfo {
 
 // TODO TOAD this should be taken care of by an emitter plugin
 void UpdateSceneEmission(
-  mt::Scene & scene
+  mt::core::Scene & scene
 , mt::PluginInfoMaterial const & self
 ) {
   scene.emissionSource.triangles.resize(0);
@@ -45,7 +46,7 @@ extern "C" {
 char const * PluginLabel() { return "wavefront mtl"; }
 mt::PluginType PluginType() { return mt::PluginType::Material; }
 
-void Load(mt::PluginInfoMaterial & self, mt::Scene & scene) {
+void Load(mt::PluginInfoMaterial & self, mt::core::Scene & scene) {
   // free previous data
   if (self.userdata) { free(self.userdata); }
 
@@ -205,7 +206,7 @@ glm::vec3 FaceForward(glm::vec3 n, glm::vec3 v) {
 
 glm::vec3 BsdfFs(
   mt::PluginInfoMaterial const & self
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 const & wo
 ) {
   auto const
@@ -247,7 +248,7 @@ glm::vec3 BsdfFs(
 
 float BsdfPdf(
   mt::PluginInfoMaterial const & /*self*/
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 const & wo
 ) {
   /* auto const & material = */
@@ -272,7 +273,7 @@ bool SameHemisphere(glm::vec3 wi, glm::vec3 wo) {
 mt::BsdfSampleInfo BsdfSample(
   mt::PluginInfoMaterial const & self
 , mt::PluginInfoRandom const & random
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 ) {
   auto const & material =
     reinterpret_cast<MaterialInfo const *>(self.userdata)[surface.material];
@@ -321,8 +322,8 @@ bool IsEmitter(
 size_t currentMtlIdx = static_cast<size_t>(-1);
 
 void UiUpdate(
-  mt::Scene & scene
-, mt::RenderInfo & render
+  mt::core::Scene & scene
+, mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
 
@@ -342,7 +343,8 @@ void UiUpdate(
         plugin.random, render.camera, data.imageResolution, uv
       );
 
-    auto surface = mt::Raycast(scene, camera.origin, camera.direction, nullptr);
+    auto surface =
+      mt::core::Raycast(scene, camera.origin, camera.direction, nullptr);
 
     currentMtlIdx =
       static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);

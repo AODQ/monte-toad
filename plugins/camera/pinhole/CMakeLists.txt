@@ -4,7 +4,7 @@ target_sources(camera-pinhole PRIVATE src/source.cpp)
 target_link_libraries(
   camera-pinhole
   PRIVATE
-    mt-plugin monte-toad
+    mt-plugin monte-toad-core
 )
 
 set_target_properties(

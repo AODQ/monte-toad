@@ -1,4 +1,4 @@
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/math.hpp>
 
 //------------------------------------------------------------------------------
 bool glm::GreaterThan(glm::vec3 a, glm::vec3 b) {

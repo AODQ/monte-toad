@@ -1,8 +1,8 @@
 // pinhole camera
 
-#include <monte-toad/camerainfo.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/camerainfo.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/math.hpp>
 
 #include <mt-plugin/plugin.hpp>
 
@@ -12,7 +12,7 @@ glm::mat3 viewProjectionMatrixDir;
 glm::mat4 viewMatrix;
 glm::mat4 projectionMatrix;
 
-void CalculateMatrices(mt::CameraInfo const & camera) {
+void CalculateMatrices(mt::core::CameraInfo const & camera) {
   glm::mat4 const view =
     glm::lookAtLH(
       camera.origin
@@ -46,7 +46,7 @@ void CalculateMatrices(mt::CameraInfo const & camera) {
   ::viewProjectionMatrixDir = glm::mat3(glm::transpose(view)*proj);
 }
 
-glm::vec3 LookAt(mt::CameraInfo const & /*camera*/, glm::vec2 uv) {
+glm::vec3 LookAt(mt::core::CameraInfo const & /*camera*/, glm::vec2 uv) {
   return glm::normalize(::viewProjectionMatrixDir * glm::vec3(uv, 1.0f));
 }
 }
@@ -58,7 +58,7 @@ mt::PluginType PluginType() { return mt::PluginType::Camera; }
 
 mt::CameraDispatchInfo Dispatch(
   mt::PluginInfoRandom const & random
-, mt::CameraInfo const & camera
+, mt::core::CameraInfo const & camera
 , glm::u16vec2 imageResolution
 , glm::vec2 uv
 ) {
@@ -71,12 +71,12 @@ mt::CameraDispatchInfo Dispatch(
   return { camera.origin, ::LookAt(camera, uv)};
 }
 
-void UpdateCamera(mt::CameraInfo const & camera) {
+void UpdateCamera(mt::core::CameraInfo const & camera) {
   ::CalculateMatrices(camera);
 }
 
 glm::vec2 WorldCoordToUv(
-  mt::CameraInfo const & camera, glm::vec3 worldCoord
+  mt::core::CameraInfo const & camera, glm::vec3 worldCoord
 ) {
   glm::mat4 view = ::viewMatrix, proj = ::projectionMatrix;
 

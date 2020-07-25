@@ -1,9 +1,9 @@
 #include <monte-toad/material/layered.hpp>
 
-#include <monte-toad/geometry.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/span.hpp>
-#include <monte-toad/surfaceinfo.hpp>
+#include <monte-toad/core/geometry.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/span.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
 /*
@@ -880,7 +880,7 @@ std::tuple<
 , std::vector<glm::vec3> /* kappas */
 > EvaluateTextureMaps(
   mt::material::layered::Data const & structure
-, mt::SurfaceInfo const & /*surface*/
+, mt::core::SurfaceInfo const & /*surface*/
 ) {
   std::vector<float>     alphas; alphas.resize(structure.layers.size());
   std::vector<glm::vec3> etas;   etas.resize(structure.layers.size()+1);
@@ -904,7 +904,7 @@ std::tuple<
 
 glm::vec3 Evaluate(
   mt::material::layered::Data const & structure
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 const & wo
 , span<float    > const alphas
 , span<glm::vec3> const etas
@@ -999,7 +999,7 @@ float mt::material::layered::TotalInternalReflectionTable::Get(
 
 float mt::material::layered::BsdfPdf(
   mt::material::layered::Data const & structure
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 const & /*wo*/
 ) {
   auto const wi = -surface.incomingAngle;
@@ -1049,7 +1049,7 @@ float mt::material::layered::BsdfPdf(
 
 glm::vec3 mt::material::layered::BsdfFs(
   mt::material::layered::Data const & structure
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 const & wo
 ) {
   auto [alphas, etas, kappas] = EvaluateTextureMaps(structure, surface);
@@ -1067,7 +1067,7 @@ std::tuple<glm::vec3 /*wo*/, glm::vec3 /*bsdfFs*/, float /*pdf*/>
 mt::material::layered::BsdfSample(
   mt::material::layered::Data const & structure
 , mt::PluginInfoRandom const & random
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 ) {
   auto const wi = -surface.incomingAngle;
 

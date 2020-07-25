@@ -4,7 +4,7 @@ target_sources(ggx-mtl PRIVATE src/source.cpp)
 target_link_libraries(
   ggx-mtl
   PRIVATE
-    mt-plugin monte-toad
+    mt-plugin monte-toad-core
     imgui
 )
 

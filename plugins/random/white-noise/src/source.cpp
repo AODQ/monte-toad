@@ -1,6 +1,6 @@
 // white noise
 
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/math.hpp>
 #include <mt-plugin/enums.hpp>
 
 #include <random>

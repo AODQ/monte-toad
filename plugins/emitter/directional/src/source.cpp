@@ -1,11 +1,12 @@
 // directional emitter
 
-#include <monte-toad/imgui.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/renderinfo.hpp>
-#include <monte-toad/scene.hpp>
-#include <monte-toad/surfaceinfo.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/core/scene.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
+
+#include <imgui/imgui.hpp>
 
 namespace {
 
@@ -21,24 +22,25 @@ char const * PluginLabel() { return "directional emitter"; }
 mt::PluginType PluginType() { return mt::PluginType::Emitter; }
 
 mt::PixelInfo SampleLi(
-  mt::Scene const & scene
+  mt::core::Scene const & scene
 , mt::PluginInfo const & /*plugin*/
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 & wo
 , float & pdf
 ) {
   wo = emissionDirection;
   pdf = 1.0f;
-  auto testSurface = mt::Raycast(scene, surface.origin, wo, surface.triangle);
+  auto testSurface =
+    mt::core::Raycast(scene, surface.origin, wo, surface.triangle);
   if (testSurface.Valid()) { return { glm::vec3(0.0f), false }; }
   // TODO TOAD apparently multiply by area
   return { emissionColor * emissionPower, true };
 }
 
 mt::PixelInfo SampleWo(
-  mt::Scene const & /*scene*/
+  mt::core::Scene const & /*scene*/
 , mt::PluginInfo const & /*plugin*/
-, mt::SurfaceInfo const & /*surface*/
+, mt::core::SurfaceInfo const & /*surface*/
 , glm::vec3 const & /*wo*/
 , float & pdf
 ) {
@@ -46,15 +48,15 @@ mt::PixelInfo SampleWo(
 }
 
 void Precompute(
-  mt::Scene const & /*scene*/
-, mt::RenderInfo const & /*render*/
+  mt::core::Scene const & /*scene*/
+, mt::core::RenderInfo const & /*render*/
 , mt::PluginInfo const & /*plugin*/
 ) {
 }
 
 void UiUpdate(
-  mt::Scene & scene
-, mt::RenderInfo & render
+  mt::core::Scene & scene
+, mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
   auto const idx = scene.emissionSource.skyboxEmitterPluginIdx;

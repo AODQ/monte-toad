@@ -1,7 +1,7 @@
-#include <monte-toad/renderinfo.hpp>
+#include <monte-toad/core/renderinfo.hpp>
 
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <glad/glad.hpp>
@@ -9,7 +9,7 @@
 namespace {
 
 void BlockCalculateRange(
-  mt::IntegratorData & self
+  mt::core::IntegratorData & self
 , glm::u16vec2 & minRange, glm::u16vec2 & maxRange
 ) {
   // amount of blocks that take up an image
@@ -40,7 +40,7 @@ void BlockCalculateRange(
 }
 
 void BlockCollectFinishedPixels(
-  mt::IntegratorData & self
+  mt::core::IntegratorData & self
 , mt::PluginInfoIntegrator const & plugin
 ) {
   if (plugin.RealTime()) {
@@ -79,7 +79,7 @@ void BlockCollectFinishedPixels(
 }
 
 void BlockIterate(
-  mt::IntegratorData & self
+  mt::core::IntegratorData & self
 , glm::u16vec2 & minRange, glm::u16vec2 & maxRange
 ) {
 
@@ -113,7 +113,7 @@ void BlockIterate(
 }
 } // namespace
 
-void mt::Clear(mt::IntegratorData & self) {
+void mt::core::Clear(mt::core::IntegratorData & self) {
   std::fill(
     self.pixelCountBuffer.begin()
   , self.pixelCountBuffer.end()
@@ -133,7 +133,7 @@ void mt::Clear(mt::IntegratorData & self) {
   self.renderingFinished = false;
 
   // clear block samples
-  self.blockPixelsFinished.resize(mt::BlockIteratorMax(self));
+  self.blockPixelsFinished.resize(mt::core::BlockIteratorMax(self));
   std::fill(
     self.blockPixelsFinished.begin(),
     self.blockPixelsFinished.end(),
@@ -148,10 +148,10 @@ void mt::Clear(mt::IntegratorData & self) {
   }
 }
 
-bool mt::DispatchRender(
-  mt::IntegratorData & self
-, mt::Scene const & scene
-, mt::RenderInfo & render
+bool mt::core::DispatchRender(
+  mt::core::IntegratorData & self
+, mt::core::Scene const & scene
+, mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 , size_t integratorIdx
 ) {
@@ -170,7 +170,7 @@ bool mt::DispatchRender(
       ++ self.dispatchedCycles;
     break;
     case mt::RenderingState::OnAlways:
-      mt::Clear(self);
+      mt::core::Clear(self);
     break;
   }
 
@@ -213,13 +213,13 @@ bool mt::DispatchRender(
   return true;
 }
 
-size_t mt::FinishedPixels(mt::IntegratorData & self) {
+size_t mt::core::FinishedPixels(mt::core::IntegratorData & self) {
   size_t finishedPixels = 0;
   for (auto & i : self.blockPixelsFinished) { finishedPixels += i; }
   return finishedPixels;
 }
 
-size_t mt::FinishedPixelsGoal(mt::IntegratorData & self) {
+size_t mt::core::FinishedPixelsGoal(mt::core::IntegratorData & self) {
   auto const & resolution = self.imageResolution;
   auto const & stride = self.blockIteratorStride;
   // find the next multiple of N (N-1 => N, N => N, N+1 => N*2)
@@ -229,7 +229,7 @@ size_t mt::FinishedPixelsGoal(mt::IntegratorData & self) {
   ;
 }
 
-size_t mt::BlockIteratorMax(mt::IntegratorData & self) {
+size_t mt::core::BlockIteratorMax(mt::core::IntegratorData & self) {
   // have to apply ceil seperately on each axis
   auto const & resolution = self.imageResolution;
   auto const & stride = self.blockIteratorStride;
@@ -238,44 +238,44 @@ size_t mt::BlockIteratorMax(mt::IntegratorData & self) {
   * static_cast<size_t>(std::ceil(resolution.y/static_cast<float>(stride)));
 }
 
-void mt::FlushTransitionBuffer(mt::IntegratorData & /*self*/) {
+void mt::core::FlushTransitionBuffer(mt::core::IntegratorData & /*self*/) {
   /* glFlushMappedBufferRange( */
   /*   self.imageTransitionBuffer.handle */
   /* , 0, sizeof(glm::vec4) * self.mappedImageTransitionBuffer.size() */
   /* ); */
 }
 
-void mt::DispatchImageCopy(mt::IntegratorData & self) {
-  glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle);
-  glTexImage2D(
-    GL_TEXTURE_2D
-  , 0
-  , GL_RGBA32F
-  , self.imageResolution.x, self.imageResolution.y
-  , 0, GL_RGBA, GL_FLOAT
-  , self.mappedImageTransitionBuffer.data()
-  );
-  /* glBindTextureUnit(0, self.renderedTexture.handle); */
-  /* glBindBufferBase( */
-  /*   GL_SHADER_STORAGE_BUFFER, 0, self.imageTransitionBuffer.handle */
+void mt::core::DispatchImageCopy(mt::core::IntegratorData & self) {
+  /* glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle); */
+  /* glTexImage2D( */
+  /*   GL_TEXTURE_2D */
+  /* , 0 */
+  /* , GL_RGBA32F */
+  /* , self.imageResolution.x, self.imageResolution.y */
+  /* , 0, GL_RGBA, GL_FLOAT */
+  /* , self.mappedImageTransitionBuffer.data() */
   /* ); */
-  /* glBindImageTexture( */
-  /*   0, self.renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8 */
-  /* ); */
+  /* /1* glBindTextureUnit(0, self.renderedTexture.handle); *1/ */
+  /* /1* glBindBufferBase( *1/ */
+  /* /1*   GL_SHADER_STORAGE_BUFFER, 0, self.imageTransitionBuffer.handle *1/ */
+  /* /1* ); *1/ */
+  /* /1* glBindImageTexture( *1/ */
+  /* /1*   0, self.renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8 *1/ */
+  /* /1* ); *1/ */
 
-  /* glUniform1i(0, self.imageStride); */
-  /* glUniform1i(1, self.dispatchedCycles == 1); */
+  /* /1* glUniform1i(0, self.imageStride); *1/ */
+  /* /1* glUniform1i(1, self.dispatchedCycles == 1); *1/ */
 
-  /* glDispatchCompute( */
-  /*   self.imageResolution.x / 8 */
-  /* , self.imageResolution.y / 8 */
-  /* , 1 */
-  /* ); */
+  /* /1* glDispatchCompute( *1/ */
+  /* /1*   self.imageResolution.x / 8 *1/ */
+  /* /1* , self.imageResolution.y / 8 *1/ */
+  /* /1* , 1 *1/ */
+  /* /1* ); *1/ */
 }
 
-void mt::AllocateGlResources(
-  mt::IntegratorData & self
-, mt::RenderInfo const & /*renderInfo*/
+void mt::core::AllocateGlResources(
+  mt::core::IntegratorData & self
+, mt::core::RenderInfo const & /*renderInfo*/
 ) {
   spdlog::info("Allocating gl resources to {}", self.imageResolution);
   size_t const
@@ -288,28 +288,28 @@ void mt::AllocateGlResources(
   self.pixelCountBuffer.resize(imagePixelLength);
 
   // -- construct texture
-  self.renderedTexture.Construct(GL_TEXTURE_2D);
+  /* self.renderedTexture.Construct(GL_TEXTURE_2D); */
   /* glTextureStorage2D( */
   /*   self.renderedTexture.handle */
   /* , 1, GL_RGBA8 */
   /* , self.imageResolution.x, self.imageResolution.y */
   /* ); */
 
-  { // -- set parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  }
+  /* { // -- set parameters */
+  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); */
+  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); */
+  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); */
+  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER); */
+  /* } */
 
   // set unfinishedPixels
   self.unfinishedPixels.resize(self.blockIteratorStride);
 
   // clear resources of garbage memory
-  mt::Clear(self);
+  mt::core::Clear(self);
 }
 
-void mt::RenderInfo::ClearImageBuffers() {
+void mt::core::RenderInfo::ClearImageBuffers() {
   for (auto & integrator : this->integratorData)
-    { mt::Clear(integrator); }
+    { mt::core::Clear(integrator); }
 }

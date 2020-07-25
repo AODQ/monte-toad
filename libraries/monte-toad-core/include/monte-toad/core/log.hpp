@@ -1,7 +1,6 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include <monte-toad/math.hpp>
 
 namespace {
   auto StandardFormat(std::string & p, fmt::format_parse_context & ctx) {
@@ -104,5 +103,3 @@ template<> struct fmt::formatter<glm::vec4> {
       );
   }
 };
-
-void PrintProgress(float progress);

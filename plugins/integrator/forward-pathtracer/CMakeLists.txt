@@ -4,7 +4,7 @@ target_sources(integrator-forward-pt PRIVATE src/source.cpp)
 target_link_libraries(
   integrator-forward-pt
   PRIVATE
-    mt-plugin monte-toad
+    mt-plugin monte-toad-core monte-toad-debug-util
 )
 
 set_target_properties(

@@ -4,20 +4,9 @@ target_include_directories(monte-toad PUBLIC "include/")
 target_sources(
   monte-toad
   PRIVATE
-    src/camerainfo.cpp
-    src/core/accelerationstructure.cpp
-    src/core/triangle.cpp
-    src/enum.cpp
-    src/geometry.cpp
     src/glutil.cpp
     src/imagebuffer.cpp
-    src/imgui.cpp
-    src/log.cpp
     src/material/layered.cpp
-    src/math.cpp
-    src/renderinfo.cpp
-    src/scene.cpp
-    src/surfaceinfo.cpp
     src/texture.cpp
 )
 
@@ -45,5 +34,7 @@ set_target_properties(
 target_link_libraries(
   monte-toad
   PUBLIC
-    glm glad spdlog fmt OpenMP::OpenMP_CXX bvh stb assimp mt-plugin imgui
+    OpenMP::OpenMP_CXX assimp mt-plugin monte-toad-core
+  PRIVATE
+    stb
 )

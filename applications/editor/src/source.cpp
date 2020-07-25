@@ -4,11 +4,11 @@
 #include "fileutil.hpp"
 #include "ui.hpp"
 
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
 #include <monte-toad/material/layered.hpp>
-#include <monte-toad/math.hpp>
-#include <monte-toad/renderinfo.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/renderinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <cxxopts.hpp>
@@ -20,8 +20,8 @@
 
 namespace {
 ////////////////////////////////////////////////////////////////////////////////
-mt::RenderInfo ParseRenderInfo(cxxopts::ParseResult const & result) {
-  mt::RenderInfo self;
+mt::core::RenderInfo ParseRenderInfo(cxxopts::ParseResult const & result) {
+  mt::core::RenderInfo self;
   self.outputFile            = result["output"]          .as<std::string>();
   self.viewImageOnCompletion = result["view"]            .as<bool>();
   self.displayProgress       = !result["noprogress"]     .as<bool>();
@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
   ;
 
   // -- load up renderinfo from command line
-  mt::RenderInfo render;
+  mt::core::RenderInfo render;
   { // -- parse options
     auto result = options.parse(argc, argv);
 

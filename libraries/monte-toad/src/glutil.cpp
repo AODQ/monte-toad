@@ -1,6 +1,6 @@
 #include <monte-toad/glutil.hpp>
 
-#include <monte-toad/log.hpp>
+#include <monte-toad/core/log.hpp>
 
 #include <glad/glad.hpp>
 

@@ -1,28 +1,28 @@
-#include <monte-toad/surfaceinfo.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 
+#include <monte-toad/core/geometry.hpp>
 #include <monte-toad/core/intersection.hpp>
+#include <monte-toad/core/scene.hpp>
 #include <monte-toad/core/triangle.hpp>
-#include <monte-toad/geometry.hpp>
-#include <monte-toad/scene.hpp>
 
-mt::SurfaceInfo mt::SurfaceInfo::Construct(
+mt::core::SurfaceInfo mt::core::SurfaceInfo::Construct(
   glm::vec3 origin
 , glm::vec3 incomingAngle
 ) {
-  mt::SurfaceInfo surface;
+  mt::core::SurfaceInfo surface;
   surface.origin = origin;
   surface.incomingAngle = incomingAngle;
   return surface;
 }
 
-mt::SurfaceInfo mt::SurfaceInfo::Construct(
-  mt::Scene const & /*scene*/
+mt::core::SurfaceInfo mt::core::SurfaceInfo::Construct(
+  mt::core::Scene const & /*scene*/
 , mt::core::Triangle const * triangle
 , mt::core::BvhIntersection const & intersection
 , glm::vec3 origin
 , glm::vec3 incomingAngle
 ) {
-  mt::SurfaceInfo surface;
+  mt::core::SurfaceInfo surface;
   surface.triangle = triangle;
   surface.origin = origin;
   surface.incomingAngle = incomingAngle;

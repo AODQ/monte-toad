@@ -1,17 +1,43 @@
 // base ui
 
-#include <monte-toad/enum.hpp>
-#include <monte-toad/imgui.hpp>
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/renderinfo.hpp>
-#include <monte-toad/scene.hpp>
+#include <monte-toad/core/enum.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/core/scene.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <GLFW/glfw3.h>
+#include <imgui/imgui.hpp>
 #include <spdlog/spdlog.h>
 
 #include <chrono>
+
+namespace ImGui {
+  bool InputInt(const char * label, size_t * value, int step = 1) {
+    int valueAsInt = static_cast<int>(*value);
+    bool result = ImGui::InputInt(label, &valueAsInt, step);
+    *value = static_cast<size_t>(valueAsInt);
+    return result;
+  }
+
+  bool InputInt(const char * label, uint16_t * value, int step = 1) {
+    int valueAsInt = static_cast<int>(*value);
+    bool result = ImGui::InputInt(label, &valueAsInt, step);
+    *value = static_cast<uint16_t>(valueAsInt);
+    return result;
+  }
+
+  bool InputInt2(const char * label, uint16_t * value, int step = 1) {
+    int values[2] = { static_cast<int>(value[0]), static_cast<int>(value[1]) };
+    bool result = ImGui::InputInt2(label, values, step);
+    if (result) {
+      value[0] = static_cast<uint16_t>(values[0]);
+      value[1] = static_cast<uint16_t>(values[1]);
+    }
+    return result;
+  }
+}
 
 namespace {
 
@@ -29,9 +55,9 @@ std::array<size_t, 4> constexpr blockIteratorStrides = {{
 }};
 
 void UiCameraControls(
-  mt::Scene const & scene
+  mt::core::Scene const & scene
 , mt::PluginInfo const & plugin
-, mt::RenderInfo & renderInfo
+, mt::core::RenderInfo & renderInfo
 ) {
 
   static double prevX = -1.0, prevY = -1.0;
@@ -109,12 +135,12 @@ void UiCameraControls(
 
   glfwSetCursorPos(window, prevX, prevY);
 
-  mt::UpdateCamera(plugin, renderInfo);
+  mt::core::UpdateCamera(plugin, renderInfo);
 }
 
 void UiPluginInfo(
-  mt::Scene & scene
-, mt::RenderInfo & renderInfo
+  mt::core::Scene & scene
+, mt::core::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
   if (!ImGui::Begin("Plugin Info")) { ImGui::End(); return; }
@@ -128,19 +154,19 @@ void UiPluginInfo(
   max += glm::abs(max)*1.5f;
 
   if (ImGui::SliderFloat3("Origin", &renderInfo.camera.origin.x, min, max)) {
-    mt::UpdateCamera(pluginInfo, renderInfo);
+    mt::core::UpdateCamera(pluginInfo, renderInfo);
   }
   if (ImGui::Button("Clear Origin")) {
     renderInfo.camera.origin = glm::vec3(0.0f);
-    mt::UpdateCamera(pluginInfo, renderInfo);
+    mt::core::UpdateCamera(pluginInfo, renderInfo);
   }
 
   if (ImGui::InputFloat3("Camera up axis", &renderInfo.camera.upAxis.x)) {
-    mt::UpdateCamera(pluginInfo, renderInfo);
+    mt::core::UpdateCamera(pluginInfo, renderInfo);
   }
   if (ImGui::Button("Normalize camera up")) {
     renderInfo.camera.upAxis = glm::normalize(renderInfo.camera.upAxis);
-    mt::UpdateCamera(pluginInfo, renderInfo);
+    mt::core::UpdateCamera(pluginInfo, renderInfo);
   }
 
   if (
@@ -149,12 +175,12 @@ void UiPluginInfo(
     )
   ) {
     renderInfo.camera.direction = glm::normalize(renderInfo.camera.direction);
-    mt::UpdateCamera(pluginInfo, renderInfo);
+    mt::core::UpdateCamera(pluginInfo, renderInfo);
   }
   ImGui::SliderFloat("Mouse Sensitivity", &::mouseSensitivity, 0.1f, 3.0f);
   ImGui::SliderFloat("Camera Velocity", &::cameraRelativeVelocity, 0.1f, 2.0f);
   if (ImGui::SliderFloat("FOV", &renderInfo.camera.fieldOfView, 0.0f, 140.0f)) {
-    mt::UpdateCamera(pluginInfo, renderInfo);
+    mt::core::UpdateCamera(pluginInfo, renderInfo);
   }
 
   static std::chrono::high_resolution_clock timer;
@@ -186,8 +212,8 @@ void ApplyImageResolutionConstraint(
 }
 
 void UiImageOutput(
-  mt::Scene & /*scene*/
-, mt::RenderInfo & renderInfo
+  mt::core::Scene & /*scene*/
+, mt::core::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
 
@@ -215,7 +241,7 @@ void UiImageOutput(
 
           // don't clear out data if set to off
           if (data.renderingState != mt::RenderingState::Off)
-            { mt::Clear(data); }
+            { mt::core::Clear(data); }
         }
       }
       ImGui::EndCombo();
@@ -231,7 +257,7 @@ void UiImageOutput(
 
     if (ImGui::InputInt("paths per sample", &data.pathsPerSample)) {
       data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
-      mt::Clear(data);
+      mt::core::Clear(data);
     }
 
     if (ImGui::InputInt("iterations per hunk", &data.blockInternalIteratorMax)){
@@ -268,7 +294,7 @@ void UiImageOutput(
             , isSelected)
           ) {
             data.blockIteratorStride = ::blockIteratorStrides[blockIt];
-            mt::Clear(data);
+            mt::core::Clear(data);
           }
         }
         ImGui::EndCombo();
@@ -321,7 +347,7 @@ void UiImageOutput(
 
       // must reallocate resources if resolution has changed
       if (previousResolution != data.imageResolution)
-        { mt::AllocateGlResources(data, renderInfo); }
+        { mt::core::AllocateGlResources(data, renderInfo); }
     }
 
     if (data.renderingFinished) {
@@ -351,7 +377,7 @@ void UiImageOutput(
 
       ImGui::Text(
         "%lu / %lu finished pixels"
-      , mt::FinishedPixels(data), mt::FinishedPixelsGoal(data)
+      , mt::core::FinishedPixels(data), mt::core::FinishedPixelsGoal(data)
       );
 
       size_t finishedBlocks = 0;
@@ -390,10 +416,10 @@ void UiImageOutput(
         );
       }
 
-      ImGui::Image(
-        reinterpret_cast<void*>(data.renderedTexture.handle)
-      , ImVec2(imageResolution.x, imageResolution.y)
-      );
+      /* ImGui::Image( */
+      /*   reinterpret_cast<void*>(data.renderedTexture.handle) */
+      /* , ImVec2(imageResolution.x, imageResolution.y) */
+      /* ); */
 
       // clear out the image pixel clicked from previous frame
       data.imagePixelClicked = false;
@@ -429,7 +455,10 @@ void UiImageOutput(
   }
 }
 
-void UiDispatchers(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
+void UiDispatchers(
+  mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
   ImGui::Begin("dispatchers");
 
     if (plugin.dispatchers.size() == 0) {
@@ -490,8 +519,8 @@ void UiDispatchers(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
 }
 
 void UiEmitters(
-  mt::Scene & scene
-, mt::RenderInfo & renderInfo
+  mt::core::Scene & scene
+, mt::core::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
   ImGui::Begin("emitters");
@@ -524,8 +553,8 @@ char const * PluginLabel() { return "base UI"; }
 mt::PluginType PluginType() { return mt::PluginType::UserInterface; }
 
 void Dispatch(
-  mt::Scene & scene
-, mt::RenderInfo & renderInfo
+  mt::core::Scene & scene
+, mt::core::RenderInfo & renderInfo
 , mt::PluginInfo const & pluginInfo
 ) {
   ::UiCameraControls(scene, pluginInfo, renderInfo);

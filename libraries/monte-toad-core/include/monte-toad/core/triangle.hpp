@@ -1,7 +1,5 @@
 #pragma once
 
-#include <monte-toad/math.hpp>
-
 #include <optional>
 
 // -- fwd decl

@@ -1,10 +1,10 @@
-#include <monte-toad/enum.hpp>
+#include <monte-toad/core/enum.hpp>
 
 #include <spdlog/spdlog.h>
 
-#include <array>   // for std::array
+#include <array>
 #include <ctype.h> // for ::tolower
-#include <string>  // for std::string
+#include <string>
 
 mt::RenderingState mt::ToRenderingState(char const * label) {
   auto fixLabel = std::string{label};

@@ -1,7 +1,7 @@
 #include <monte-toad/interpolation.hpp>
 
-#include <monte-toad/math.hpp>
-#include <monte-toad/span.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/span.hpp>
 
 #include <functional>
 

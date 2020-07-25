@@ -1,16 +1,16 @@
 // albedo integrator
 
-#include <monte-toad/imgui.hpp>
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/math.hpp>
-#include <monte-toad/scene.hpp>
-#include <monte-toad/surfaceinfo.hpp>
-#include <monte-toad/texture.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/scene.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
-namespace mt { struct CameraInfo; }
-namespace mt { struct RenderInfo; }
+#include <imgui/imgui.hpp>
+
+namespace mt::core { struct CameraInfo; }
+namespace mt::core { struct RenderInfo; }
 
 extern "C" {
 
@@ -19,10 +19,10 @@ mt::PluginType PluginType() { return mt::PluginType::Integrator; }
 
 mt::PixelInfo Dispatch(
   glm::vec2 const & uv
-, mt::Scene const & scene
-, mt::CameraInfo const & camera
+, mt::core::Scene const & scene
+, mt::core::CameraInfo const & camera
 , mt::PluginInfo const & pluginInfo
-, mt::IntegratorData const & integratorData
+, mt::core::IntegratorData const & integratorData
 , void (*)(mt::debugutil::IntegratorPathUnit)
 ) {
   auto const eye =
@@ -30,7 +30,7 @@ mt::PixelInfo Dispatch(
       pluginInfo.random, camera, integratorData.imageResolution, uv
     );
 
-  auto surface = mt::Raycast(scene, eye.origin, eye.direction, nullptr);
+  auto surface = mt::core::Raycast(scene, eye.origin, eye.direction, nullptr);
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   auto color =
@@ -49,10 +49,10 @@ mt::PixelInfo Dispatch(
 }
 
 void UiUpdate(
-  mt::Scene & /*scene*/
-, mt::RenderInfo & /*render*/
+  mt::core::Scene & /*scene*/
+, mt::core::RenderInfo & /*render*/
 , mt::PluginInfo const & /*plugin*/
-, mt::IntegratorData & /*integratorData*/
+, mt::core::IntegratorData & /*integratorData*/
 ) {
   ImGui::Begin("albedo integrator (config)");
     /* if (ImGui::Checkbox("apply fog", &applyFogging)) */

@@ -1,6 +1,4 @@
-#include <monte-toad/geometry.hpp>
-
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/geometry.hpp>
 
 //------------------------------------------------------------------------------
 std::tuple<glm::vec3 /*tangent*/, glm::vec3 /*binormal*/> OrthogonalVectors(

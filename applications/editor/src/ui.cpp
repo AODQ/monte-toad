@@ -3,17 +3,17 @@
 #include "fileutil.hpp"
 #include "graphicscontext.hpp"
 
-#include <glad/glad.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/core/scene.hpp>
 #include <monte-toad/glutil.hpp>
-#include <monte-toad/imgui.hpp>
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/renderinfo.hpp>
-#include <monte-toad/scene.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
+#include <glad/glad.hpp>
 #include <GLFW/glfw3.h>
+#include <imgui/imgui.hpp>
 #include <imgui/imgui_impl_glfw.hpp>
 #include <imgui/imgui_impl_opengl3.hpp>
 #include <spdlog/sinks/base_sink.h>
@@ -25,8 +25,34 @@
 
 #include <omp.h>
 
+namespace ImGui {
+  bool InputInt(const char * label, size_t * value, int step) {
+    int valueAsInt = static_cast<int>(*value);
+    bool result = ImGui::InputInt(label, &valueAsInt, step);
+    *value = static_cast<size_t>(valueAsInt);
+    return result;
+  }
+
+  bool InputInt(const char * label, uint16_t * value, int step) {
+    int valueAsInt = static_cast<int>(*value);
+    bool result = ImGui::InputInt(label, &valueAsInt, step);
+    *value = static_cast<uint16_t>(valueAsInt);
+    return result;
+  }
+
+  bool InputInt2(const char * label, uint16_t * value, int step) {
+    int values[2] = { static_cast<int>(value[0]), static_cast<int>(value[1]) };
+    bool result = ImGui::InputInt2(label, values, step);
+    if (result) {
+      value[0] = static_cast<uint16_t>(values[0]);
+      value[1] = static_cast<uint16_t>(values[1]);
+    }
+    return result;
+  }
+}
+
 namespace {
-mt::Scene scene;
+mt::core::Scene scene;
 
 bool reloadPlugin = false;
 
@@ -71,8 +97,8 @@ public:
 
 std::shared_ptr<GuiSink> imGuiSink;
 
-void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
-  mt::Scene::Construct(
+void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
+  mt::core::Scene::Construct(
     ::scene
   , render.modelFile
   , render.environmentMapFile
@@ -87,16 +113,16 @@ void LoadScene(mt::RenderInfo & render, mt::PluginInfo & plugin) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void AllocateGlResources(mt::RenderInfo & renderInfo) {
+void AllocateGlResources(mt::core::RenderInfo & renderInfo) {
   for (auto & integrator : renderInfo.integratorData)
-    { mt::AllocateGlResources(integrator, renderInfo); }
+    { mt::core::AllocateGlResources(integrator, renderInfo); }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 [[maybe_unused]]
 void UiPluginLoadFile(
   mt::PluginInfo & pluginInfo
-, mt::RenderInfo & render
+, mt::core::RenderInfo & render
 , mt::PluginType pluginType
 , std::string & /*file*/
 ) {
@@ -115,7 +141,7 @@ void UiPluginLoadFile(
     switch (pluginType) {
       default: break;
       case mt::PluginType::Integrator:
-        mt::AllocateGlResources(render.integratorData.back(), render);
+        mt::core::AllocateGlResources(render.integratorData.back(), render);
       break;
       case mt::PluginType::Material:
         pluginInfo.material.Load(pluginInfo.material, scene);
@@ -256,7 +282,7 @@ void UiLog() {
 
 ////////////////////////////////////////////////////////////////////////////////
 void UiRenderInfo(
-  mt::RenderInfo & renderInfo
+  mt::core::RenderInfo & renderInfo
 , mt::PluginInfo & pluginInfo
 ) {
   // -- menubar
@@ -273,7 +299,7 @@ void UiRenderInfo(
         LoadScene(renderInfo, pluginInfo);
         // reset camera origin
         renderInfo.camera.origin = glm::vec3(0.0f);
-        mt::UpdateCamera(pluginInfo, renderInfo);
+        mt::core::UpdateCamera(pluginInfo, renderInfo);
       }
     }
 
@@ -334,7 +360,10 @@ void UiRenderInfo(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void DispatchRender(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
+void DispatchRender(
+  mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
   // make sure plugin is valid
   if (plugin.integrators.size() == 0) { return; }
 
@@ -345,16 +374,17 @@ void DispatchRender(mt::RenderInfo & render, mt::PluginInfo const & plugin) {
   for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
     auto & integratorData = render.integratorData[idx];
 
-    if (mt::DispatchRender(integratorData, ::scene, render, plugin, idx)) {
+    if (mt::core::DispatchRender(integratorData, ::scene, render, plugin, idx))
+    {
       FlushTransitionBuffer(integratorData);
-      mt::DispatchImageCopy(integratorData);
+      mt::core::DispatchImageCopy(integratorData);
     }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void UiEntry(
-  mt::RenderInfo & render
+  mt::core::RenderInfo & render
 , mt::PluginInfo & plugin
 ) {
   ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -447,7 +477,7 @@ void ui::InitializeLogger() {
 
 ////////////////////////////////////////////////////////////////////////////////
 bool ui::Initialize(
-  mt::RenderInfo & render
+  mt::core::RenderInfo & render
 , mt::PluginInfo & plugin
 ) {
   if (!app::InitializeGraphicsContext()) { return false; }
@@ -486,7 +516,7 @@ bool ui::Initialize(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ui::Run(mt::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
+void ui::Run(mt::core::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
 
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   renderInfo.glfwWindow = reinterpret_cast<void*>(app::DisplayWindow());

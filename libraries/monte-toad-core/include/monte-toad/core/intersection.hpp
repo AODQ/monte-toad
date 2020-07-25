@@ -1,6 +1,6 @@
 #pragma once
 
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/math.hpp>
 
 #include <cstdint>
 

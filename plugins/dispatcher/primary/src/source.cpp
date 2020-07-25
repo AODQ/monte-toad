@@ -1,16 +1,16 @@
 // primary dispatcher
 
-#include <monte-toad/camerainfo.hpp>
-#include <monte-toad/debugutil/IntegratorPathUnit.hpp>
-#include <monte-toad/imgui.hpp>
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/math.hpp>
-#include <monte-toad/renderinfo.hpp>
-
+#include <monte-toad/core/camerainfo.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/debugutil/integratorpathunit.hpp>
 #include <mt-plugin/plugin.hpp>
 
-namespace mt { struct Scene; }
+#include <imgui/imgui.hpp>
+
+namespace mt::core { struct Scene; }
 namespace mt { struct PluginInfo; }
 namespace mt { struct RenderInfo; }
 
@@ -18,7 +18,7 @@ namespace
 {
 std::vector<mt::debugutil::IntegratorPathUnit> storedPathRecorder;
 mt::PixelInfo storedPixelInfo;
-mt::CameraInfo storedCamera;
+mt::core::CameraInfo storedCamera;
 
 void RecordPath(mt::debugutil::IntegratorPathUnit unit) {
   storedPathRecorder.emplace_back(std::move(unit));
@@ -55,7 +55,7 @@ void BresenhamLine(glm::ivec2 f0, glm::ivec2 f1, Fn && fn) {
   }
 }
 
-void DrawPath(mt::PluginInfo const & plugin, mt::RenderInfo & render) {
+void DrawPath(mt::PluginInfo const & plugin, mt::core::RenderInfo & render) {
   auto & depthIntegratorData =
     render.integratorData[
       render.integratorIndices[Idx(mt::IntegratorTypeHint::Depth)]
@@ -102,8 +102,8 @@ void DrawPath(mt::PluginInfo const & plugin, mt::RenderInfo & render) {
     );
   }
 
-  mt::FlushTransitionBuffer(depthIntegratorData);
-  mt::DispatchImageCopy(depthIntegratorData);
+  mt::core::FlushTransitionBuffer(depthIntegratorData);
+  mt::core::DispatchImageCopy(depthIntegratorData);
 }
 }
 
@@ -113,8 +113,8 @@ char const * PluginLabel() { return "primary dispatcher"; }
 mt::PluginType PluginType() { return mt::PluginType::Dispatcher; }
 
 void UiUpdate(
-  mt::Scene & /*scene*/
-, mt::RenderInfo & render
+  mt::core::Scene & /*scene*/
+, mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
   ImGui::Begin("dispatchers");
@@ -142,11 +142,11 @@ void UiUpdate(
       (void)RecordPath;
       ::storedPathRecorder = {{
         glm::vec3(1.0f), glm::vec3(0.0f), mt::TransportMode::Radiance,
-        0, mt::SurfaceInfo::Construct(glm::vec3(-0.3f, 1.4f, 3.0f), glm::vec3(0.0f))
+        0, mt::core::SurfaceInfo::Construct(glm::vec3(-0.3f, 1.4f, 3.0f), glm::vec3(0.0f))
       },{ glm::vec3(1.0f), glm::vec3(0.0f), mt::TransportMode::Radiance,
-        0, mt::SurfaceInfo::Construct(glm::vec3(-0.36f, 0.548f, -0.033f), glm::vec3(0.0f))
+        0, mt::core::SurfaceInfo::Construct(glm::vec3(-0.36f, 0.548f, -0.033f), glm::vec3(0.0f))
       },{ glm::vec3(1.0f), glm::vec3(0.0f), mt::TransportMode::Radiance,
-        0, mt::SurfaceInfo::Construct(glm::vec3(0.976f, 1.564f, 0.923f), glm::vec3(0.0f))
+        0, mt::core::SurfaceInfo::Construct(glm::vec3(0.976f, 1.564f, 0.923f), glm::vec3(0.0f))
       }};
     }
 
@@ -196,8 +196,8 @@ void UiUpdate(
 }
 
 void DispatchBlockRegion(
-  mt::Scene const & scene
-, mt::RenderInfo & render
+  mt::core::Scene const & scene
+, mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 
 , size_t integratorIdx

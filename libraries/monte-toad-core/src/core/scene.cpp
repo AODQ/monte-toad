@@ -1,11 +1,11 @@
-#include <monte-toad/scene.hpp>
+#include <monte-toad/core/scene.hpp>
 
 #include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/intersection.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/triangle.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/math.hpp>
-#include <monte-toad/surfaceinfo.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -14,7 +14,7 @@
 namespace {
 ////////////////////////////////////////////////////////////////////////////////
 std::vector<mt::core::Triangle> LoadAssetIntoScene(
-  mt::Scene & model
+  mt::core::Scene & model
 , std::string const & filename
 ) {
   Assimp::Importer importer;
@@ -248,8 +248,8 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
 /* } */
 
 ////////////////////////////////////////////////////////////////////////////////
-void mt::Scene::Construct(
-  mt::Scene & self
+void mt::core::Scene::Construct(
+  mt::core::Scene & self
 , std::string const & filename
 , std::string const & environmentMapFilename
 ) {
@@ -262,15 +262,15 @@ void mt::Scene::Construct(
   , LoadAssetIntoScene(self, filename)
   );
 
-  if(environmentMapFilename != "") {
-    self.emissionSource.environmentMap =
-      mt::Texture::Construct(environmentMapFilename);
-  }
+  /* if(environmentMapFilename != "") { */
+  /*   self.emissionSource.environmentMap = */
+  /*     mt::Texture::Construct(environmentMapFilename); */
+  /* } */
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-mt::SurfaceInfo mt::Raycast(
-  mt::Scene const & scene
+mt::core::SurfaceInfo mt::core::Raycast(
+  mt::core::Scene const & scene
 , glm::vec3 ori, glm::vec3 dir
 , mt::core::Triangle const * ignoredTriangle
 ) {
@@ -278,11 +278,11 @@ mt::SurfaceInfo mt::Raycast(
     mt::core::IntersectClosest(scene.accelStructure, ori, dir, ignoredTriangle);
 
   if (!hit.has_value()) {
-    return mt::SurfaceInfo::Construct(ori, dir);
+    return mt::core::SurfaceInfo::Construct(ori, dir);
   }
 
   return
-    mt::SurfaceInfo::Construct(
+    mt::core::SurfaceInfo::Construct(
       scene
     , scene.accelStructure.Triangles().data() + hit->triangleIdx
     , *hit
@@ -290,12 +290,13 @@ mt::SurfaceInfo mt::Raycast(
     );
 }
 
-#include <monte-toad/math.hpp>
+#include <monte-toad/core/math.hpp>
 #include <mt-plugin/plugin.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
-std::tuple<mt::core::Triangle const *, glm::vec2> mt::EmissionSourceTriangle(
-  mt::Scene const & scene
+std::tuple<mt::core::Triangle const *, glm::vec2>
+mt::core::EmissionSourceTriangle(
+  mt::core::Scene const & scene
 , mt::PluginInfoRandom const & random
 ) {
   if (scene.emissionSource.triangles.size() == 0)

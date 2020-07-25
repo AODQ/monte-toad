@@ -1,19 +1,18 @@
 // foward path tracer
 
-#include <monte-toad/debugutil/IntegratorPathUnit.hpp>
-#include <monte-toad/enum.hpp>
-#include <monte-toad/geometry.hpp>
+#include <monte-toad/core/enum.hpp>
+#include <monte-toad/core/geometry.hpp>
+#include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/log.hpp>
+#include <monte-toad/core/math.hpp>
+#include <monte-toad/core/scene.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/triangle.hpp>
-#include <monte-toad/integratordata.hpp>
-#include <monte-toad/log.hpp>
-#include <monte-toad/math.hpp>
-#include <monte-toad/scene.hpp>
-#include <monte-toad/surfaceinfo.hpp>
-#include <monte-toad/texture.hpp>
+#include <monte-toad/debugutil/integratorpathunit.hpp>
 
 #include <mt-plugin/plugin.hpp>
 
-namespace mt { struct CameraInfo; }
+namespace mt::core { struct CameraInfo; }
 
 namespace {
 
@@ -31,8 +30,8 @@ enum class PropagationStatus {
 
 // TODO move
 [[maybe_unused]] float EmitterPdf(
-  mt::SurfaceInfo const & surface
-, mt::SurfaceInfo const & emissionSurface
+  mt::core::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & emissionSurface
 ) {
   glm::vec3 const wo = emissionSurface.incomingAngle;
   float inverseDistanceSqr = 1.0f/glm::sqr(glm::length(wo));
@@ -45,9 +44,9 @@ enum class PropagationStatus {
 }
 
 PropagationStatus ApplyIndirectEmission(
-  mt::Scene const & scene
+  mt::core::Scene const & scene
 , mt::PluginInfo const & plugin
-, mt::SurfaceInfo const & surface
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 const & radiance
 , glm::vec3 & accumulatedIrradiance
 , size_t it
@@ -86,7 +85,7 @@ PropagationStatus ApplyIndirectEmission(
 
   { // apply indirect emission from random emitter in scene
     auto [emissionTriangle, emissionBarycentricUvCoord] =
-      mt::EmissionSourceTriangle(scene, plugin.random);
+      mt::core::EmissionSourceTriangle(scene, plugin.random);
 
     if (!emissionTriangle) { return propagationStatus; }
 
@@ -109,8 +108,8 @@ PropagationStatus ApplyIndirectEmission(
     if (glm::dot(emissionWo, surface.normal) <= 0.0f)
       { return propagationStatus; }
 
-    mt::SurfaceInfo emissionSurface =
-      mt::Raycast(scene, surface.origin, emissionWo, surface.triangle);
+    mt::core::SurfaceInfo emissionSurface =
+      mt::core::Raycast(scene, surface.origin, emissionWo, surface.triangle);
 
     if (emissionSurface.triangle != emissionTriangle)
       { return propagationStatus; }
@@ -138,8 +137,8 @@ PropagationStatus ApplyIndirectEmission(
 }
 
 PropagationStatus Propagate(
-  mt::Scene const & scene
-, mt::SurfaceInfo & surface
+  mt::core::Scene const & scene
+, mt::core::SurfaceInfo & surface
 , glm::vec3 & radiance
 , glm::vec3 & accumulatedIrradiance
 , size_t const it
@@ -164,8 +163,8 @@ PropagationStatus Propagate(
   bsdf.pdf = bsdf.pdf == 0.0f ? 1.0f : bsdf.pdf;
 
   // grab information of next surface
-  mt::SurfaceInfo nextSurface =
-    mt::Raycast(scene, surface.origin, bsdf.wo, surface.triangle);
+  mt::core::SurfaceInfo nextSurface =
+    mt::core::Raycast(scene, surface.origin, bsdf.wo, surface.triangle);
 
   // check if an emitter or skybox (which could be a blackbody) was hit
   if (nextSurface.triangle == nullptr) {
@@ -233,14 +232,14 @@ mt::PluginType PluginType() { return mt::PluginType::Integrator; }
 
 mt::PixelInfo Dispatch(
   glm::vec2 const & uv
-, mt::Scene const & scene
-, mt::CameraInfo const & camera
+, mt::core::Scene const & scene
+, mt::core::CameraInfo const & camera
 , mt::PluginInfo const & plugin
-, mt::IntegratorData const & integratorData
+, mt::core::IntegratorData const & integratorData
 , void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
 
-  mt::SurfaceInfo surface;
+  mt::core::SurfaceInfo surface;
   { // -- apply initial raycast
     auto const eye =
       plugin.camera.Dispatch(
@@ -249,7 +248,7 @@ mt::PixelInfo Dispatch(
 
     // store camera info
     if (debugPathRecorder) {
-      mt::SurfaceInfo cameraSurface;
+      mt::core::SurfaceInfo cameraSurface;
       cameraSurface.distance = 0.0f;
       cameraSurface.exitting = false;
       cameraSurface.incomingAngle = glm::vec3(0);
@@ -261,7 +260,7 @@ mt::PixelInfo Dispatch(
       });
     }
 
-    surface = mt::Raycast(scene, eye.origin, eye.direction, nullptr);
+    surface = mt::core::Raycast(scene, eye.origin, eye.direction, nullptr);
   }
 
   // return skybox

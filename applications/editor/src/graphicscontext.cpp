@@ -1,7 +1,7 @@
 #include "graphicscontext.hpp"
 
 #include <glad/glad.hpp>
-#include <monte-toad/log.hpp>
+#include <monte-toad/core/log.hpp>
 
 #include <GLFW/glfw3.h>
 

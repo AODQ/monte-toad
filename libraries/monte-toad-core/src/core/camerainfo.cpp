@@ -1,11 +1,11 @@
-#include <monte-toad/camerainfo.hpp>
+#include <monte-toad/core/camerainfo.hpp>
 
-#include <monte-toad/renderinfo.hpp>
+#include <monte-toad/core/renderinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
-void mt::UpdateCamera(
+void mt::core::UpdateCamera(
   mt::PluginInfo const & plugin
-, mt::RenderInfo & render
+, mt::core::RenderInfo & render
 ) {
   if (plugin.camera.UpdateCamera)
     { plugin.camera.UpdateCamera(render.camera); }

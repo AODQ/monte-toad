@@ -4,7 +4,7 @@ target_sources(wavefront-mtl PRIVATE src/source.cpp)
 target_link_libraries(
   wavefront-mtl
   PRIVATE
-    mt-plugin monte-toad
+    mt-plugin monte-toad-core
     imgui
 )
 

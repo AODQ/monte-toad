@@ -4,7 +4,7 @@ target_sources(emitter-directional PRIVATE src/source.cpp)
 target_link_libraries(
   emitter-directional
   PRIVATE
-    mt-plugin monte-toad
+    mt-plugin monte-toad-core
     imgui
 )
 

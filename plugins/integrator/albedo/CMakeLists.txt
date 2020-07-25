@@ -4,7 +4,7 @@ target_sources(integrator-albedo PRIVATE src/source.cpp)
 target_link_libraries(
   integrator-albedo
   PRIVATE
-    mt-plugin monte-toad
+    mt-plugin monte-toad-core
     imgui
 )
 
