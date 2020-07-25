@@ -8,6 +8,7 @@
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
 #include <monte-toad/core/scene.hpp>
+#include <monte-toad/textureloader.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -100,8 +101,10 @@ void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
   mt::core::Scene::Construct(
     ::scene
   , render.modelFile
-  , render.environmentMapFile
   );
+
+  ::scene.emissionSource.environmentMap =
+    mt::LoadTexture(render.environmentMapFile);
 
   for (auto & emitter : plugin.emitters)
     { emitter.Precompute(scene, render, plugin); }

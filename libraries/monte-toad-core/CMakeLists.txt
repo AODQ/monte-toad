@@ -7,6 +7,7 @@ target_sources(
     src/core/accelerationstructure.cpp
     src/core/camerainfo.cpp
     src/core/enum.cpp
+    src/core/texture.cpp
     src/core/geometry.cpp
     src/core/glutil.cpp
     src/core/math.cpp

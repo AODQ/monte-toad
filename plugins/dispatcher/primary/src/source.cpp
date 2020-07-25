@@ -86,8 +86,6 @@ void DrawPath(mt::PluginInfo const & plugin, mt::core::RenderInfo & render) {
     , uCoordEnd   = glm::uvec2(uvCoordEnd   * glm::vec2(depthResolution))
     ;
 
-    spdlog::info("ic {} {}", uCoordStart, uCoordEnd);
-
     // -- bresenham line algorithm
     BresenhamLine(
       glm::ivec2(uCoordStart)

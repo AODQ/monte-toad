@@ -251,7 +251,6 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
 void mt::core::Scene::Construct(
   mt::core::Scene & self
 , std::string const & filename
-, std::string const & /*environmentMapFilename*/
 ) {
   self.bboxMin = glm::vec3(std::numeric_limits<float>::max());
   self.bboxMax = glm::vec3(std::numeric_limits<float>::min());
@@ -261,11 +260,6 @@ void mt::core::Scene::Construct(
     self.accelStructure
   , LoadAssetIntoScene(self, filename)
   );
-
-  /* if(environmentMapFilename != "") { */
-  /*   self.emissionSource.environmentMap = */
-  /*     mt::Texture::Construct(environmentMapFilename); */
-  /* } */
 }
 
 ////////////////////////////////////////////////////////////////////////////////

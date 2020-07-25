@@ -2,11 +2,10 @@
 
 #include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/math.hpp>
-/* #include <monte-toad/texture.hpp> */
+#include <monte-toad/core/span.hpp>
+#include <monte-toad/core/texture.hpp>
 
-#include <any>
 #include <filesystem>
-#include "span.hpp"
 #include <string>
 #include <vector>
 
@@ -22,7 +21,7 @@ namespace mt::core {
   struct EmissionSource {
     std::vector<size_t> triangles;
 
-    /* mt::Texture environmentMap; */
+    mt::core::Texture environmentMap;
 
     size_t skyboxEmitterPluginIdx = -1lu;
   };
@@ -31,14 +30,12 @@ namespace mt::core {
     static void Construct(
       Scene & self
     , std::string const & filename
-    , std::string const & environmentMapFilename = ""
     );
 
     std::filesystem::path basePath;
 
     std::vector<Mesh> meshes;
 
-    std::any environmentData;
 
     mt::core::AccelerationStructure accelStructure;
     EmissionSource emissionSource;
