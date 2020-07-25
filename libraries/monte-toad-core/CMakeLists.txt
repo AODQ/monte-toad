@@ -8,6 +8,7 @@ target_sources(
     src/core/camerainfo.cpp
     src/core/enum.cpp
     src/core/geometry.cpp
+    src/core/glutil.cpp
     src/core/math.cpp
     src/core/renderinfo.cpp
     src/core/scene.cpp
@@ -35,7 +36,7 @@ set_target_properties(
 target_link_libraries(
   monte-toad-core
   PUBLIC
-    glm glad spdlog fmt bvh monte-toad-util
+    glm spdlog fmt bvh monte-toad-util
   PRIVATE
-    mt-plugin
+    glad mt-plugin
 )

@@ -347,7 +347,7 @@ void UiImageOutput(
 
       // must reallocate resources if resolution has changed
       if (previousResolution != data.imageResolution)
-        { mt::core::AllocateGlResources(data, renderInfo); }
+        { mt::core::AllocateResources(data); }
     }
 
     if (data.renderingFinished) {
@@ -416,10 +416,10 @@ void UiImageOutput(
         );
       }
 
-      /* ImGui::Image( */
-      /*   reinterpret_cast<void*>(data.renderedTexture.handle) */
-      /* , ImVec2(imageResolution.x, imageResolution.y) */
-      /* ); */
+      ImGui::Image(
+        reinterpret_cast<void*>(data.renderedTexture.handle)
+      , ImVec2(imageResolution.x, imageResolution.y)
+      );
 
       // clear out the image pixel clicked from previous frame
       data.imagePixelClicked = false;

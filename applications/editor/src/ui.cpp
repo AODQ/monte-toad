@@ -3,11 +3,11 @@
 #include "fileutil.hpp"
 #include "graphicscontext.hpp"
 
+#include <monte-toad/core/glutil.hpp>
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
 #include <monte-toad/core/scene.hpp>
-#include <monte-toad/glutil.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -16,14 +16,13 @@
 #include <imgui/imgui.hpp>
 #include <imgui/imgui_impl_glfw.hpp>
 #include <imgui/imgui_impl_opengl3.hpp>
+#include <omp.h>
 #include <spdlog/sinks/base_sink.h>
 
 #include <deque>
 #include <filesystem>
 #include <mutex>
 #include <string>
-
-#include <omp.h>
 
 namespace ImGui {
   bool InputInt(const char * label, size_t * value, int step) {
@@ -56,7 +55,7 @@ mt::core::Scene scene;
 
 bool reloadPlugin = false;
 
-mt::GlProgram imageTransitionProgram;
+mt::core::GlProgram imageTransitionProgram;
 
 struct GuiLogMessage {
   GuiLogMessage() = default;
@@ -113,9 +112,9 @@ void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void AllocateGlResources(mt::core::RenderInfo & renderInfo) {
+void AllocateResources(mt::core::RenderInfo & renderInfo) {
   for (auto & integrator : renderInfo.integratorData)
-    { mt::core::AllocateGlResources(integrator, renderInfo); }
+    { mt::core::AllocateResources(integrator); }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +140,7 @@ void UiPluginLoadFile(
     switch (pluginType) {
       default: break;
       case mt::PluginType::Integrator:
-        mt::core::AllocateGlResources(render.integratorData.back(), render);
+        mt::core::AllocateResources(render.integratorData.back());
       break;
       case mt::PluginType::Material:
         pluginInfo.material.Load(pluginInfo.material, scene);
@@ -376,7 +375,6 @@ void DispatchRender(
 
     if (mt::core::DispatchRender(integratorData, ::scene, render, plugin, idx))
     {
-      FlushTransitionBuffer(integratorData);
       mt::core::DispatchImageCopy(integratorData);
     }
   }
@@ -510,7 +508,7 @@ bool ui::Initialize(
   }
 
   // load up opengl resources
-  ::AllocateGlResources(render);
+  ::AllocateResources(render);
 
   return true;
 }

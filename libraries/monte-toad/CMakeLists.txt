@@ -4,7 +4,6 @@ target_include_directories(monte-toad PUBLIC "include/")
 target_sources(
   monte-toad
   PRIVATE
-    src/glutil.cpp
     src/imagebuffer.cpp
     src/material/layered.cpp
     src/texture.cpp

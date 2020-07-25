@@ -238,45 +238,19 @@ size_t mt::core::BlockIteratorMax(mt::core::IntegratorData & self) {
   * static_cast<size_t>(std::ceil(resolution.y/static_cast<float>(stride)));
 }
 
-void mt::core::FlushTransitionBuffer(mt::core::IntegratorData & /*self*/) {
-  /* glFlushMappedBufferRange( */
-  /*   self.imageTransitionBuffer.handle */
-  /* , 0, sizeof(glm::vec4) * self.mappedImageTransitionBuffer.size() */
-  /* ); */
-}
-
 void mt::core::DispatchImageCopy(mt::core::IntegratorData & self) {
-  /* glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle); */
-  /* glTexImage2D( */
-  /*   GL_TEXTURE_2D */
-  /* , 0 */
-  /* , GL_RGBA32F */
-  /* , self.imageResolution.x, self.imageResolution.y */
-  /* , 0, GL_RGBA, GL_FLOAT */
-  /* , self.mappedImageTransitionBuffer.data() */
-  /* ); */
-  /* /1* glBindTextureUnit(0, self.renderedTexture.handle); *1/ */
-  /* /1* glBindBufferBase( *1/ */
-  /* /1*   GL_SHADER_STORAGE_BUFFER, 0, self.imageTransitionBuffer.handle *1/ */
-  /* /1* ); *1/ */
-  /* /1* glBindImageTexture( *1/ */
-  /* /1*   0, self.renderedTexture.handle, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8 *1/ */
-  /* /1* ); *1/ */
-
-  /* /1* glUniform1i(0, self.imageStride); *1/ */
-  /* /1* glUniform1i(1, self.dispatchedCycles == 1); *1/ */
-
-  /* /1* glDispatchCompute( *1/ */
-  /* /1*   self.imageResolution.x / 8 *1/ */
-  /* /1* , self.imageResolution.y / 8 *1/ */
-  /* /1* , 1 *1/ */
-  /* /1* ); *1/ */
+  glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle);
+  glTexImage2D(
+    GL_TEXTURE_2D
+  , 0
+  , GL_RGBA32F
+  , self.imageResolution.x, self.imageResolution.y
+  , 0, GL_RGBA, GL_FLOAT
+  , self.mappedImageTransitionBuffer.data()
+  );
 }
 
-void mt::core::AllocateGlResources(
-  mt::core::IntegratorData & self
-, mt::core::RenderInfo const & /*renderInfo*/
-) {
+void mt::core::AllocateResources(mt::core::IntegratorData & self) {
   spdlog::info("Allocating gl resources to {}", self.imageResolution);
   size_t const
     imagePixelLength = self.imageResolution.x * self.imageResolution.y
@@ -288,19 +262,14 @@ void mt::core::AllocateGlResources(
   self.pixelCountBuffer.resize(imagePixelLength);
 
   // -- construct texture
-  /* self.renderedTexture.Construct(GL_TEXTURE_2D); */
-  /* glTextureStorage2D( */
-  /*   self.renderedTexture.handle */
-  /* , 1, GL_RGBA8 */
-  /* , self.imageResolution.x, self.imageResolution.y */
-  /* ); */
+  self.renderedTexture.Construct(GL_TEXTURE_2D);
 
-  /* { // -- set parameters */
-  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); */
-  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); */
-  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); */
-  /*   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER); */
-  /* } */
+  { // -- set parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  }
 
   // set unfinishedPixels
   self.unfinishedPixels.resize(self.blockIteratorStride);

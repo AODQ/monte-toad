@@ -1,7 +1,7 @@
 #pragma once
 
 #include <monte-toad/core/enum.hpp>
-/* #include <monte-toad/glutil.hpp> */
+#include <monte-toad/core/glutil.hpp>
 
 #include <vector>
 
@@ -9,7 +9,7 @@ namespace mt::core {
   struct IntegratorData {
     std::vector<glm::vec4> mappedImageTransitionBuffer;
     std::vector<uint16_t> pixelCountBuffer;
-    /* mt::GlTexture renderedTexture; */
+    mt::core::GlTexture renderedTexture;
 
     glm::u16vec2 imageResolution = glm::u16vec2(640, 480);
     mt::AspectRatio imageAspectRatio = mt::AspectRatio::e4_3;

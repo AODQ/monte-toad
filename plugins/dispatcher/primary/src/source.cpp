@@ -102,7 +102,6 @@ void DrawPath(mt::PluginInfo const & plugin, mt::core::RenderInfo & render) {
     );
   }
 
-  mt::core::FlushTransitionBuffer(depthIntegratorData);
   mt::core::DispatchImageCopy(depthIntegratorData);
 }
 }

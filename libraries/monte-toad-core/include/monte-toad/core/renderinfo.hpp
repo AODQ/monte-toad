@@ -29,14 +29,9 @@ namespace mt::core {
 
   size_t BlockIteratorMax(mt::core::IntegratorData & self);
 
-  void FlushTransitionBuffer(mt::core::IntegratorData & self);
-
   void DispatchImageCopy(mt::core::IntegratorData & self);
 
-  void AllocateGlResources(
-    mt::core::IntegratorData & self
-  , mt::core::RenderInfo const & renderInfo
-  );
+  void AllocateResources(mt::core::IntegratorData & self);
 
   struct RenderInfo {
     std::string modelFile;
