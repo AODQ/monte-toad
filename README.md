@@ -73,16 +73,9 @@ be loaded. Several plugins are provided for this purpose.
 
 # Running offline renderer
 this is not currently available
-There are several shell scripts provided under scripts that should assist in
-default scene configurations. (In the future these will probably be json files).
 
-As an example to render the BMW (with environmental spherical map)
+# Development
 
-```
-git clone https://github.com/aodq/test-models
-cd test-models
-./extract.sh
-cd ..
-./scripts/bmw-front.sh -e ~/spherical-texture.png
-feh --force-aliasing out.ppm
-```
+current layout of how software/dependencies interact with each other is in
+software-layout.dot . Most of monte-toad should be extendable with plugins
+alone.

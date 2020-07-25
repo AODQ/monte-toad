@@ -1,0 +1,28 @@
+digraph G {
+  "monte-toad-core" -> "monte-toad"
+  "monte-toad-core" -> "plugins"
+
+  "mt-plugin" -> "plugins"
+  "mt-plugin" -> "monte-toad"
+
+  "mt-plugin-host" -> "monte-toad"
+
+  "monte-toad" -> "interactive-editor"
+  "monte-toad" -> "offline-renderer"
+
+  "plugins" -> "monte-toad"
+
+  "third-party/bvh" -> "monte-toad-core"
+
+  "third-party/cxxopts" -> "interactive-editor"
+  "third-party/cxxopts" -> "offline-renderer"
+  "third-party/glad" -> "monte-toad-core"
+  "third-party/glm" -> "monte-toad-core"
+  "third-party/imgui" -> "monte-toad-core"
+  "third-party/json" -> "monte-toad"
+  "third-party/stb" -> "monte-toad"
+
+  "third-party/assimp" -> "monte-toad"
+  "third-party/openmp" -> "monte-toad"
+  "third-party/spdlog" -> "monte-toad-core"
+}
