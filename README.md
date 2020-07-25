@@ -1,12 +1,14 @@
 # Monte Toad
 
 Ongoing WIP project animation renderer. The majority of the feature-set is
-C-ABI plugin-based with native support for hot-reloading.
+plugin-based with native support for hot-reloading.
 
 # External Dependencies
 
+current goal is to have most external dependencies be part of the build process
+  using git submodules
+
 - ASSIMP
-- GLM
 - OpenMP
 - spdlog
 - fmt
@@ -17,19 +19,15 @@ C-ABI plugin-based with native support for hot-reloading.
 - bvh
 - stb\_image.hpp
 - cxxopts
+- GLM
 
 # Support
 
 To run the editor, OpenGL3.2 is required. Image processing can still be done
 without a GPU.
 
-Minimum of CMake 3.0 is necessary
-
-The following compilers/toolsets are tested/supported:
-
-  * GCC
-  * Clang
-  * ccache
+Minimum of CMake 3.0 is necessary. I've only tested with GCC 10.1 and Clang
+  10.0 on Linux. There is no windows support as of now.
 
 # Current Feature List
 
