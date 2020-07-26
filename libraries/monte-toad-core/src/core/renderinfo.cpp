@@ -274,7 +274,7 @@ void mt::core::DispatchImageCopy(
 }
 
 void mt::core::AllocateResources(mt::core::IntegratorData & self) {
-  spdlog::info("Allocating gl resources to {}", self.imageResolution);
+  spdlog::debug("Allocating gl resources to {}", self.imageResolution);
   size_t const
     imagePixelLength = self.imageResolution.x * self.imageResolution.y
   ;

@@ -58,11 +58,11 @@ template <typename T> void Plugin::LoadFunction(
   if (!fn && optional == Optional::No)
     { spdlog::error("Failed to load function '{}'; '{}'", label, dlerror()); }
 
-  spdlog::info("Loaded function {}\n", reinterpret_cast<void*>(fn));
+  spdlog::debug("Loaded function {}\n", reinterpret_cast<void*>(fn));
 }
 
 void Plugin::Reload() {
-  spdlog::info("Reloading plugin '{}'", this->filename.c_str());
+  spdlog::debug("Reloading plugin '{}'", this->filename.c_str());
   // attempt close
   if (this->data) { dlclose(this->data); }
   // open dll again

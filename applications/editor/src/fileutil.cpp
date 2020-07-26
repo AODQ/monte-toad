@@ -183,7 +183,7 @@ bool fileutil::LoadPlugin(
 , std::string const & file
 , mt::PluginType type
 ) {
-  spdlog::info("Loading {} of type {}", file, ToString(type));
+  spdlog::debug("Loading {} of type {}", file, ToString(type));
 
   // allocate memory for plugin if it's a vector
   size_t idx = 0;

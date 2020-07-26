@@ -652,8 +652,6 @@ EvalFresnel(
   glm::vec3 tij =
     kappa == glm::vec3(0.0f) ? glm::vec3(1.0f) - rij : glm::vec3(0.0f);
 
-  /* spdlog::info("rij {} tij {}", rij, tij); */
-
   return { rij, tij };
 }
 
