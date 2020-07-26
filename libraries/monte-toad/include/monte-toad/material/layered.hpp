@@ -1,7 +1,5 @@
 #pragma once
 
-#include <monte-toad/core/math.hpp>
-
 #include <vector>
 
 // implements layered material as laid out in

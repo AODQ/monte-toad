@@ -2,6 +2,7 @@
 
 #include <monte-toad/core/geometry.hpp>
 #include <monte-toad/core/log.hpp>
+#include <monte-toad/core/math.hpp>
 #include <monte-toad/core/span.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>

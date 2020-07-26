@@ -2,7 +2,6 @@
 
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
-#include <monte-toad/core/math.hpp>
 #include <monte-toad/core/scene.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
 

@@ -6,9 +6,8 @@
 
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
-#include <monte-toad/material/layered.hpp>
-#include <monte-toad/core/math.hpp>
 #include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/material/layered.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <cxxopts.hpp>

@@ -2,7 +2,6 @@
 //
 //#include <monte-toad/interpolation.hpp>
 //#include <monte-toad/log.hpp>
-//#include <monte-toad/math.hpp>
 //#include <monte-toad/span.hpp>
 //#include <monte-toad/surfaceinfo.hpp>
 //#include <mt-plugin/plugin.hpp>

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <monte-toad/core/math.hpp>
-
 namespace mt::core { struct Scene; }
 namespace mt::core { struct Triangle; }
 namespace mt::core { struct BvhIntersection; }

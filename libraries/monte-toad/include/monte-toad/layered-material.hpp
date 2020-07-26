@@ -1,7 +1,6 @@
 #pragma once
 
 #include <monte-toad/core/enum.hpp>
-#include <monte-toad/core/math.hpp>
 
 #include <cstdint>
 #include <tuple>

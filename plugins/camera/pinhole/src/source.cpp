@@ -2,7 +2,6 @@
 
 #include <monte-toad/core/camerainfo.hpp>
 #include <monte-toad/core/log.hpp>
-#include <monte-toad/core/math.hpp>
 
 #include <mt-plugin/plugin.hpp>
 
@@ -80,9 +79,9 @@ glm::vec2 WorldCoordToUv(
 ) {
   glm::mat4 view = ::viewMatrix, proj = ::projectionMatrix;
 
-  /* view[3][0] = -camera.origin.x; */
-  /* view[3][1] = -camera.origin.y; */
-  /* view[3][2] = -camera.origin.z; */
+  view[3][0] = -camera.origin.x;
+  view[3][1] = -camera.origin.y;
+  view[3][2] = -camera.origin.z;
 
   auto vec =
     glm::inverse(glm::transpose(view)*proj) * glm::vec4(worldCoord, -1.0f);

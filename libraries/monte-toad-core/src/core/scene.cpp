@@ -3,7 +3,6 @@
 #include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/intersection.hpp>
 #include <monte-toad/core/log.hpp>
-#include <monte-toad/core/math.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/triangle.hpp>
 
@@ -284,7 +283,6 @@ mt::core::SurfaceInfo mt::core::Raycast(
     );
 }
 
-#include <monte-toad/core/math.hpp>
 #include <mt-plugin/plugin.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////

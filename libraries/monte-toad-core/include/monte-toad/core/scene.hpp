@@ -1,7 +1,6 @@
 #pragma once
 
 #include <monte-toad/core/accelerationstructure.hpp>
-#include <monte-toad/core/math.hpp>
 #include <monte-toad/core/span.hpp>
 #include <monte-toad/core/texture.hpp>
 
