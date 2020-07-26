@@ -49,9 +49,6 @@ void LoadPluginIntegrator(
 
   ::AttemptJsonStore(info, data.samplesPerPixel, "samples-per-pixel");
   ::AttemptJsonStore(info, data.pathsPerSample, "paths-per-sample");
-  ::AttemptJsonStore(
-    info, data.blockInternalIteratorMax, "iterations-per-block"
-  );
   ::AttemptJsonStore(info, data.blockIteratorStride, "block-stride");
   ::AttemptJsonStore(info, data.imageResolution.x, "resolution");
   data.overrideImGuiImageResolution =

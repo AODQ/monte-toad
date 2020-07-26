@@ -204,6 +204,7 @@ void DispatchBlockRegion(
 , size_t const minX, size_t const minY
 , size_t const maxX, size_t const maxY
 , size_t strideX, size_t strideY
+, size_t internalIterator
 ) {
   auto & integratorData = render.integratorData[integratorIdx];
 
@@ -229,7 +230,8 @@ void DispatchBlockRegion(
 
   #pragma omp parallel for
   for (size_t x = minX; x < maxX; x += strideX)
-  for (size_t y = minY; y < maxY; y += strideY) {
+  for (size_t y = minY; y < maxY; y += strideY)
+  for (size_t it = 0; it < internalIterator; ++ it) {
     auto & pixelCount = integratorData.pixelCountBuffer[y*resolution.x + x];
     auto & pixel =
       integratorData.mappedImageTransitionBuffer[y*resolution.x + x];

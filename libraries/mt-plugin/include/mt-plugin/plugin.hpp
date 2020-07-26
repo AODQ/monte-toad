@@ -231,6 +231,7 @@ namespace mt {
     , size_t const minX, size_t const minY
     , size_t const maxX, size_t const maxY
     , size_t strideX, size_t strideY
+    , size_t internalIterator
     ) = nullptr;
 
     void (*UiUpdate)(

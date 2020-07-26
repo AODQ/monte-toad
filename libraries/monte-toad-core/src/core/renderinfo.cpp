@@ -89,25 +89,22 @@ void BlockIterate(
   ::BlockCalculateRange(self, minRange, maxRange);
 
   { // perform iteration
-    if (++self.blockInternalIterator >= self.blockInternalIteratorMax) {
-      self.blockInternalIterator = 0ul;
-      self.blockIterator =
-        (self.blockIterator + 1) % self.blockPixelsFinished.size();
+    self.blockIterator =
+      (self.blockIterator + 1) % self.blockPixelsFinished.size();
 
-      // -- skip blocks that are full
-      size_t blockFull = 0ul;
-      while (
-        self.blockPixelsFinished[self.blockIterator] >= blockPixelCount
-      ) {
-        // if we have come full circle, then rendering has finished
-        if (++ blockFull == self.blockPixelsFinished.size()) {
-          self.renderingFinished = true;
-          return;
-        }
-
-        self.blockIterator =
-          (self.blockIterator+1) % self.blockPixelsFinished.size();
+    // -- skip blocks that are full
+    size_t blockFull = 0ul;
+    while (
+      self.blockPixelsFinished[self.blockIterator] >= blockPixelCount
+    ) {
+      // if we have come full circle, then rendering has finished
+      if (++ blockFull == self.blockPixelsFinished.size()) {
+        self.renderingFinished = true;
+        return;
       }
+
+      self.blockIterator =
+        (self.blockIterator+1) % self.blockPixelsFinished.size();
     }
   }
 }
@@ -129,7 +126,6 @@ void mt::core::Clear(mt::core::IntegratorData & self) {
   self.dispatchedCycles = 0;
   self.bufferCleared = true;
   self.blockIterator = 0ul;
-  self.blockInternalIterator = 0ul;
   self.renderingFinished = false;
 
   // clear block samples
@@ -192,9 +188,16 @@ bool mt::core::DispatchRender(
   glm::u16vec2 minRange = glm::uvec2(0);
   glm::u16vec2 maxRange = self.imageResolution;
   const bool realtime = plugin.integrators[integratorIdx].RealTime();
+  bool const quickLowResRender = !realtime && self.dispatchedCycles == 1;
   if (!realtime) {
     switch (self.dispatchedCycles) {
-      case 1: self.imageStride = 8; break;
+      case 1:
+        if (self.imageResolution.x > 1024) {
+          self.imageStride = 16;
+        } else {
+          self.imageStride = 8;
+        }
+      break;
       default:
         ::BlockIterate(self, minRange, maxRange);
       break;
@@ -207,16 +210,17 @@ bool mt::core::DispatchRender(
       scene, render, plugin, integratorIdx
     , minRange.x, minRange.y, maxRange.x, maxRange.y
     , self.imageStride, self.imageStride
+    , (realtime || quickLowResRender) ? 1 : self.blockInternalIteratorMax
     );
 
   // blit transition buffer for 8 pixels, thus generating an 8x lower resolution
   //  image without gaps
-  if (!realtime && self.dispatchedCycles == 1) {
+  if (quickLowResRender) {
     #pragma omp parallel for
     for (size_t x = minRange.x; x < maxRange.x; ++ x)
     for (size_t y = minRange.y; y < maxRange.y; ++ y) {
-      auto const yy = y - (y % 8);
-      auto const xx = x - (x % 8);
+      auto const yy = y - (y % self.imageStride);
+      auto const xx = x - (x % self.imageStride);
       self.mappedImageTransitionBuffer[y*self.imageResolution.x + x] =
           self.mappedImageTransitionBuffer[yy*self.imageResolution.x + xx];
     }
