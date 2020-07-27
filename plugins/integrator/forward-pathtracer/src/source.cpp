@@ -206,7 +206,7 @@ PropagationStatus Propagate(
     Join(propagationStatus, PropagationStatus::End);
 
   } else if (
-      plugin.material.IsEmitter(plugin.material, scene, *nextSurface.triangle)
+      plugin.material.IsEmitter(plugin.material, *nextSurface.triangle)
   ) {
     auto emissiveColor =
       plugin.material.BsdfFs(plugin.material, nextSurface, bsdf.wo);
@@ -297,7 +297,7 @@ mt::PixelInfo Dispatch(
   }
 
   // check if emitter
-  if (plugin.material.IsEmitter(plugin.material, scene, *surface.triangle)) {
+  if (plugin.material.IsEmitter(plugin.material, *surface.triangle)) {
     auto const emission =
       plugin.material.BsdfFs(plugin.material, surface, glm::vec3(0));
 
