@@ -69,10 +69,10 @@ void UiCameraControls(
 
   // toggle rendering state
   static bool qPressed = false;
-  if (!qPressed && glfwGetKey(window, GLFW_KEY_Q)) {
-    render.rendering = !render.rendering;
+  if (glfwGetKey(window, GLFW_KEY_Q)) {
+    render.rendering = qPressed ? render.rendering : !render.rendering;
     qPressed = true;
-  } else qPressed = false;
+  } else { qPressed = false; }
 
   // only get to control camera by right clicking
   if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
