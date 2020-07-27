@@ -528,7 +528,10 @@ void ui::Run(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
       // check if currently rendering anything
       bool rendering = false;
       for (auto & integrator : render.integratorData) {
-        rendering = rendering | !integrator.renderingFinished;
+        rendering |=
+            !integrator.renderingFinished
+         && integrator.renderingState != mt::RenderingState::Off
+        ;
       }
 
       // if no rendering is being done right now the thread should just sleep
