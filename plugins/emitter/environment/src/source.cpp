@@ -1,17 +1,26 @@
 // environmental emitter
 
+#include <monte-toad/core/geometry.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
 #include <monte-toad/core/scene.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
-/* #include <monte-toad/core/texture.hpp> */
+#include <monte-toad/core/texture.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <imgui/imgui.hpp>
 
 namespace {
 
-[[maybe_unused]] static float emissionPower = 1.0f;
+static float emissionPower = 1.0f;
+
+glm::vec3 SampleEmission(
+  mt::core::Scene const & /*scene*/
+, mt::core::Texture const & texture
+, glm::vec3 wo
+) {
+  return mt::core::Sample(texture, wo);
+}
 
 } // -- namespace
 
@@ -39,7 +48,7 @@ mt::PixelInfo SampleLi(
   auto testSurface =
     mt::core::Raycast(scene, surface.origin, wo, surface.triangle);
   if (testSurface.Valid()) { return { glm::vec3(0.0f), false }; }
-  auto color = mt::core::Sample(scene.emissionSource.environmentMap, wo);
+  auto color = ::SampleEmission(scene, scene.emissionSource.environmentMap, wo);
   return { color * emissionPower, true };
 }
 
@@ -57,8 +66,8 @@ mt::PixelInfo SampleWo(
   pdf = 1.0f;
 
   return {
-    mt::core::Sample(scene.emissionSource.environmentMap, wo) * emissionPower,
-    true
+    ::SampleEmission(scene, scene.emissionSource.environmentMap, wo)
+  , true
   };
 }
 
