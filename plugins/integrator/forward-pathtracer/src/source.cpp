@@ -17,14 +17,24 @@ namespace mt::core { struct CameraInfo; }
 namespace {
 
 enum class PropagationStatus {
-  Continue // normal behaviour, continue propagation
-, End // no propagation could occur (apply only indirect accumulation)
-, IndirectAccumulation // emitter has been indirectly hit (such as for MIS)
-, DirectAccumulation // emmitter has been directly hit, end propagation loop
+  Continue = 0 // normal behaviour, continue propagation
+, IndirectAccumulation = 1 // emitter has been indirectly hit (such as for MIS)
+, DirectAccumulation = 2 // emitter has been directly hit, end propagation loop
+, End = 3 // no propagation could occur (apply only indirect accumulation)
+, IndirectAccumulationEnd = 4 //
 };
 
 // joins results such that only the most relevant component is returned
-[[maybe_unused]] void Join(PropagationStatus & l, PropagationStatus r) {
+void Join(PropagationStatus & l, PropagationStatus r) {
+  // hardcoded case where indire
+  if (
+      l == PropagationStatus::End
+   && r == PropagationStatus::IndirectAccumulation
+  ) {
+    l = PropagationStatus::IndirectAccumulationEnd;
+    return;
+  }
+
   l = Idx(l) > Idx(r) ? l : r;
 }
 
@@ -155,6 +165,11 @@ PropagationStatus Propagate(
   // store a value for current propagation status, which could be overwritten
   auto propagationStatus = PropagationStatus::Continue;
 
+  if (surface.triangle == nullptr) {
+    spdlog::critical("could not propagate in a correct manner, null triangle");
+    return PropagationStatus::End;
+  }
+
   // generate bsdf sample (this will also be used for next propagation)
   auto bsdf =
     plugin.material.BsdfSample(plugin.material, plugin.random, surface);
@@ -187,6 +202,8 @@ PropagationStatus Propagate(
 
     // even tho we didn't hit a surface still record the origin
     nextSurface.origin = surface.origin + bsdf.wo*100.0f;
+
+    Join(propagationStatus, PropagationStatus::End);
 
   } else if (
       plugin.material.IsEmitter(plugin.material, scene, *nextSurface.triangle)
@@ -303,6 +320,10 @@ mt::PixelInfo Dispatch(
       , debugPathRecorder
       );
 
+    if (status == PropagationStatus::IndirectAccumulationEnd) {
+      hit = true;
+      break;
+    }
     if (status == PropagationStatus::End) { break; }
     if (status == PropagationStatus::IndirectAccumulation) {
       hit = true;

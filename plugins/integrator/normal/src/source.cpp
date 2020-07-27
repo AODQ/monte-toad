@@ -30,7 +30,12 @@ mt::PixelInfo Dispatch(
   auto surface = mt::core::Raycast(scene, eye.origin, eye.direction, nullptr);
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
-  return mt::PixelInfo{surface.normal, true};
+  auto surfaceNormal = surface.normal;
+
+  // normalize from range -1 ‥ 1 to 0 ‥ 1
+  surfaceNormal = surface.normal*0.5f + glm::vec3(1.0f);
+
+  return mt::PixelInfo{surfaceNormal, true};
 }
 
 bool RealTime() { return true; }
