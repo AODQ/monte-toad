@@ -239,6 +239,7 @@ glm::vec3 BsdfFs(
     + TrowbridgeReitzGeometric(wi, material.roughness)
     );
 
+  return glm::dot(wo, surface.normal) * glm::InvPi * material.albedo;
   return glm::vec3(0.5f);
   return glm::vec3(cosThetaO);
   return
@@ -287,7 +288,7 @@ mt::BsdfSampleInfo BsdfSample(
     );
 
   float pdf = BsdfPdf(self, surface, wo);
-  glm::vec3 fs = material.albedo * glm::dot(surface.normal, wo) * glm::InvPi;
+  glm::vec3 fs = BsdfFs(self, surface, wo);
   return { wo, fs, pdf };
 
   /* glm::vec3 const */
