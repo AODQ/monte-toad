@@ -5,7 +5,6 @@ target_sources(
   monte-toad
   PRIVATE
     src/imagebuffer.cpp
-    src/textureloader.cpp
     src/material/layered.cpp
 )
 

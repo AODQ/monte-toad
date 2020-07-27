@@ -128,7 +128,6 @@ namespace mt {
 
     bool (*IsEmitter)(
       mt::PluginInfoMaterial const & self
-    , mt::core::Scene const & scene
     , mt::core::Triangle const & triangle
     );
 

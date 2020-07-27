@@ -10,6 +10,7 @@
 
 namespace mt::core { struct SurfaceInfo; }
 namespace mt::core { struct Triangle; }
+namespace mt::core { struct Texture; }
 namespace mt { struct PluginInfoRandom; }
 
 namespace mt::core {
@@ -33,8 +34,9 @@ namespace mt::core {
 
     std::filesystem::path basePath;
 
-    std::vector<Mesh> meshes;
+    std::vector<mt::core::Mesh> meshes;
 
+    std::vector<mt::core::Texture> textures;
 
     mt::core::AccelerationStructure accelStructure;
     EmissionSource emissionSource;

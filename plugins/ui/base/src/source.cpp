@@ -221,6 +221,34 @@ void ApplyImageResolutionConstraint(
   mt::ApplyAspectRatioY(aspectRatio, resolution.x, resolution.y);
 }
 
+void UiTextureEditor(mt::core::Scene & scene) {
+  ImGui::Begin("Textures");
+
+  if (ImGui::Button("Load Texture")) {
+    auto filename =
+        mt::util::FilePicker(
+          " --file-filter=\"image files | "
+          " *.jpeg *.jpg *.png *.tga *.bmp *.psd *.gif *.hdr *.pic *.ppm"
+          " *.pgm\""
+        );
+    if (filename != "") {
+      auto texture = mt::util::LoadTexture(filename);
+      if (texture.Valid()) {
+        texture.label = filename;
+        scene.textures.emplace_back(texture);
+      } else {
+        spdlog::error("Could not load texture '{}'", filename);
+      }
+    }
+  }
+
+  for (auto & tex : scene.textures) {
+    ImGui::Text("%s", tex.label.c_str());
+  }
+
+  ImGui::End();
+}
+
 void UiImageOutput(
   mt::core::Scene & /*scene*/
 , mt::core::RenderInfo & render
@@ -486,7 +514,7 @@ void UiDispatchers(
 
       auto comboStr =
         fmt::format(
-          "Integrator {}"
+           "Integrator {}"
         , mt::ToString(static_cast<mt::IntegratorTypeHint>(it))
         );
       if (!ImGui::BeginCombo(comboStr.c_str(), IntegratorLabel(idx)))
@@ -572,6 +600,7 @@ void Dispatch(
   ::UiImageOutput(scene, render, plugin);
   ::UiEmitters(scene, render, plugin);
   ::UiDispatchers(render, plugin);
+  ::UiTextureEditor(scene);
 }
 
 }

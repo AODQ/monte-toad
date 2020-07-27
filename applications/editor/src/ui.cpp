@@ -8,7 +8,8 @@
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
 #include <monte-toad/core/scene.hpp>
-#include <monte-toad/textureloader.hpp>
+#include <monte-toad/util/file.hpp>
+#include <monte-toad/util/textureloader.hpp>
 #include <mt-plugin-host/plugin.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -104,7 +105,7 @@ void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
   );
 
   ::scene.emissionSource.environmentMap =
-    mt::LoadTexture(render.environmentMapFile);
+    mt::util::LoadTexture(render.environmentMapFile);
 
   for (auto & emitter : plugin.emitters)
     { emitter.Precompute(scene, render, plugin); }
@@ -129,7 +130,7 @@ void UiPluginLoadFile(
 , std::string & /*file*/
 ) {
   std::string tempFile =
-    fileutil::FilePicker(" --file-filter=\"mt-plugin | *.mt-plugin\"");
+    mt::util::FilePicker(" --file-filter=\"mt-plugin | *.mt-plugin\"");
 
   // only set to the plugin string if the filesize > 0 & path seems valid
   // also remove newline while we're at it
@@ -292,7 +293,7 @@ void UiRenderInfo(
   if (ImGui::BeginMenu("File")) {
     if (ImGui::MenuItem("Load Scene")) {
       auto tempFilename =
-        fileutil::FilePicker(
+        mt::util::FilePicker(
           " --file-filter=\"3D models |"
           " *.obj *.gltf *.fbx *.stl *.ply *.blend *.dae\""
         );
@@ -307,7 +308,7 @@ void UiRenderInfo(
 
     if (ImGui::MenuItem("Load Environment File")) {
       auto tempFilename =
-        fileutil::FilePicker(
+        mt::util::FilePicker(
           " --file-filter=\"image files | "
           " *.jpeg *.jpg *.png *.tga *.bmp *.psd *.gif *.hdr *.pic *.ppm"
           " *.pgm\""
@@ -323,7 +324,7 @@ void UiRenderInfo(
     /*   auto filenameFlag = */
     /*     render.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; */
     /*   auto tempFilename = */
-    /*     fileutil::FilePicker( */
+    /*     mt::util::FilePicker( */
     /*       " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag */
     /*     ); */
     /*   if (tempFilename != "") { */

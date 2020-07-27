@@ -25,6 +25,4 @@ namespace fileutil {
   , std::string const & file
   , mt::PluginType type
   );
-
-  std::string FilePicker(std::string const & flags);
 }

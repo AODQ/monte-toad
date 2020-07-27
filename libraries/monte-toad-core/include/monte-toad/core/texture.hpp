@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 #include <vector>
 
 namespace mt::core {
@@ -8,6 +9,7 @@ namespace mt::core {
   struct Texture {
     uint64_t width, height;
     std::vector<glm::vec4> data;
+    std::string label;
 
     Texture() = default;
 
