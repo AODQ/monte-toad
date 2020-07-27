@@ -57,12 +57,19 @@ std::array<size_t, 4> constexpr blockIteratorStrides = {{
 void UiCameraControls(
   mt::core::Scene const & scene
 , mt::PluginInfo const & plugin
-, mt::core::RenderInfo & renderInfo
+, mt::core::RenderInfo & render
 ) {
 
   static double prevX = -1.0, prevY = -1.0;
 
-  auto window = reinterpret_cast<GLFWwindow *>(renderInfo.glfwWindow);
+  auto window = reinterpret_cast<GLFWwindow *>(render.glfwWindow);
+
+  // toggle rendering state
+  static bool qPressed = false;
+  if (!qPressed && glfwGetKey(window, GLFW_KEY_Q)) {
+    render.rendering = !render.rendering;
+    qPressed = true;
+  } else qPressed = false;
 
   // only get to control camera by right clicking
   if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
@@ -182,6 +189,9 @@ void UiPluginInfo(
   if (ImGui::SliderFloat("FOV", &render.camera.fieldOfView, 0.0f, 140.0f)) {
     mt::core::UpdateCamera(plugin, render);
   }
+
+  ImGui::Checkbox("rendering", &render.rendering);
+  //ImGui::Checkbox("rendering", &render.rendering);
 
   static std::chrono::high_resolution_clock timer;
   static std::chrono::time_point<std::chrono::high_resolution_clock> prevFrame;
