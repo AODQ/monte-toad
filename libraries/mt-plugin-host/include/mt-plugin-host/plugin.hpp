@@ -11,7 +11,7 @@ namespace mt {
   // where the type is a vector, the memory must be allocated beforehand and
   // its index passed in
   bool LoadPlugin(
-    mt::PluginInfo & pluginInfo
+    mt::PluginInfo & plugin
   , mt::PluginType pluginType, std::string const & filename
   , size_t idx = 0
   );
@@ -21,11 +21,11 @@ namespace mt {
   void FreePlugins();
 
   // checks if plugins need to be reloaded
-  void UpdatePlugins(mt::PluginInfo & pluginInfo);
+  void UpdatePlugins(mt::PluginInfo & plugin);
 
   // checks that plugin of type is valid
   bool Valid(
-    mt::PluginInfo const & pluginInfo
+    mt::PluginInfo const & plugin
   , mt::PluginType pluginType
   , size_t idx = 0
   );
@@ -33,7 +33,7 @@ namespace mt {
   // cleans plugin so that it can be recognized as invalid. Also frees userdata
   // of the plugin if(f) the plugin is valid
   void Clean(
-    mt::PluginInfo & pluginInfo
+    mt::PluginInfo & plugin
   , mt::PluginType pluginType
   , size_t idx
   );

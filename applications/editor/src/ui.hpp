@@ -8,5 +8,5 @@ namespace ui {
 
   bool Initialize(mt::core::RenderInfo & render, mt::PluginInfo & plugin);
 
-  void Run(mt::core::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo);
+  void Run(mt::core::RenderInfo & render, mt::PluginInfo & plugin);
 }

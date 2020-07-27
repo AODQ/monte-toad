@@ -38,7 +38,7 @@ namespace mt {
       glm::vec2 const & uv
     , mt::core::Scene const & scene
     , mt::core::CameraInfo const & camera
-    , mt::PluginInfo const & pluginInfo
+    , mt::PluginInfo const & plugin
     , mt::core::IntegratorData const & integratorData
     , void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
     ) = nullptr;
@@ -59,16 +59,16 @@ namespace mt {
     glm::vec3 (*Tonemap)(
       glm::vec2 const & uv
     , glm::vec3 color
-    , mt::core::RenderInfo const & renderInfo
-    , mt::PluginInfo const & pluginInfo
+    , mt::core::RenderInfo const & render
+    , mt::PluginInfo const & plugin
     , mt::core::IntegratorData const & integratorData
     ) = nullptr;
 
     glm::vec3 (*Denoise)(
       glm::vec2 uv, glm::vec2 resolution
     , glm::vec3 color
-    , mt::core::RenderInfo const & renderInfo
-    , mt::PluginInfo const & pluginInfo
+    , mt::core::RenderInfo const & render
+    , mt::PluginInfo const & plugin
     ) = nullptr;
 
     void (*UiUpdate)(
@@ -225,7 +225,7 @@ namespace mt {
     void (*DispatchBlockRegion)(
       mt::core::Scene const & scene
     , mt::core::RenderInfo & render
-    , mt::PluginInfo const & pluginInfo
+    , mt::PluginInfo const & plugin
 
     , size_t integratorIdx
     , size_t const minX, size_t const minY

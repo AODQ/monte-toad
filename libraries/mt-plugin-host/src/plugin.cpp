@@ -154,30 +154,30 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
 } // -- namespace
 
 bool mt::LoadPlugin(
-  mt::PluginInfo & pluginInfo
+  mt::PluginInfo & plugin
 , PluginType pluginType, std::string const & file
 , size_t idx
 ) {
 
   // first find if the plugin has already been loaded, if that's the case then
   // error
-  for (auto & plugin : plugins)
-    { if (plugin->filename == file) { return false; } }
+  for (auto & pluginIt : plugins)
+    { if (pluginIt->filename == file) { return false; } }
 
   // -- load plugin
   ::plugins.emplace_back(
     std::make_unique<Plugin>(file.c_str(), pluginType, idx)
   );
-  auto & plugin = ::plugins.back();
+  auto & pluginEnd = ::plugins.back();
 
   // check plugin loaded
-  if (!plugin->data) {
+  if (!pluginEnd->data) {
     ::plugins.pop_back();
     return false;
   }
 
   // -- load functions to respective plugin type
-  LoadPluginFunctions(pluginInfo, *plugin);
+  LoadPluginFunctions(plugin, *pluginEnd);
 
   return true;
 }
@@ -194,92 +194,92 @@ void mt::FreePlugins() {
 ////////////////////////////////////////////////////////////////////////////////
 // checks if plugins need to be reloaded TODO
 void mt::UpdatePlugins(
-  mt::PluginInfo & pluginInfo
+  mt::PluginInfo & plugin
 ) {
-  for (auto & plugin : ::plugins) {
-    plugin->Reload();
+  for (auto & pluginIt : ::plugins) {
+    pluginIt->Reload();
 
     // -- load functions to respective plugin type
-    LoadPluginFunctions(pluginInfo, *plugin);
+    LoadPluginFunctions(plugin, *pluginIt);
   }
 }
 
 //------------------------------------------------------------------------------
 bool mt::Valid(
-  mt::PluginInfo const & pluginInfo
+  mt::PluginInfo const & plugin
 , mt::PluginType pluginType
 , size_t idx
 ) {
   switch (pluginType) {
     case mt::PluginType::Integrator:
       return
-          idx < pluginInfo.integrators.size()
-       && pluginInfo.integrators[idx].Dispatch != nullptr
-       && pluginInfo.integrators[idx].PluginType != nullptr
-       && pluginInfo.integrators[idx].PluginType() == pluginType
-       && pluginInfo.integrators[idx].PluginLabel != nullptr
-       && pluginInfo.integrators[idx].RealTime != nullptr
+          idx < plugin.integrators.size()
+       && plugin.integrators[idx].Dispatch != nullptr
+       && plugin.integrators[idx].PluginType != nullptr
+       && plugin.integrators[idx].PluginType() == pluginType
+       && plugin.integrators[idx].PluginLabel != nullptr
+       && plugin.integrators[idx].RealTime != nullptr
       ;
     case mt::PluginType::Kernel:
       return
-          pluginInfo.kernel.Denoise != nullptr
-       && pluginInfo.kernel.Tonemap != nullptr
-       && pluginInfo.kernel.PluginType() == pluginType
-       && pluginInfo.kernel.PluginLabel != nullptr
+          plugin.kernel.Denoise != nullptr
+       && plugin.kernel.Tonemap != nullptr
+       && plugin.kernel.PluginType() == pluginType
+       && plugin.kernel.PluginLabel != nullptr
       ;
     case mt::PluginType::Material:
       return
-          pluginInfo.material.BsdfFs     != nullptr
-       && pluginInfo.material.BsdfPdf    != nullptr
-       && pluginInfo.material.BsdfSample != nullptr
-       && pluginInfo.material.IsEmitter  != nullptr
-       && pluginInfo.material.Load       != nullptr
-       && pluginInfo.material.PluginType != nullptr
-       && pluginInfo.material.PluginType() == pluginType
-       && pluginInfo.material.PluginLabel != nullptr
+          plugin.material.BsdfFs     != nullptr
+       && plugin.material.BsdfPdf    != nullptr
+       && plugin.material.BsdfSample != nullptr
+       && plugin.material.IsEmitter  != nullptr
+       && plugin.material.Load       != nullptr
+       && plugin.material.PluginType != nullptr
+       && plugin.material.PluginType() == pluginType
+       && plugin.material.PluginLabel != nullptr
       ;
     case mt::PluginType::Camera:
       return
-          pluginInfo.camera.Dispatch != nullptr
-       && pluginInfo.camera.PluginType != nullptr
-       && pluginInfo.camera.PluginType() == pluginType
-       && pluginInfo.camera.PluginLabel != nullptr
+          plugin.camera.Dispatch != nullptr
+       && plugin.camera.PluginType != nullptr
+       && plugin.camera.PluginType() == pluginType
+       && plugin.camera.PluginLabel != nullptr
        ;
     case mt::PluginType::Random:
       return
-          pluginInfo.random.Clean != nullptr
-       && pluginInfo.random.Initialize != nullptr
-       && pluginInfo.random.SampleUniform1 != nullptr
-       && pluginInfo.random.SampleUniform2 != nullptr
-       && pluginInfo.random.SampleUniform3 != nullptr
-       && pluginInfo.random.PluginType != nullptr
-       && pluginInfo.random.PluginType() == pluginType
-       && pluginInfo.random.PluginLabel != nullptr
+          plugin.random.Clean != nullptr
+       && plugin.random.Initialize != nullptr
+       && plugin.random.SampleUniform1 != nullptr
+       && plugin.random.SampleUniform2 != nullptr
+       && plugin.random.SampleUniform3 != nullptr
+       && plugin.random.PluginType != nullptr
+       && plugin.random.PluginType() == pluginType
+       && plugin.random.PluginLabel != nullptr
       ;
     case mt::PluginType::UserInterface:
       return
-          pluginInfo.userInterface.Dispatch != nullptr
-       && pluginInfo.userInterface.PluginType != nullptr
-       && pluginInfo.userInterface.PluginType() == pluginType
-       && pluginInfo.userInterface.PluginLabel != nullptr
+          plugin.userInterface.Dispatch != nullptr
+       && plugin.userInterface.PluginType != nullptr
+       && plugin.userInterface.PluginType() == pluginType
+       && plugin.userInterface.PluginLabel != nullptr
       ;
     case mt::PluginType::Emitter:
       return
-          idx < pluginInfo.emitters.size()
-       && pluginInfo.emitters[idx].SampleLi != nullptr
-       && pluginInfo.emitters[idx].SampleWo != nullptr
-       && pluginInfo.emitters[idx].Precompute != nullptr
-       && pluginInfo.emitters[idx].PluginType != nullptr
-       && pluginInfo.emitters[idx].PluginType() == pluginType
-       && pluginInfo.emitters[idx].PluginLabel != nullptr
+          idx < plugin.emitters.size()
+       && plugin.emitters[idx].SampleLi != nullptr
+       && plugin.emitters[idx].SampleWo != nullptr
+       && plugin.emitters[idx].Precompute != nullptr
+       && plugin.emitters[idx].PluginType != nullptr
+       && plugin.emitters[idx].PluginType() == pluginType
+       && plugin.emitters[idx].PluginLabel != nullptr
       ;
     case mt::PluginType::Dispatcher:
       return
-          idx < pluginInfo.dispatchers.size()
-       && pluginInfo.dispatchers[idx].DispatchBlockRegion != nullptr
-       && pluginInfo.dispatchers[idx].PluginType != nullptr
-       && pluginInfo.dispatchers[idx].PluginType() == pluginType
-       && pluginInfo.dispatchers[idx].PluginLabel != nullptr
+          idx < plugin.dispatchers.size()
+       && plugin.dispatchers[idx].DispatchBlockRegion != nullptr
+       && plugin.dispatchers[idx].PluginType != nullptr
+       && plugin.dispatchers[idx].PluginType() == pluginType
+       && plugin.dispatchers[idx].PluginLabel != nullptr
       ;
     default: return false;
   }
@@ -287,78 +287,78 @@ bool mt::Valid(
 
 //------------------------------------------------------------------------------
 void mt::Clean(
-  mt::PluginInfo & pluginInfo
+  mt::PluginInfo & plugin
 , mt::PluginType pluginType
 , size_t idx
 ) {
   // cleanup the plugin since it is invalid
   switch (pluginType) {
     case mt::PluginType::Integrator:
-      pluginInfo.integrators[idx].Dispatch = nullptr;
-      pluginInfo.integrators[idx].UiUpdate = nullptr;
-      pluginInfo.integrators[idx].RealTime = nullptr;
-      pluginInfo.integrators[idx].PluginType = nullptr;
-      pluginInfo.integrators[idx].PluginLabel = nullptr;
+      plugin.integrators[idx].Dispatch = nullptr;
+      plugin.integrators[idx].UiUpdate = nullptr;
+      plugin.integrators[idx].RealTime = nullptr;
+      plugin.integrators[idx].PluginType = nullptr;
+      plugin.integrators[idx].PluginLabel = nullptr;
     break;
     case mt::PluginType::Kernel:
-      pluginInfo.kernel.Denoise = nullptr;
-      pluginInfo.kernel.Tonemap = nullptr;
-      pluginInfo.kernel.UiUpdate = nullptr;
-      pluginInfo.kernel.PluginType = nullptr;
-      pluginInfo.kernel.PluginLabel = nullptr;
+      plugin.kernel.Denoise = nullptr;
+      plugin.kernel.Tonemap = nullptr;
+      plugin.kernel.UiUpdate = nullptr;
+      plugin.kernel.PluginType = nullptr;
+      plugin.kernel.PluginLabel = nullptr;
     break;
     case mt::PluginType::Material:
-      pluginInfo.material.BsdfFs      = nullptr;
-      pluginInfo.material.BsdfPdf     = nullptr;
-      pluginInfo.material.BsdfSample  = nullptr;
-      pluginInfo.material.IsEmitter   = nullptr;
-      pluginInfo.material.Load        = nullptr;
-      pluginInfo.material.UiUpdate    = nullptr;
-      pluginInfo.material.PluginType  = nullptr;
-      pluginInfo.material.PluginLabel = nullptr;
+      plugin.material.BsdfFs      = nullptr;
+      plugin.material.BsdfPdf     = nullptr;
+      plugin.material.BsdfSample  = nullptr;
+      plugin.material.IsEmitter   = nullptr;
+      plugin.material.Load        = nullptr;
+      plugin.material.UiUpdate    = nullptr;
+      plugin.material.PluginType  = nullptr;
+      plugin.material.PluginLabel = nullptr;
 
-      if (pluginInfo.material.userdata)
-        { free(pluginInfo.material.userdata); }
-      pluginInfo.material.userdata    = nullptr;
+      if (plugin.material.userdata)
+        { free(plugin.material.userdata); }
+      plugin.material.userdata    = nullptr;
     break;
     case mt::PluginType::Camera:
-      pluginInfo.camera.Dispatch = nullptr;
-      pluginInfo.camera.PluginType = nullptr;
-      pluginInfo.camera.PluginLabel = nullptr;
-      pluginInfo.camera.UiUpdate = nullptr;
+      plugin.camera.Dispatch = nullptr;
+      plugin.camera.PluginType = nullptr;
+      plugin.camera.PluginLabel = nullptr;
+      plugin.camera.UiUpdate = nullptr;
     break;
     case mt::PluginType::Random:
-      if (mt::Valid(pluginInfo, pluginType)) {
-        pluginInfo.random.Clean();
+      if (mt::Valid(plugin, pluginType)) {
+        plugin.random.Clean();
       }
-      pluginInfo.random.Clean = nullptr;
-      pluginInfo.random.Initialize = nullptr;
-      pluginInfo.random.SampleUniform1 = nullptr;
-      pluginInfo.random.SampleUniform2 = nullptr;
-      pluginInfo.random.SampleUniform3 = nullptr;
-      pluginInfo.random.UiUpdate       = nullptr;
-      pluginInfo.random.PluginType = nullptr;
-      pluginInfo.random.PluginLabel = nullptr;
+      plugin.random.Clean = nullptr;
+      plugin.random.Initialize = nullptr;
+      plugin.random.SampleUniform1 = nullptr;
+      plugin.random.SampleUniform2 = nullptr;
+      plugin.random.SampleUniform3 = nullptr;
+      plugin.random.UiUpdate       = nullptr;
+      plugin.random.PluginType = nullptr;
+      plugin.random.PluginLabel = nullptr;
     break;
     case mt::PluginType::UserInterface:
-      pluginInfo.userInterface.Dispatch = nullptr;
-      pluginInfo.userInterface.PluginType = nullptr;
-      pluginInfo.userInterface.PluginLabel = nullptr;
+      plugin.userInterface.Dispatch = nullptr;
+      plugin.userInterface.PluginType = nullptr;
+      plugin.userInterface.PluginLabel = nullptr;
     break;
     case mt::PluginType::Emitter:
-      pluginInfo.emitters[idx].SampleLi = nullptr;
-      pluginInfo.emitters[idx].SampleWo = nullptr;
-      pluginInfo.emitters[idx].Precompute = nullptr;
-      pluginInfo.emitters[idx].UiUpdate = nullptr;
-      pluginInfo.emitters[idx].PluginType = nullptr;
-      pluginInfo.emitters[idx].PluginLabel = nullptr;
-      pluginInfo.emitters[idx].IsSkybox = nullptr;
+      plugin.emitters[idx].SampleLi = nullptr;
+      plugin.emitters[idx].SampleWo = nullptr;
+      plugin.emitters[idx].Precompute = nullptr;
+      plugin.emitters[idx].UiUpdate = nullptr;
+      plugin.emitters[idx].PluginType = nullptr;
+      plugin.emitters[idx].PluginLabel = nullptr;
+      plugin.emitters[idx].IsSkybox = nullptr;
     break;
     case mt::PluginType::Dispatcher:
-      pluginInfo.dispatchers[idx].DispatchBlockRegion = nullptr;
-      pluginInfo.dispatchers[idx].UiUpdate = nullptr;
-      pluginInfo.dispatchers[idx].PluginType = nullptr;
-      pluginInfo.dispatchers[idx].PluginLabel = nullptr;
+      plugin.dispatchers[idx].DispatchBlockRegion = nullptr;
+      plugin.dispatchers[idx].UiUpdate = nullptr;
+      plugin.dispatchers[idx].PluginType = nullptr;
+      plugin.dispatchers[idx].PluginLabel = nullptr;
     break;
     default: return;
   }

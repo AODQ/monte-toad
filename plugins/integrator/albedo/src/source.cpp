@@ -20,21 +20,21 @@ mt::PixelInfo Dispatch(
   glm::vec2 const & uv
 , mt::core::Scene const & scene
 , mt::core::CameraInfo const & camera
-, mt::PluginInfo const & pluginInfo
+, mt::PluginInfo const & plugin
 , mt::core::IntegratorData const & integratorData
 , void (*)(mt::debugutil::IntegratorPathUnit)
 ) {
   auto const eye =
-    pluginInfo.camera.Dispatch(
-      pluginInfo.random, camera, integratorData.imageResolution, uv
+    plugin.camera.Dispatch(
+      plugin.random, camera, integratorData.imageResolution, uv
     );
 
   auto surface = mt::core::Raycast(scene, eye.origin, eye.direction, nullptr);
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   auto color =
-    pluginInfo.material.BsdfFs(
-      pluginInfo.material, surface, glm::reflect(eye.direction, surface.normal)
+    plugin.material.BsdfFs(
+      plugin.material, surface, glm::reflect(eye.direction, surface.normal)
     );
 
   // do fogging just for some visual characteristics if requested

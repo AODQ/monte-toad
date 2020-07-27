@@ -115,15 +115,15 @@ void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void AllocateResources(mt::core::RenderInfo & renderInfo) {
-  for (auto & integrator : renderInfo.integratorData)
+void AllocateResources(mt::core::RenderInfo & render) {
+  for (auto & integrator : render.integratorData)
     { mt::core::AllocateResources(integrator); }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 [[maybe_unused]]
 void UiPluginLoadFile(
-  mt::PluginInfo & pluginInfo
+  mt::PluginInfo & plugin
 , mt::core::RenderInfo & render
 , mt::PluginType pluginType
 , std::string & /*file*/
@@ -138,7 +138,7 @@ void UiPluginLoadFile(
     return;
   }
 
-  if (fileutil::LoadPlugin(pluginInfo, render, tempFile, pluginType)) {
+  if (fileutil::LoadPlugin(plugin, render, tempFile, pluginType)) {
     // load plugin w/ scene etc
     switch (pluginType) {
       default: break;
@@ -146,10 +146,10 @@ void UiPluginLoadFile(
         mt::core::AllocateResources(render.integratorData.back());
       break;
       case mt::PluginType::Material:
-        pluginInfo.material.Load(pluginInfo.material, scene);
+        plugin.material.Load(plugin.material, scene);
       break;
       case mt::PluginType::Random:
-        pluginInfo.random.Initialize();
+        plugin.random.Initialize();
       break;
     }
   }
@@ -179,18 +179,18 @@ void UiPluginDisplayInfo(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void UiPlugin(mt::PluginInfo & pluginInfo) {
+void UiPlugin(mt::PluginInfo & plugin) {
   ImGui::Begin("Plugins");
     auto DisplayPluginUi = [&](mt::PluginType pluginType, size_t idx = 0) {
       ImGui::Text("%s (%lu)", ToString(pluginType), idx);
-      if (!mt::Valid(pluginInfo, pluginType, idx)) {
+      if (!mt::Valid(plugin, pluginType, idx)) {
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Not loaded");
       }
       ImGui::Separator();
     };
 
-    for (size_t idx = 0; idx < pluginInfo.integrators.size(); ++ idx)
+    for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx)
       { DisplayPluginUi(mt::PluginType::Integrator, idx); }
 
     DisplayPluginUi(mt::PluginType::Kernel);
@@ -216,18 +216,18 @@ void UiPlugin(mt::PluginInfo & pluginInfo) {
 
   /*   auto treeNodeResult = ImGui::TreeNode(infoStr.c_str()); */
 
-  /*   if (!mt::Valid(pluginInfo, pluginType)) { */
+  /*   if (!mt::Valid(plugin, pluginType)) { */
   /*     ImGui::SameLine(); */
   /*     ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Not loaded"); */
   /*   } */
 
   /*   if (treeNodeResult) { */
-  /*     UiPluginDisplayInfo(pluginInfo, pluginType); */
+  /*     UiPluginDisplayInfo(plugin, pluginType); */
   /*     ImGui::TreePop(); */
   /*   } */
 
   /*   if (ImGui::Button(buttonStr.c_str())) */
-  /*     { UiPluginLoadFile(pluginInfo, pluginType, pluginName); } */
+  /*     { UiPluginLoadFile(plugin, pluginType, pluginName); } */
 
   /*   ImGui::Separator(); */
   /* } */
@@ -284,8 +284,8 @@ void UiLog() {
 
 ////////////////////////////////////////////////////////////////////////////////
 void UiRenderInfo(
-  mt::core::RenderInfo & renderInfo
-, mt::PluginInfo & pluginInfo
+  mt::core::RenderInfo & render
+, mt::PluginInfo & plugin
 ) {
   // -- menubar
   // TODO DTOADQ this causes crash
@@ -297,11 +297,11 @@ void UiRenderInfo(
           " *.obj *.gltf *.fbx *.stl *.ply *.blend *.dae\""
         );
       if (tempFilename != "") {
-        renderInfo.modelFile = tempFilename;
-        LoadScene(renderInfo, pluginInfo);
+        render.modelFile = tempFilename;
+        LoadScene(render, plugin);
         // reset camera origin
-        renderInfo.camera.origin = glm::vec3(0.0f);
-        mt::core::UpdateCamera(pluginInfo, renderInfo);
+        render.camera.origin = glm::vec3(0.0f);
+        mt::core::UpdateCamera(plugin, render);
       }
     }
 
@@ -313,25 +313,25 @@ void UiRenderInfo(
           " *.pgm\""
         );
       if (tempFilename != "") {
-        renderInfo.environmentMapFile = std::filesystem::path{tempFilename};
-        LoadScene(renderInfo, pluginInfo);
+        render.environmentMapFile = std::filesystem::path{tempFilename};
+        LoadScene(render, plugin);
       }
     }
 
     // TODO
     /* if (ImGui::MenuItem("Save Image")) { */
     /*   auto filenameFlag = */
-    /*     renderInfo.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; */
+    /*     render.outputFile == "" ? "" : "--filename " + renderInfo.outputFile; */
     /*   auto tempFilename = */
     /*     fileutil::FilePicker( */
     /*       " --save --file-filter=\"ppm | *.ppm\" " + filenameFlag */
     /*     ); */
     /*   if (tempFilename != "") { */
-    /*     renderInfo.outputFile = tempFilename; */
+    /*     render.outputFile = tempFilename; */
     /*     mt::SaveImage( */
     /*       mappedImageTransitionBuffer */
-    /*     , renderInfo.imageResolution[0], renderInfo.imageResolution[1] */
-    /*     , renderInfo.outputFile */
+    /*     , render.imageResolution[0], renderInfo.imageResolution[1] */
+    /*     , render.outputFile */
     /*     , false */
     /*     ); */
     /*   } */
@@ -342,20 +342,20 @@ void UiRenderInfo(
 
   // -- window
   ImGui::Begin("RenderInfo");
-    ImGui::Text("'%s'", renderInfo.modelFile.c_str());
+    ImGui::Text("'%s'", render.modelFile.c_str());
 
     if (ImGui::Button("Reload scene")) {
-      LoadScene(renderInfo, pluginInfo);
+      LoadScene(render, plugin);
     }
 
     if (ImGui::Button("Reload plugins")) {
      reloadPlugin = true;
     }
 
-    int tempNumThreads = static_cast<int>(renderInfo.numThreads);
+    int tempNumThreads = static_cast<int>(render.numThreads);
     if (ImGui::InputInt("# threads", &tempNumThreads)) {
-      renderInfo.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
-      omp_set_num_threads(static_cast<int32_t>(renderInfo.numThreads));
+      render.numThreads = static_cast<size_t>(glm::max(1, tempNumThreads));
+      omp_set_num_threads(static_cast<int32_t>(render.numThreads));
     }
 
   ImGui::End();
@@ -366,6 +366,9 @@ void DispatchRender(
   mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
+  // check if user wants to render anything
+  if (!render.rendering) { return; }
+
   // make sure plugin is valid
   if (plugin.integrators.size() == 0) { return; }
 
@@ -514,16 +517,16 @@ bool ui::Initialize(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ui::Run(mt::core::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
+void ui::Run(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
 
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-  renderInfo.glfwWindow = reinterpret_cast<void*>(app::DisplayWindow());
+  render.glfwWindow = reinterpret_cast<void*>(app::DisplayWindow());
 
   while (!glfwWindowShouldClose(app::DisplayWindow())) {
     { // -- event & sleep update
       // check if currently rendering anything
       bool rendering = false; // TODO TOAD set to rendering
-      for (auto & integrator : renderInfo.integratorData) {
+      for (auto & integrator : render.integratorData) {
         rendering = rendering | !integrator.renderingFinished;
       }
 
@@ -541,9 +544,9 @@ void ui::Run(mt::core::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ::UiEntry(renderInfo, pluginInfo);
+    ::UiEntry(render, plugin);
 
-    ::DispatchRender(renderInfo, pluginInfo);
+    ::DispatchRender(render, plugin);
 
     ImGui::Render();
 
@@ -569,7 +572,7 @@ void ui::Run(mt::core::RenderInfo & renderInfo, mt::PluginInfo & pluginInfo) {
     if (reloadPlugin) {
       // update plugins, should be ran every frame with a file checker in the
       // future
-      mt::UpdatePlugins(pluginInfo);
+      mt::UpdatePlugins(plugin);
       reloadPlugin = false;
     }
   }

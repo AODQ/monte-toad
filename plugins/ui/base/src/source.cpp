@@ -75,40 +75,40 @@ void UiCameraControls(
 
   auto const cameraRight =
     glm::normalize(
-      glm::cross(renderInfo.camera.direction, renderInfo.camera.upAxis)
+      glm::cross(render.camera.direction, render.camera.upAxis)
     );
-  auto const & cameraForward = renderInfo.camera.direction;
-  auto const & cameraUp = renderInfo.camera.upAxis;
+  auto const & cameraForward = render.camera.direction;
+  auto const & cameraUp = render.camera.upAxis;
 
   auto const cameraVelocity =
     glm::length(scene.bboxMax - scene.bboxMin)
   * 0.001f * cameraRelativeVelocity * ::msTime;
 
   if (glfwGetKey(window, GLFW_KEY_A)) {
-    renderInfo.camera.origin -= cameraRight * cameraVelocity;
+    render.camera.origin -= cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_D)) {
-    renderInfo.camera.origin += cameraRight * cameraVelocity;
+    render.camera.origin += cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_W)) {
-    renderInfo.camera.origin += cameraForward * cameraVelocity;
+    render.camera.origin += cameraForward * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_S)) {
-    renderInfo.camera.origin -= cameraForward * cameraVelocity;
+    render.camera.origin -= cameraForward * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-    renderInfo.camera.origin -= cameraUp * cameraVelocity;
+    render.camera.origin -= cameraUp * cameraVelocity;
   }
 
   if (
       glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)
    && glfwGetKey(window, GLFW_KEY_SPACE)
   ) {
-    renderInfo.camera.origin += 2.0f * cameraUp * cameraVelocity;
+    render.camera.origin += 2.0f * cameraUp * cameraVelocity;
   }
 
   // hide as mouse will spaz around screen being teleported
@@ -123,25 +123,25 @@ void UiCameraControls(
 
   glm::vec2 delta = glm::vec2(deltaX - prevX, deltaY - prevY);
 
-  renderInfo.camera.direction +=
+  render.camera.direction +=
     (delta.x * cameraRight + delta.y * cameraUp)
   * 0.00025f * ::mouseSensitivity * ::msTime
   ;
-  renderInfo.camera.direction = glm::normalize(renderInfo.camera.direction);
+  render.camera.direction = glm::normalize(render.camera.direction);
 
-  if (std::isnan(renderInfo.camera.direction.x)) {
-    renderInfo.camera.direction = glm::vec3(1.0f, 0.0f, 0.0f);
+  if (std::isnan(render.camera.direction.x)) {
+    render.camera.direction = glm::vec3(1.0f, 0.0f, 0.0f);
   }
 
   glfwSetCursorPos(window, prevX, prevY);
 
-  mt::core::UpdateCamera(plugin, renderInfo);
+  mt::core::UpdateCamera(plugin, render);
 }
 
 void UiPluginInfo(
   mt::core::Scene & scene
-, mt::core::RenderInfo & renderInfo
-, mt::PluginInfo const & pluginInfo
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
 ) {
   if (!ImGui::Begin("Plugin Info")) { ImGui::End(); return; }
 
@@ -153,34 +153,34 @@ void UiPluginInfo(
   min -= glm::abs(min)*1.5f;
   max += glm::abs(max)*1.5f;
 
-  if (ImGui::SliderFloat3("Origin", &renderInfo.camera.origin.x, min, max)) {
-    mt::core::UpdateCamera(pluginInfo, renderInfo);
+  if (ImGui::SliderFloat3("Origin", &render.camera.origin.x, min, max)) {
+    mt::core::UpdateCamera(plugin, render);
   }
   if (ImGui::Button("Clear Origin")) {
-    renderInfo.camera.origin = glm::vec3(0.0f);
-    mt::core::UpdateCamera(pluginInfo, renderInfo);
+    render.camera.origin = glm::vec3(0.0f);
+    mt::core::UpdateCamera(plugin, render);
   }
 
-  if (ImGui::InputFloat3("Camera up axis", &renderInfo.camera.upAxis.x)) {
-    mt::core::UpdateCamera(pluginInfo, renderInfo);
+  if (ImGui::InputFloat3("Camera up axis", &render.camera.upAxis.x)) {
+    mt::core::UpdateCamera(plugin, render);
   }
   if (ImGui::Button("Normalize camera up")) {
-    renderInfo.camera.upAxis = glm::normalize(renderInfo.camera.upAxis);
-    mt::core::UpdateCamera(pluginInfo, renderInfo);
+    render.camera.upAxis = glm::normalize(render.camera.upAxis);
+    mt::core::UpdateCamera(plugin, render);
   }
 
   if (
     ImGui::SliderFloat3(
-      "Direction", &renderInfo.camera.direction.x, -1.0f, +1.0f
+      "Direction", &render.camera.direction.x, -1.0f, +1.0f
     )
   ) {
-    renderInfo.camera.direction = glm::normalize(renderInfo.camera.direction);
-    mt::core::UpdateCamera(pluginInfo, renderInfo);
+    render.camera.direction = glm::normalize(render.camera.direction);
+    mt::core::UpdateCamera(plugin, render);
   }
   ImGui::SliderFloat("Mouse Sensitivity", &::mouseSensitivity, 0.1f, 3.0f);
   ImGui::SliderFloat("Camera Velocity", &::cameraRelativeVelocity, 0.1f, 2.0f);
-  if (ImGui::SliderFloat("FOV", &renderInfo.camera.fieldOfView, 0.0f, 140.0f)) {
-    mt::core::UpdateCamera(pluginInfo, renderInfo);
+  if (ImGui::SliderFloat("FOV", &render.camera.fieldOfView, 0.0f, 140.0f)) {
+    mt::core::UpdateCamera(plugin, render);
   }
 
   static std::chrono::high_resolution_clock timer;
@@ -213,13 +213,13 @@ void ApplyImageResolutionConstraint(
 
 void UiImageOutput(
   mt::core::Scene & /*scene*/
-, mt::core::RenderInfo & renderInfo
-, mt::PluginInfo const & pluginInfo
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
 ) {
 
-  for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
-    auto & data       = renderInfo.integratorData[i];
-    auto & integrator = pluginInfo.integrators[i];
+  for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
+    auto & data       = render.integratorData[i];
+    auto & integrator = plugin.integrators[i];
 
     std::string label =
       std::string{integrator.PluginLabel()} + std::string{" (config)"};
@@ -398,9 +398,9 @@ void UiImageOutput(
     ImGui::End();
   }
 
-  for (size_t i = 0; i < pluginInfo.integrators.size(); ++ i) {
-    auto & data = renderInfo.integratorData[i];
-    auto & integrator = pluginInfo.integrators[i];
+  for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
+    auto & data = render.integratorData[i];
+    auto & integrator = plugin.integrators[i];
 
     std::string label =
       std::string{integrator.PluginLabel()} + std::string{" (image)"};
@@ -448,7 +448,7 @@ void UiImageOutput(
         // store results, also have to tell render info which image was clicked
         data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
         data.imagePixelClicked = true;
-        renderInfo.lastIntegratorImageClicked = i;
+        render.lastIntegratorImageClicked = i;
       }
 
     ImGui::End();
@@ -520,23 +520,23 @@ void UiDispatchers(
 
 void UiEmitters(
   mt::core::Scene & scene
-, mt::core::RenderInfo & renderInfo
-, mt::PluginInfo const & pluginInfo
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
 ) {
   ImGui::Begin("emitters");
     { // select skybox emitter
       auto GetEmissionLabel = [&](size_t idx) -> char const * {
-        return idx == -1lu ? "none" : pluginInfo.emitters[idx].PluginLabel();
+        return idx == -1lu ? "none" : plugin.emitters[idx].PluginLabel();
       };
 
       size_t & emissionIdx = scene.emissionSource.skyboxEmitterPluginIdx;
       if (ImGui::BeginCombo("Skybox", GetEmissionLabel(emissionIdx))) {
-        for (size_t i = 0; i < pluginInfo.emitters.size(); ++ i) {
-          if (!pluginInfo.emitters[i].IsSkybox()) { continue; }
+        for (size_t i = 0; i < plugin.emitters.size(); ++ i) {
+          if (!plugin.emitters[i].IsSkybox()) { continue; }
           bool isSelected = emissionIdx == i;
           if (ImGui::Selectable(GetEmissionLabel(i), isSelected)) {
             emissionIdx = i;
-            renderInfo.ClearImageBuffers();
+            render.ClearImageBuffers();
           }
         }
         ImGui::EndCombo();
@@ -554,14 +554,14 @@ mt::PluginType PluginType() { return mt::PluginType::UserInterface; }
 
 void Dispatch(
   mt::core::Scene & scene
-, mt::core::RenderInfo & renderInfo
-, mt::PluginInfo const & pluginInfo
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
 ) {
-  ::UiCameraControls(scene, pluginInfo, renderInfo);
-  ::UiPluginInfo(scene, renderInfo, pluginInfo);
-  ::UiImageOutput(scene, renderInfo, pluginInfo);
-  ::UiEmitters(scene, renderInfo, pluginInfo);
-  ::UiDispatchers(renderInfo, pluginInfo);
+  ::UiCameraControls(scene, plugin, render);
+  ::UiPluginInfo(scene, render, plugin);
+  ::UiImageOutput(scene, render, plugin);
+  ::UiEmitters(scene, render, plugin);
+  ::UiDispatchers(render, plugin);
 }
 
 }
