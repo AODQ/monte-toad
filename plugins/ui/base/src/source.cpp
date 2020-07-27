@@ -5,6 +5,9 @@
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
 #include <monte-toad/core/scene.hpp>
+#include <monte-toad/core/texture.hpp>
+#include <monte-toad/util/file.hpp>
+#include <monte-toad/util/textureloader.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <GLFW/glfw3.h>
@@ -191,7 +194,6 @@ void UiPluginInfo(
   }
 
   ImGui::Checkbox("rendering", &render.rendering);
-  //ImGui::Checkbox("rendering", &render.rendering);
 
   static std::chrono::high_resolution_clock timer;
   static std::chrono::time_point<std::chrono::high_resolution_clock> prevFrame;

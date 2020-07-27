@@ -4,7 +4,7 @@ target_sources(ui-base PRIVATE src/source.cpp)
 target_link_libraries(
   ui-base
   PRIVATE
-    mt-plugin monte-toad-core
+    mt-plugin monte-toad-core monte-toad-util
     imgui glfw
 )
 

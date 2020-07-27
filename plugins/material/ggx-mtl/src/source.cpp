@@ -20,6 +20,8 @@ struct MaterialInfo {
   glm::vec3 albedo = glm::vec3(0.5f);
   glm::vec2 roughness = glm::vec2(1.0f);
   float emission = 0.0f;
+
+  mt::core::Texture * albedoTexture = nullptr;
 };
 
 // TODO TOAD this should be taken care of by an emitter plugin
@@ -239,7 +241,16 @@ glm::vec3 BsdfFs(
     + TrowbridgeReitzGeometric(wi, material.roughness)
     );
 
-  return glm::dot(wo, surface.normal) * glm::InvPi * material.albedo;
+  auto albedo = material.albedo;
+  if (material.albedoTexture) {
+    albedo = mt::core::Sample(*material.albedoTexture, surface.uvcoord);
+  }
+
+  if (material.emission > 0.0f) {
+    return glm::vec3(material.emission) * albedo;
+  }
+
+  return glm::dot(wo, surface.normal) * glm::InvPi * albedo;
   return glm::vec3(0.5f);
   return glm::vec3(cosThetaO);
   return
@@ -311,13 +322,12 @@ mt::BsdfSampleInfo BsdfSample(
 }
 
 bool IsEmitter(
-  mt::PluginInfoMaterial const & /*self*/
-, mt::core::Triangle const & /*triangle*/
+  mt::PluginInfoMaterial const & self
+, mt::core::Triangle const & triangle
 ) {
-  return false;
-  /* auto const & mtl = */
-  /*   reinterpret_cast<MaterialInfo const *>(self.userdata)[triangle.meshIdx]; */
-  /* return mtl.emission > 0.0f; */
+  auto const & mtl =
+    reinterpret_cast<MaterialInfo const *>(self.userdata)[triangle.meshIdx];
+  return mtl.emission > 0.0f;
 }
 
 size_t currentMtlIdx = static_cast<size_t>(-1);
@@ -380,34 +390,84 @@ void UiUpdate(
   if (currentMtlIdx >= scene.meshes.size())
     { currentMtlIdx = static_cast<size_t>(-1); }
 
-  if (ImGui::Begin("Material Editor")) {
 
-    ImGui::Text("Selected idx %lu\n", currentMtlIdx);
+  // -- material editor (this is last of the function)
+  if (!ImGui::Begin("Material Editor")) {}
 
-    if (currentMtlIdx != static_cast<size_t>(-1)) {
-      auto & material =
-        reinterpret_cast<MaterialInfo *>(plugin.material.userdata)[
-          currentMtlIdx
-        ];
-      ImGui::PushID(std::to_string(currentMtlIdx).c_str());
-      ImGui::Text("Mtl %lu", currentMtlIdx);
-      if (ImGui::InputFloat("emission", &material.emission)) {
-        render.ClearImageBuffers();
-      }
-      if (ImGui::ColorPicker3("albedo", &material.albedo.x)) {
-        render.ClearImageBuffers();
-      }
-      if (ImGui::ColorPicker3("fresnel", &material.fresnel.x)) {
-        render.ClearImageBuffers();
-      }
-      if (ImGui::SliderFloat2("roughness", &material.roughness.x, 0.0f, 1.0f)) {
-        render.ClearImageBuffers();
-      }
-      ImGui::PopID();
-    }
+  ImGui::Text("Selected idx %lu\n", currentMtlIdx);
 
+  ImGui::Separator();
+
+  if (currentMtlIdx == static_cast<size_t>(-1)) {
     ImGui::End();
+    return;
   }
+
+  auto & material =
+    reinterpret_cast<MaterialInfo *>(plugin.material.userdata)[
+      currentMtlIdx
+    ];
+
+  ImGui::PushID(std::to_string(currentMtlIdx).c_str());
+  ImGui::Text("Mtl %lu", currentMtlIdx);
+  if (ImGui::InputFloat("emission", &material.emission)) {
+    render.ClearImageBuffers();
+  }
+
+  ImGui::Separator();
+
+  ImGui::Text("albedo");
+
+  if (!material.albedoTexture) {
+    if (ImGui::ColorPicker3("##albedo", &material.albedo.x)) {
+      render.ClearImageBuffers();
+    }
+  }
+
+  { // -- albedo texture
+    if (
+      ImGui::BeginCombo(
+        "Texture"
+      , material.albedoTexture ? material.albedoTexture->label.c_str() : "none"
+      )
+    ) {
+      if (ImGui::Selectable("none", !material.albedoTexture)) {
+        material.albedoTexture = nullptr;
+        render.ClearImageBuffers();
+      }
+
+      for (auto & tex : scene.textures) {
+        if (
+          ImGui::Selectable(
+            tex.label.c_str()
+          , &tex == material.albedoTexture
+          )
+        ) {
+          material.albedoTexture = &tex;
+          render.ClearImageBuffers();
+        }
+      }
+      ImGui::EndCombo();
+    }
+  }
+
+  ImGui::Separator();
+
+  ImGui::Text("fresnel");
+  if (ImGui::ColorPicker3("##fresnel", &material.fresnel.x)) {
+    render.ClearImageBuffers();
+  }
+
+  ImGui::Separator();
+
+  ImGui::Text("roughness");
+  if (ImGui::SliderFloat2("##roughness", &material.roughness.x, 0.0f, 1.0f)) {
+    render.ClearImageBuffers();
+  }
+
+  ImGui::PopID();
+
+  ImGui::End();
 }
 
 } // -- end extern "C"
