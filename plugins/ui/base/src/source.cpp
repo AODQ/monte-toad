@@ -564,24 +564,28 @@ void UiEmitters(
 , mt::PluginInfo const & plugin
 ) {
   ImGui::Begin("emitters");
-    { // select skybox emitter
-      auto GetEmissionLabel = [&](size_t idx) -> char const * {
-        return idx == -1lu ? "none" : plugin.emitters[idx].PluginLabel();
-      };
+  { // -- select skybox emitter
+    auto GetEmissionLabel = [&](size_t idx) -> char const * {
+      return idx == -1lu ? "none" : plugin.emitters[idx].PluginLabel();
+    };
 
-      size_t & emissionIdx = scene.emissionSource.skyboxEmitterPluginIdx;
-      if (ImGui::BeginCombo("Skybox", GetEmissionLabel(emissionIdx))) {
-        for (size_t i = 0; i < plugin.emitters.size(); ++ i) {
-          if (!plugin.emitters[i].IsSkybox()) { continue; }
-          bool isSelected = emissionIdx == i;
-          if (ImGui::Selectable(GetEmissionLabel(i), isSelected)) {
-            emissionIdx = i;
-            render.ClearImageBuffers();
-          }
-        }
-        ImGui::EndCombo();
+    size_t & emissionIdx = scene.emissionSource.skyboxEmitterPluginIdx;
+    if (ImGui::BeginCombo("Skybox", GetEmissionLabel(emissionIdx))) {
+      if (ImGui::Selectable("none", emissionIdx == -1lu)) {
+        emissionIdx = -1lu;
+        render.ClearImageBuffers();
       }
+      for (size_t i = 0; i < plugin.emitters.size(); ++ i) {
+        if (!plugin.emitters[i].IsSkybox()) { continue; }
+        bool isSelected = emissionIdx == i;
+        if (ImGui::Selectable(GetEmissionLabel(i), isSelected)) {
+          emissionIdx = i;
+          render.ClearImageBuffers();
+        }
+      }
+      ImGui::EndCombo();
     }
+  }
   ImGui::End();
 }
 
