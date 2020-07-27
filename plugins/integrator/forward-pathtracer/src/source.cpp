@@ -203,8 +203,6 @@ PropagationStatus Propagate(
     // even tho we didn't hit a surface still record the origin
     nextSurface.origin = surface.origin + bsdf.wo*100.0f;
 
-    Join(propagationStatus, PropagationStatus::End);
-
   } else if (
       plugin.material.IsEmitter(plugin.material, *nextSurface.triangle)
   ) {
