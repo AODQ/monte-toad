@@ -64,34 +64,34 @@ PropagationStatus ApplyIndirectEmission(
 ) {
   auto propagationStatus = PropagationStatus::Continue;
 
-  if (scene.emissionSource.skyboxEmitterPluginIdx != -1lu)
-  { // apply indirect emission from skybox if available
-    glm::vec3 emissionWo;
-    float emissionPdf;
-    auto info =
-      plugin
-        .emitters[scene.emissionSource.skyboxEmitterPluginIdx]
-        .SampleLi(scene, plugin, surface, emissionWo, emissionPdf);
+  /* if (scene.emissionSource.skyboxEmitterPluginIdx != -1lu) */
+  /* { // apply indirect emission from skybox if available */
+  /*   glm::vec3 emissionWo; */
+  /*   float emissionPdf; */
+  /*   auto info = */
+  /*     plugin */
+  /*       .emitters[scene.emissionSource.skyboxEmitterPluginIdx] */
+  /*       .SampleLi(scene, plugin, surface, emissionWo, emissionPdf); */
 
-    if (info.valid) {
-      float bsdfPdf =
-        plugin.material.BsdfPdf(plugin.material, surface, emissionWo);
+  /*   if (info.valid) { */
+  /*     float bsdfPdf = */
+  /*       plugin.material.BsdfPdf(plugin.material, surface, emissionWo); */
 
-      // only valid if the bsdfPdf is not delta dirac
-      if (bsdfPdf > 0.0f) {
-        glm::vec3 irradiance =
-          info.color
-        * radiance
-        * plugin.material.BsdfFs(plugin.material, surface, emissionWo)
-        / (emissionPdf/(emissionPdf + bsdfPdf));
+  /*     // only valid if the bsdfPdf is not delta dirac */
+  /*     if (bsdfPdf > 0.0f) { */
+  /*       glm::vec3 irradiance = */
+  /*         info.color */
+  /*       * radiance */
+  /*       * plugin.material.BsdfFs(plugin.material, surface, emissionWo) */
+  /*       / (emissionPdf/(emissionPdf + bsdfPdf)); */
 
-        if (glm::length(irradiance) > 0.0001f) {
-          propagationStatus = PropagationStatus::IndirectAccumulation;
-          accumulatedIrradiance += irradiance;
-        }
-      }
-    }
-  }
+  /*       if (glm::length(irradiance) > 0.0001f) { */
+  /*         propagationStatus = PropagationStatus::IndirectAccumulation; */
+  /*         accumulatedIrradiance += irradiance; */
+  /*       } */
+  /*     } */
+  /*   } */
+  /* } */
 
   { // apply indirect emission from random emitter in scene
     auto [emissionTriangle, emissionBarycentricUvCoord] =
