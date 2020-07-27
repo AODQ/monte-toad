@@ -70,7 +70,8 @@ void UiCameraControls(
   // toggle rendering state
   static bool qPressed = false;
   if (glfwGetKey(window, GLFW_KEY_Q)) {
-    render.rendering = qPressed ? render.rendering : !render.rendering;
+    render.globalRendering =
+      qPressed ? render.globalRendering : !render.globalRendering;
     qPressed = true;
   } else { qPressed = false; }
 
@@ -193,7 +194,7 @@ void UiPluginInfo(
     mt::core::UpdateCamera(plugin, render);
   }
 
-  ImGui::Checkbox("rendering", &render.rendering);
+  ImGui::Checkbox("rendering", &render.globalRendering);
 
   static std::chrono::high_resolution_clock timer;
   static std::chrono::time_point<std::chrono::high_resolution_clock> prevFrame;

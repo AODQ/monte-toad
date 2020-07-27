@@ -42,7 +42,7 @@ namespace mt::core {
     std::string environmentMapFile;
 
     // will disable all rendering if disabled
-    bool rendering = false;
+    bool globalRendering = false;
     bool viewImageOnCompletion;
     size_t numThreads = 0;
     bool displayProgress = true;

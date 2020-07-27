@@ -368,7 +368,7 @@ void DispatchRender(
 , mt::PluginInfo const & plugin
 ) {
   // check if user wants to render anything
-  if (!render.rendering) { return; }
+  if (!render.globalRendering) { return; }
 
   // make sure plugin is valid
   if (plugin.integrators.size() == 0) { return; }
@@ -526,10 +526,13 @@ void ui::Run(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
   while (!glfwWindowShouldClose(app::DisplayWindow())) {
     { // -- event & sleep update
       // check if currently rendering anything
-      bool rendering = false; // TODO TOAD set to rendering
+      bool rendering = false;
       for (auto & integrator : render.integratorData) {
         rendering = rendering | !integrator.renderingFinished;
       }
+
+      // if no rendering is being done right now the thread should just sleep
+      rendering = rendering && render.globalRendering;
 
       // switch between a live event handler or an event-based handler if
       // rendering has occured or not. This saves CPU cycles when monte-toad is
