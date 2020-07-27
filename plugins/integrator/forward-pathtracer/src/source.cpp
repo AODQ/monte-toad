@@ -4,8 +4,10 @@
 #include <monte-toad/core/geometry.hpp>
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
+#include <monte-toad/core/material.hpp>
 #include <monte-toad/core/math.hpp>
 #include <monte-toad/core/scene.hpp>
+#include <monte-toad/core/spectrum.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/triangle.hpp>
 #include <monte-toad/debugutil/integratorpathunit.hpp>
@@ -54,96 +56,100 @@ void Join(PropagationStatus & l, PropagationStatus r) {
 }
 
 PropagationStatus ApplyIndirectEmission(
-  mt::core::Scene const & scene
-, mt::PluginInfo const & plugin
-, mt::core::SurfaceInfo const & surface
-, glm::vec3 const & radiance
-, glm::vec3 & accumulatedIrradiance
-, size_t it
-, void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
+  mt::core::Scene const & /*scene*/
+, mt::PluginInfo const & /*plugin*/
+, mt::core::SurfaceInfo const & /*surface*/
+, glm::vec3 const & /*radiance*/
+, glm::vec3 & /*accumulatedIrradiance*/
+, size_t /*it*/
+, void (* /*debugPathRecorder*/)(mt::debugutil::IntegratorPathUnit)
 ) {
-  auto propagationStatus = PropagationStatus::Continue;
+  return PropagationStatus::Continue;
+  /* auto propagationStatus = PropagationStatus::Continue; */
 
-  /* if (scene.emissionSource.skyboxEmitterPluginIdx != -1lu) */
-  /* { // apply indirect emission from skybox if available */
-  /*   glm::vec3 emissionWo; */
-  /*   float emissionPdf; */
-  /*   auto info = */
-  /*     plugin */
-  /*       .emitters[scene.emissionSource.skyboxEmitterPluginIdx] */
-  /*       .SampleLi(scene, plugin, surface, emissionWo, emissionPdf); */
+  /* /1* if (scene.emissionSource.skyboxEmitterPluginIdx != -1lu) *1/ */
+  /* /1* { // apply indirect emission from skybox if available *1/ */
+  /* /1*   glm::vec3 emissionWo; *1/ */
+  /* /1*   float emissionPdf; *1/ */
+  /* /1*   auto info = *1/ */
+  /* /1*     plugin *1/ */
+  /* /1*       .emitters[scene.emissionSource.skyboxEmitterPluginIdx] *1/ */
+  /* /1*       .SampleLi(scene, plugin, surface, emissionWo, emissionPdf); *1/ */
 
-  /*   if (info.valid) { */
-  /*     float bsdfPdf = */
-  /*       plugin.material.BsdfPdf(plugin.material, surface, emissionWo); */
+  /* /1*   if (info.valid) { *1/ */
+  /* /1*     float bsdfPdf = *1/ */
+  /* /1*       plugin.material.BsdfPdf(plugin.material, surface, emissionWo); *1/ */
 
-  /*     // only valid if the bsdfPdf is not delta dirac */
-  /*     if (bsdfPdf > 0.0f) { */
-  /*       glm::vec3 irradiance = */
-  /*         info.color */
-  /*       * radiance */
-  /*       * plugin.material.BsdfFs(plugin.material, surface, emissionWo) */
-  /*       / (emissionPdf/(emissionPdf + bsdfPdf)); */
+  /* /1*     // only valid if the bsdfPdf is not delta dirac *1/ */
+  /* /1*     if (bsdfPdf > 0.0f) { *1/ */
+  /* /1*       glm::vec3 irradiance = *1/ */
+  /* /1*         info.color *1/ */
+  /* /1*       * radiance *1/ */
+  /* /1*       * plugin.material.BsdfFs(plugin.material, surface, emissionWo) *1/ */
+  /* /1*       / (emissionPdf/(emissionPdf + bsdfPdf)); *1/ */
 
-  /*       if (glm::length(irradiance) > 0.0001f) { */
-  /*         propagationStatus = PropagationStatus::IndirectAccumulation; */
-  /*         accumulatedIrradiance += irradiance; */
-  /*       } */
-  /*     } */
+  /* /1*       if (glm::length(irradiance) > 0.0001f) { *1/ */
+  /* /1*         propagationStatus = PropagationStatus::IndirectAccumulation; *1/ */
+  /* /1*         accumulatedIrradiance += irradiance; *1/ */
+  /* /1*       } *1/ */
+  /* /1*     } *1/ */
+  /* /1*   } *1/ */
+  /* /1* } *1/ */
+
+  /* { // apply indirect emission from random emitter in scene */
+  /*   auto [emissionTriangle, emissionBarycentricUvCoord] = */
+  /*     mt::core::EmissionSourceTriangle(scene, plugin.random); */
+
+  /*   if (!emissionTriangle) { return propagationStatus; } */
+
+  /*   auto emissionOrigin = */
+  /*     BarycentricInterpolation( */
+  /*       emissionTriangle->v0, emissionTriangle->v1, emissionTriangle->v2 */
+  /*     , emissionBarycentricUvCoord */
+  /*     ); */
+
+  /*   glm::vec3 emissionWo = glm::normalize(emissionOrigin - surface.origin); */
+
+  /*   float bsdfEmitPdf = */
+  /*     mt::core::MaterialIndirectPdf(surface, scene, plugin, emissionWo); */
+
+  /*   // if the surface is delta-dirac, than there is no indirect emission */
+  /*   // contribution */
+  /*   if (bsdfEmitPdf == 0.0f) { return propagationStatus; } */
+
+  /*   // check that emission source is within reflected hemisphere */
+  /*   if (glm::dot(emissionWo, surface.normal) <= 0.0f) */
+  /*     { return propagationStatus; } */
+
+  /*   mt::core::SurfaceInfo emissionSurface = */
+  /*     mt::core::Raycast(scene, surface.origin, emissionWo, surface.triangle); */
+
+  /*   if (emissionSurface.triangle != emissionTriangle) */
+  /*     { return propagationStatus; } */
+
+  /*   float emitPdf = EmitterPdf(surface, emissionSurface); */
+
+  /*   propagationStatus = PropagationStatus::IndirectAccumulation; */
+  /*   accumulatedIrradiance += */
+  /*     mt::core::MaterialFs( */
+  /*       emissionSurface, scene, plugin, glm::vec3(0), true, 0 */
+  /*     ) */
+  /*   * radiance */
+  /*   * mt::core::MaterialFs( */
+  /*       surface, scene, plugin, emissionWo, true, 0 */
+  /*   / (emitPdf/(emitPdf + bsdfEmitPdf)) */
+  /*   ; */
+
+
+  /*   if (debugPathRecorder) { */
+  /*     debugPathRecorder({ */
+  /*       radiance, accumulatedIrradiance */
+  /*     , mt::TransportMode::Importance, it+2, surface */
+  /*     }); */
   /*   } */
   /* } */
 
-  { // apply indirect emission from random emitter in scene
-    auto [emissionTriangle, emissionBarycentricUvCoord] =
-      mt::core::EmissionSourceTriangle(scene, plugin.random);
-
-    if (!emissionTriangle) { return propagationStatus; }
-
-    auto emissionOrigin =
-      BarycentricInterpolation(
-        emissionTriangle->v0, emissionTriangle->v1, emissionTriangle->v2
-      , emissionBarycentricUvCoord
-      );
-
-    glm::vec3 emissionWo = glm::normalize(emissionOrigin - surface.origin);
-
-    float bsdfEmitPdf =
-      plugin.material.BsdfPdf(plugin.material, surface, emissionWo);
-
-    // if the surface is delta-dirac, than there is no indirect emission
-    // contribution
-    if (bsdfEmitPdf == 0.0f) { return propagationStatus; }
-
-    // check that emission source is within reflected hemisphere
-    if (glm::dot(emissionWo, surface.normal) <= 0.0f)
-      { return propagationStatus; }
-
-    mt::core::SurfaceInfo emissionSurface =
-      mt::core::Raycast(scene, surface.origin, emissionWo, surface.triangle);
-
-    if (emissionSurface.triangle != emissionTriangle)
-      { return propagationStatus; }
-
-    float emitPdf = EmitterPdf(surface, emissionSurface);
-
-    propagationStatus = PropagationStatus::IndirectAccumulation;
-    accumulatedIrradiance +=
-      plugin.material.BsdfFs(plugin.material, emissionSurface, glm::vec3(0))
-    * radiance
-    * plugin.material.BsdfFs(plugin.material, surface, emissionWo)
-    / (emitPdf/(emitPdf + bsdfEmitPdf))
-    ;
-
-
-    if (debugPathRecorder) {
-      debugPathRecorder({
-        radiance, accumulatedIrradiance
-      , mt::TransportMode::Importance, it+2, surface
-      });
-    }
-  }
-
-  return propagationStatus;
+  /* return propagationStatus; */
 }
 
 PropagationStatus Propagate(
@@ -155,7 +161,6 @@ PropagationStatus Propagate(
 , mt::PluginInfo const & plugin
 , void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
-
   if (debugPathRecorder) {
     debugPathRecorder({
       radiance, accumulatedIrradiance, mt::TransportMode::Radiance, it, surface
@@ -171,8 +176,9 @@ PropagationStatus Propagate(
   }
 
   // generate bsdf sample (this will also be used for next propagation)
-  auto bsdf =
-    plugin.material.BsdfSample(plugin.material, plugin.random, surface);
+  mt::core::BsdfSampleInfo bsdf =
+    mt::core::MaterialSample(surface, scene, plugin);
+  /* mt::core::BsdfSampleInfo bsdf; */
 
   // delta-dirac correct pdfs, valid only for direct emissions
   bsdf.pdf = bsdf.pdf == 0.0f ? 1.0f : bsdf.pdf;
@@ -202,22 +208,22 @@ PropagationStatus Propagate(
 
     // even tho we didn't hit a surface still record the origin
     nextSurface.origin = surface.origin + bsdf.wo*100.0f;
-
-  } else if (
-      plugin.material.IsEmitter(plugin.material, *nextSurface.triangle)
-  ) {
-    auto emissiveColor =
-      plugin.material.BsdfFs(plugin.material, nextSurface, bsdf.wo);
-
-    /* float emitPdf = EmitterPdf(surface, nextSurface); */
-
-    accumulatedIrradiance +=
-      emissiveColor * radiance * bsdf.fs / bsdf.pdf;
-      // TODO use below
-      /* emissiveColor * radiance * bsdfFs / (bsdfPdf/(emitPdf + bsdfPdf)); */
-
-    propagationStatus = PropagationStatus::DirectAccumulation;
   }
+  /* } else if ( */
+  /*     plugin.material.IsEmitter(plugin.material, *nextSurface.triangle) */
+  /* ) { */
+  /*   auto emissiveColor = */
+  /*     plugin.material.BsdfFs(plugin.material, nextSurface, bsdf.wo); */
+
+  /*   /1* float emitPdf = EmitterPdf(surface, nextSurface); *1/ */
+
+  /*   accumulatedIrradiance += */
+  /*     emissiveColor * radiance * bsdf.fs / bsdf.pdf; */
+  /*     // TODO use below */
+  /* emissiveColor * radiance * bsdfFs / (bsdfPdf/(emitPdf + bsdfPdf)); *1/ */
+
+  /*   propagationStatus = PropagationStatus::DirectAccumulation; */
+  /* } */
 
   Join(
     propagationStatus,
@@ -253,7 +259,6 @@ mt::PixelInfo Dispatch(
 , mt::core::IntegratorData const & integratorData
 , void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
 ) {
-
   mt::core::SurfaceInfo surface;
   { // -- apply initial raycast
     auto const eye =
@@ -295,12 +300,12 @@ mt::PixelInfo Dispatch(
   }
 
   // check if emitter
-  if (plugin.material.IsEmitter(plugin.material, *surface.triangle)) {
-    auto const emission =
-      plugin.material.BsdfFs(plugin.material, surface, glm::vec3(0));
+  /* if (plugin.material.IsEmitter(plugin.material, *surface.triangle)) { */
+  /*   auto const emission = */
+  /*     plugin.material.BsdfFs(plugin.material, surface, glm::vec3(0)); */
 
-    return mt::PixelInfo{emission, true};
-  }
+  /*   return mt::PixelInfo{emission, true}; */
+  /* } */
 
   bool hit = false;
   glm::vec3 radiance = glm::vec3(1.0f), accumulatedIrradiance = glm::vec3(0.0f);

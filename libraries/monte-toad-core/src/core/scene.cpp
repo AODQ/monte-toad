@@ -3,6 +3,7 @@
 #include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/intersection.hpp>
 #include <monte-toad/core/log.hpp>
+#include <monte-toad/core/material.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/triangle.hpp>
 
@@ -53,7 +54,7 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
   for (size_t meshIt = 0; meshIt < asset->mNumMeshes; ++ meshIt) {
     auto const & mesh = *asset->mMeshes[meshIt];
 
-    model.meshes.push_back({meshIt});
+    model.meshes.emplace_back(mt::core::Material(), meshIt);
 
     for (size_t face = 0; face < mesh.mNumFaces; ++ face)
     for (size_t idx  = 0; idx < mesh.mFaces[face].mNumIndices/3; ++ idx) {

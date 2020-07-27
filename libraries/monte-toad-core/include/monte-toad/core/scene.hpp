@@ -1,6 +1,7 @@
 #pragma once
 
 #include <monte-toad/core/accelerationstructure.hpp>
+#include <monte-toad/core/material.hpp>
 #include <monte-toad/core/span.hpp>
 #include <monte-toad/core/texture.hpp>
 
@@ -15,6 +16,7 @@ namespace mt { struct PluginInfoRandom; }
 
 namespace mt::core {
   struct Mesh {
+    mt::core::Material material;
     size_t idx;
   };
 

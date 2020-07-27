@@ -90,8 +90,8 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
     } break;
     case mt::PluginType::Material: {
-      auto & unit = plugin.material;
-      ctx.LoadFunction(unit.Load, "Load");
+      auto & unit = plugin.materials[ctx.idx];
+      ctx.LoadFunction(unit.Allocate, "Allocate");
       ctx.LoadFunction(unit.BsdfSample, "BsdfSample");
       ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
       ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
@@ -161,8 +161,12 @@ bool mt::LoadPlugin(
 
   // first find if the plugin has already been loaded, if that's the case then
   // error
-  for (auto & pluginIt : plugins)
-    { if (pluginIt->filename == file) { return false; } }
+  for (auto & pluginIt : plugins) {
+    if (pluginIt->filename == file) {
+      spdlog::error("Plugin '{}' already loaded", pluginIt->filename);
+      return false;
+    }
+  }
 
   // -- load plugin
   ::plugins.emplace_back(
@@ -173,6 +177,7 @@ bool mt::LoadPlugin(
   // check plugin loaded
   if (!pluginEnd->data) {
     ::plugins.pop_back();
+    spdlog::error("shared object file could not load correctly");
     return false;
   }
 
@@ -229,14 +234,15 @@ bool mt::Valid(
       ;
     case mt::PluginType::Material:
       return
-          plugin.material.BsdfFs     != nullptr
-       && plugin.material.BsdfPdf    != nullptr
-       && plugin.material.BsdfSample != nullptr
-       && plugin.material.IsEmitter  != nullptr
-       && plugin.material.Load       != nullptr
-       && plugin.material.PluginType != nullptr
-       && plugin.material.PluginType() == pluginType
-       && plugin.material.PluginLabel != nullptr
+          idx < plugin.materials.size()
+       && plugin.materials[idx].BsdfFs     != nullptr
+       && plugin.materials[idx].BsdfPdf    != nullptr
+       && plugin.materials[idx].BsdfSample != nullptr
+       && plugin.materials[idx].IsEmitter  != nullptr
+       && plugin.materials[idx].Allocate   != nullptr
+       && plugin.materials[idx].PluginType != nullptr
+       && plugin.materials[idx].PluginType() == pluginType
+       && plugin.materials[idx].PluginLabel != nullptr
       ;
     case mt::PluginType::Camera:
       return
@@ -308,18 +314,14 @@ void mt::Clean(
       plugin.kernel.PluginLabel = nullptr;
     break;
     case mt::PluginType::Material:
-      plugin.material.BsdfFs      = nullptr;
-      plugin.material.BsdfPdf     = nullptr;
-      plugin.material.BsdfSample  = nullptr;
-      plugin.material.IsEmitter   = nullptr;
-      plugin.material.Load        = nullptr;
-      plugin.material.UiUpdate    = nullptr;
-      plugin.material.PluginType  = nullptr;
-      plugin.material.PluginLabel = nullptr;
-
-      if (plugin.material.userdata)
-        { free(plugin.material.userdata); }
-      plugin.material.userdata    = nullptr;
+      plugin.materials[idx].BsdfFs      = nullptr;
+      plugin.materials[idx].BsdfPdf     = nullptr;
+      plugin.materials[idx].BsdfSample  = nullptr;
+      plugin.materials[idx].IsEmitter   = nullptr;
+      plugin.materials[idx].Allocate    = nullptr;
+      plugin.materials[idx].UiUpdate    = nullptr;
+      plugin.materials[idx].PluginType  = nullptr;
+      plugin.materials[idx].PluginLabel = nullptr;
     break;
     case mt::PluginType::Camera:
       plugin.camera.Dispatch = nullptr;

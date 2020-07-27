@@ -143,7 +143,6 @@ void fileutil::LoadEditorConfig(
         plugin, render, file->get<std::string>(), pluginType
       )
     ) {
-      spdlog::error("Failed to load plugin {}", file->get<std::string>());
       continue;
     }
 
@@ -180,7 +179,7 @@ bool fileutil::LoadPlugin(
 , std::string const & file
 , mt::PluginType type
 ) {
-  spdlog::debug("Loading {} of type {}", file, ToString(type));
+  spdlog::info("Loading {} of type {}", file, ToString(type));
 
   // allocate memory for plugin if it's a vector
   size_t idx = 0;
@@ -188,6 +187,10 @@ bool fileutil::LoadPlugin(
     plugin.integrators.emplace_back();
     render.integratorData.emplace_back();
     idx = plugin.integrators.size()-1;
+  }
+  if (type == mt::PluginType::Material) {
+    plugin.materials.emplace_back();
+    idx = plugin.materials.size()-1;
   }
   if (type == mt::PluginType::Emitter) {
     plugin.emitters.emplace_back();
@@ -210,6 +213,9 @@ bool fileutil::LoadPlugin(
     if (type == mt::PluginType::Integrator) {
       render.integratorData.pop_back();
       plugin.integrators.pop_back();
+    }
+    if (type == mt::PluginType::Material) {
+      plugin.materials.pop_back();
     }
     if (type == mt::PluginType::Emitter) {
       plugin.emitters.pop_back();

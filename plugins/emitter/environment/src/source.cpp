@@ -30,26 +30,27 @@ char const * PluginLabel() { return "environment emitter"; }
 mt::PluginType PluginType() { return mt::PluginType::Emitter; }
 
 mt::PixelInfo SampleLi(
-  mt::core::Scene const & scene
-, mt::PluginInfo const & plugin
-, mt::core::SurfaceInfo const & surface
-, glm::vec3 & wo
-, float & pdf
+  mt::core::Scene const & /*scene*/
+, mt::PluginInfo const & /*plugin*/
+, mt::core::SurfaceInfo const & /*surface*/
+, glm::vec3 & /*wo*/
+, float & /*pdf*/
 ) {
-  if (!scene.emissionSource.environmentMap.Valid())
-    { pdf = 0.0f; return { glm::vec3(0.0f), false }; }
+  return {};
+  /* if (!scene.emissionSource.environmentMap.Valid()) */
+  /*   { pdf = 0.0f; return { glm::vec3(0.0f), false }; } */
 
-  {
-    auto bsdf =
-      plugin.material.BsdfSample(plugin.material, plugin.random, surface);
-    wo = bsdf.wo;
-    pdf = bsdf.pdf;
-  }
-  auto testSurface =
-    mt::core::Raycast(scene, surface.origin, wo, surface.triangle);
-  if (testSurface.Valid()) { return { glm::vec3(0.0f), false }; }
-  auto color = ::SampleEmission(scene, scene.emissionSource.environmentMap, wo);
-  return { color * emissionPower, true };
+  /* { */
+  /*   auto bsdf = */
+  /*     plugin.material.BsdfSample(plugin.material, plugin.random, surface); */
+  /*   wo = bsdf.wo; */
+  /*   pdf = bsdf.pdf; */
+  /* } */
+  /* auto testSurface = */
+  /*   mt::core::Raycast(scene, surface.origin, wo, surface.triangle); */
+  /* if (testSurface.Valid()) { return { glm::vec3(0.0f), false }; } */
+  /* auto color = ::SampleEmission(scene, scene.emissionSource.environmentMap, wo); */
+  /* return { color * emissionPower, true }; */
 }
 
 mt::PixelInfo SampleWo(

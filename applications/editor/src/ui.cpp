@@ -109,10 +109,6 @@ void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
 
   for (auto & emitter : plugin.emitters)
     { emitter.Precompute(scene, render, plugin); }
-
-  if (mt::Valid(plugin, mt::PluginType::Material)) {
-    plugin.material.Load(plugin.material, ::scene);
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -145,9 +141,6 @@ void UiPluginLoadFile(
       default: break;
       case mt::PluginType::Integrator:
         mt::core::AllocateResources(render.integratorData.back());
-      break;
-      case mt::PluginType::Material:
-        plugin.material.Load(plugin.material, scene);
       break;
       case mt::PluginType::Random:
         plugin.random.Initialize();
@@ -194,8 +187,10 @@ void UiPlugin(mt::PluginInfo & plugin) {
     for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx)
       { DisplayPluginUi(mt::PluginType::Integrator, idx); }
 
+    for (size_t idx = 0; idx < plugin.materials.size(); ++ idx)
+      { DisplayPluginUi(mt::PluginType::Material, idx); }
+
     DisplayPluginUi(mt::PluginType::Kernel);
-    DisplayPluginUi(mt::PluginType::Material);
     DisplayPluginUi(mt::PluginType::Camera);
     DisplayPluginUi(mt::PluginType::Random);
     DisplayPluginUi(mt::PluginType::UserInterface);
@@ -451,9 +446,6 @@ void UiEntry(
 
   if (plugin.kernel.UiUpdate)
     { plugin.kernel.UiUpdate(scene, render, plugin); }
-
-  if (plugin.material.UiUpdate)
-    { plugin.material.UiUpdate(scene, render, plugin); }
 
   if (plugin.camera.UiUpdate)
     { plugin.camera.UiUpdate(scene, render, plugin); }

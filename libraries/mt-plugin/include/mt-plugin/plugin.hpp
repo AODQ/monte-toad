@@ -17,6 +17,8 @@
 
 // TODO implement functional instead of ptrs
 
+namespace mt::core { struct Any; }
+namespace mt::core { struct BsdfSampleInfo; }
 namespace mt::core { struct CameraInfo; }
 namespace mt::core { struct IntegratorData; }
 namespace mt::core { struct RenderInfo; }
@@ -99,48 +101,40 @@ namespace mt {
     char const * (*PluginLabel)();
   };
 
-  struct BsdfSampleInfo {
-    glm::vec3 wo;
-    glm::vec3 fs;
-    float pdf;
-  };
-
   struct PluginInfoMaterial {
-    void (*Load)(mt::PluginInfoMaterial & self, mt::core::Scene &) = nullptr;
+    void (*Allocate)(mt::core::Any & userdata) = nullptr;
 
-    BsdfSampleInfo (*BsdfSample)(
-      mt::PluginInfoMaterial const & self
+    void (*UiUpdate)(
+      mt::core::Any & userdata
+    , mt::core::RenderInfo & render
+    , mt::core::Scene & scene
+    ) = nullptr;
+
+    mt::core::BsdfSampleInfo (*BsdfSample)(
+      mt::core::Any const & data
     , mt::PluginInfoRandom const & random
     , mt::core::SurfaceInfo const & surface
     ) = nullptr;
 
     float (*BsdfPdf)(
-      mt::PluginInfoMaterial const & self
+      mt::core::Any const & data
     , mt::core::SurfaceInfo const & surface
     , glm::vec3 const & wo
     ) = nullptr;
 
     glm::vec3 (*BsdfFs)(
-      mt::PluginInfoMaterial const & self
+      mt::core::Any const & data
     , mt::core::SurfaceInfo const & surface
     , glm::vec3 const & wo
     ) = nullptr;
 
     bool (*IsEmitter)(
-      mt::PluginInfoMaterial const & self
+      mt::core::Any const & data
     , mt::core::Triangle const & triangle
     );
 
-    void (*UiUpdate)(
-      mt::core::Scene & scene
-    , mt::core::RenderInfo & render
-    , mt::PluginInfo const & plugin
-    ) = nullptr;
-
     mt::PluginType (*PluginType)();
     char const * (*PluginLabel)();
-
-    void * userdata = nullptr;
   };
 
   struct CameraDispatchInfo {
@@ -247,8 +241,8 @@ namespace mt {
     std::vector<PluginInfoIntegrator> integrators;
     std::vector<PluginInfoEmitter> emitters;
     std::vector<PluginInfoDispatcher> dispatchers;
+    std::vector<PluginInfoMaterial> materials;
     PluginInfoKernel kernel; // optional
-    PluginInfoMaterial material;
     PluginInfoCamera camera; // optional
     PluginInfoRandom random;
     PluginInfoUserInterface userInterface; //optional

@@ -5,7 +5,9 @@
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
 #include <monte-toad/core/scene.hpp>
+#include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/texture.hpp>
+#include <monte-toad/core/triangle.hpp>
 #include <monte-toad/util/file.hpp>
 #include <monte-toad/util/textureloader.hpp>
 #include <mt-plugin/plugin.hpp>
@@ -222,6 +224,102 @@ void ApplyImageResolutionConstraint(
 
   // apply aspect ratio change dependent
   mt::ApplyAspectRatioY(aspectRatio, resolution.x, resolution.y);
+}
+
+void UiMaterialEditor(
+  mt::core::Scene & scene
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
+  static size_t currentMtlIdx = -1lu;
+
+  // -- if an image is clicked then update where it was clicked;
+  if (render.lastIntegratorImageClicked != -1lu) {
+    auto & data = render.integratorData[render.lastIntegratorImageClicked];
+    auto uv =
+      glm::vec2(data.imagePixelClickedCoord)
+    / glm::vec2(data.imageResolution);
+
+    uv = (uv - glm::vec2(0.5f)) * 2.0f;
+    uv.y *=
+      data.imageResolution[1] / static_cast<float>(data.imageResolution[0]);
+
+    auto camera =
+      plugin.camera.Dispatch(
+        plugin.random, render.camera, data.imageResolution, uv
+      );
+
+    auto surface =
+      mt::core::Raycast(scene, camera.origin, camera.direction, nullptr);
+
+    currentMtlIdx =
+      static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);
+
+    render.lastIntegratorImageClicked = -1lu;
+  }
+
+  // reset in case something weird happens and idx is oob
+  if (currentMtlIdx != -1lu && currentMtlIdx >= scene.meshes.size())
+    { currentMtlIdx = 0; }
+
+  // -- material editor
+  if (!ImGui::Begin("Material editor")) {}
+
+  if (currentMtlIdx == -1lu) {
+    ImGui::End();
+    return;
+  }
+
+  ImGui::Text("selected material idx %lu\n", currentMtlIdx);
+
+  ImGui::Separator();
+
+  auto & material = scene.meshes[currentMtlIdx].material;
+
+  ImGui::SliderFloat(
+    "index of refraction"
+  , &material.indexOfRefraction, 0.0f, 1.0f
+  );
+
+  ImGui::Separator();
+  ImGui::Separator();
+  ImGui::Text("-- reflective --");
+
+  for (size_t bsdfIdx = 0; bsdfIdx < material.reflective.size(); ++ bsdfIdx) {
+    auto & bsdf = material.reflective[bsdfIdx];
+    auto & materialPlugin = plugin.materials[bsdfIdx];
+    ImGui::Separator();
+    ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
+    ImGui::Text("%s", materialPlugin.PluginLabel());
+    ImGui::SliderFloat("%%", &bsdf.probability, 0.0f, 1.0f);
+    if (materialPlugin.UiUpdate)
+      { materialPlugin.UiUpdate(bsdf.userdata, render, scene); }
+  }
+
+  ImGui::Separator();
+
+  if (ImGui::BeginCombo("##brdf", "add brdf")) {
+    ImGui::Selectable("cancel", true);
+    for (size_t i = 0; i < plugin.materials.size(); ++ i) {
+      if (ImGui::Selectable(plugin.materials[i].PluginLabel())) {
+        mt::core::MaterialComponent component;
+        component.probability = 1.0f;
+        component.pluginIdx = i;
+        plugin.materials[i].Allocate(component.userdata);
+        material.reflective.emplace_back(std::move(component));
+
+        render.ClearImageBuffers();
+      }
+    }
+
+    ImGui::EndCombo();
+  }
+
+  ImGui::Separator();
+  ImGui::Separator();
+  ImGui::Text("-- refractive --");
+
+  ImGui::End();
 }
 
 void UiTextureEditor(mt::core::Scene & scene) {
@@ -608,6 +706,7 @@ void Dispatch(
   ::UiEmitters(scene, render, plugin);
   ::UiDispatchers(render, plugin);
   ::UiTextureEditor(scene);
+  ::UiMaterialEditor(scene, render, plugin);
 }
 
 }

@@ -404,9 +404,7 @@ void UiUpdate(
   }
 
   auto & material =
-    reinterpret_cast<MaterialInfo *>(plugin.material.userdata)[
-      currentMtlIdx
-    ];
+    reinterpret_cast<MaterialInfo *>(plugin.material.userdata)[currentMtlIdx ];
 
   ImGui::PushID(std::to_string(currentMtlIdx).c_str());
   ImGui::Text("Mtl %lu", currentMtlIdx);
