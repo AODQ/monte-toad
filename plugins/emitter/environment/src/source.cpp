@@ -68,6 +68,7 @@ mt::PixelInfo SampleWo(
 
   return {
     ::SampleEmission(scene, scene.emissionSource.environmentMap, wo)
+  * ::emissionPower
   , true
   };
 }

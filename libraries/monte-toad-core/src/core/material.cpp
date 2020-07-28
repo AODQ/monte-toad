@@ -47,6 +47,28 @@ mt::core::BsdfSampleInfo mt::core::MaterialSample(
 
   if (!reflection) {
     // -- refraction
+    if (material.refractive.size() == 0) { return mt::core::BsdfSampleInfo{}; }
+
+    // choose probability, don't sample a uniform if there's only one brdf
+    float const probability =
+      material.refractive.size() <= 1 ? 0.0f : plugin.random.SampleUniform1()
+    ;
+
+    // locate the corresponding material and calculate results
+    float probabilityIt = 0.0f;
+    for (size_t i = 0; i < material.refractive.size(); ++i) {
+      probabilityIt += material.refractive[i].probability;
+
+      auto & bsdf = material.refractive[i];
+
+      // probability found now just return the plugin's brdf sample
+      if (probabilityIt >= probability) {
+        return
+          plugin.materials[bsdf.pluginIdx].BsdfSample(
+              bsdf.userdata, material.indexOfRefraction, plugin.random, surface
+          );
+      }
+    }
   }
 
   // -- reflection
