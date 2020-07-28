@@ -28,7 +28,8 @@ enum class PropagationStatus {
 
 // joins results such that only the most relevant component is returned
 void Join(PropagationStatus & l, PropagationStatus r) {
-  // hardcoded case where indire
+  // hardcoded case where indirect is asked but path has ended, it should
+  // be accepted but the path should still end
   if (
       l == PropagationStatus::End
    && r == PropagationStatus::IndirectAccumulation
@@ -178,7 +179,6 @@ PropagationStatus Propagate(
   // generate bsdf sample (this will also be used for next propagation)
   mt::core::BsdfSampleInfo bsdf =
     mt::core::MaterialSample(surface, scene, plugin);
-  /* mt::core::BsdfSampleInfo bsdf; */
 
   // delta-dirac correct pdfs, valid only for direct emissions
   bsdf.pdf = bsdf.pdf == 0.0f ? 1.0f : bsdf.pdf;

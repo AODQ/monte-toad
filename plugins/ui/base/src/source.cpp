@@ -238,7 +238,7 @@ void UiMaterialEditor(
     auto & data = render.integratorData[render.lastIntegratorImageClicked];
     auto uv =
       glm::vec2(data.imagePixelClickedCoord)
-    / glm::vec2(data.imageResolution);
+      / glm::vec2(data.imageResolution);
 
     uv = (uv - glm::vec2(0.5f)) * 2.0f;
     uv.y *=
@@ -246,8 +246,8 @@ void UiMaterialEditor(
 
     auto camera =
       plugin.camera.Dispatch(
-        plugin.random, render.camera, data.imageResolution, uv
-      );
+          plugin.random, render.camera, data.imageResolution, uv
+          );
 
     auto surface =
       mt::core::Raycast(scene, camera.origin, camera.direction, nullptr);
@@ -260,7 +260,7 @@ void UiMaterialEditor(
 
   // reset in case something weird happens and idx is oob
   if (currentMtlIdx != -1lu && currentMtlIdx >= scene.meshes.size())
-    { currentMtlIdx = 0; }
+  { currentMtlIdx = 0; }
 
   // -- material editor
   if (!ImGui::Begin("Material editor")) {}
@@ -277,9 +277,9 @@ void UiMaterialEditor(
   auto & material = scene.meshes[currentMtlIdx].material;
 
   ImGui::SliderFloat(
-    "index of refraction"
-  , &material.indexOfRefraction, 0.0f, 1.0f
-  );
+      "index of refraction"
+      , &material.indexOfRefraction, 0.0f, 1.0f
+      );
 
   ImGui::Separator();
   ImGui::Separator();
@@ -287,13 +287,30 @@ void UiMaterialEditor(
 
   for (size_t bsdfIdx = 0; bsdfIdx < material.reflective.size(); ++ bsdfIdx) {
     auto & bsdf = material.reflective[bsdfIdx];
-    auto & materialPlugin = plugin.materials[bsdfIdx];
+    auto & materialPlugin = plugin.materials[bsdf.pluginIdx];
     ImGui::Separator();
     ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
     ImGui::Text("%s", materialPlugin.PluginLabel());
-    ImGui::SliderFloat("%%", &bsdf.probability, 0.0f, 1.0f);
-    if (materialPlugin.UiUpdate)
-      { materialPlugin.UiUpdate(bsdf.userdata, render, scene); }
+    if (ImGui::SliderFloat("%", &bsdf.probability, 0.0f, 1.0f)) {
+      render.ClearImageBuffers();
+
+      // normalize bsdf probabilities
+      float total = 0.0f;
+      for (auto const & tBsdf : material.reflective) {
+        total += tBsdf.probability;
+      }
+      for (auto & tBsdf : material.reflective) {
+        tBsdf.probability /= total;
+      }
+    }
+
+    if (
+        materialPlugin.UiUpdate
+     && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
+    ) {
+      materialPlugin.UiUpdate(bsdf.userdata, render, scene);
+      ImGui::TreePop();
+    }
   }
 
   ImGui::Separator();
@@ -327,11 +344,11 @@ void UiTextureEditor(mt::core::Scene & scene) {
 
   if (ImGui::Button("Load Texture")) {
     auto filename =
-        mt::util::FilePicker(
+      mt::util::FilePicker(
           " --file-filter=\"image files | "
           " *.jpeg *.jpg *.png *.tga *.bmp *.psd *.gif *.hdr *.pic *.ppm"
           " *.pgm\""
-        );
+          );
     if (filename != "") {
       auto texture = mt::util::LoadTexture(filename);
       if (texture.Valid()) {
@@ -351,10 +368,10 @@ void UiTextureEditor(mt::core::Scene & scene) {
 }
 
 void UiImageOutput(
-  mt::core::Scene & /*scene*/
-, mt::core::RenderInfo & render
-, mt::PluginInfo const & plugin
-) {
+    mt::core::Scene & /*scene*/
+    , mt::core::RenderInfo & render
+    , mt::PluginInfo const & plugin
+    ) {
 
   for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
     auto & data       = render.integratorData[i];
@@ -370,9 +387,9 @@ void UiImageOutput(
     }};
 
     if (
-      size_t value = static_cast<size_t>(data.renderingState);
-      ImGui::BeginCombo("State", stateStrings[value])
-    ) {
+        size_t value = static_cast<size_t>(data.renderingState);
+        ImGui::BeginCombo("State", stateStrings[value])
+       ) {
       for (size_t stateIt = 0; stateIt < stateStrings.size(); ++ stateIt) {
         bool isSelected = value == stateIt;
         if (ImGui::Selectable(stateStrings[stateIt], isSelected)) {
@@ -380,7 +397,7 @@ void UiImageOutput(
 
           // don't clear out data if set to off
           if (data.renderingState != mt::RenderingState::Off)
-            { mt::core::Clear(data); }
+          { mt::core::Clear(data); }
         }
       }
       ImGui::EndCombo();
@@ -416,22 +433,22 @@ void UiImageOutput(
       }
 
       if (
-        ImGui::BeginCombo(
-          "block size"
-        , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
-        )
-      ) {
+          ImGui::BeginCombo(
+            "block size"
+            , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
+            )
+         ) {
         for (
-          size_t blockIt = 0;
-          blockIt < ::blockIteratorStrides.size();
-          ++ blockIt
-        ) {
+            size_t blockIt = 0;
+            blockIt < ::blockIteratorStrides.size();
+            ++ blockIt
+            ) {
           bool isSelected = iteratorIdx == blockIt;
           if (
-            ImGui::Selectable(
-              std::to_string(::blockIteratorStrides[blockIt]).c_str()
-            , isSelected)
-          ) {
+              ImGui::Selectable(
+                std::to_string(::blockIteratorStrides[blockIt]).c_str()
+                , isSelected)
+             ) {
             data.blockIteratorStride = ::blockIteratorStrides[blockIt];
             mt::core::Clear(data);
           }
@@ -453,9 +470,9 @@ void UiImageOutput(
               data.imageAspectRatio = static_cast<mt::AspectRatio>(arIt);
 
               ApplyImageResolutionConstraint(
-                data.imageResolution
-              , data.imageAspectRatio
-              );
+                  data.imageResolution
+                  , data.imageAspectRatio
+                  );
             }
           }
           ImGui::EndCombo();
@@ -465,18 +482,18 @@ void UiImageOutput(
       // image resolution
       if (ImGui::InputInt("image resolution", &data.imageResolution.x, 8)) {
         ApplyImageResolutionConstraint(
-          data.imageResolution
-        , data.imageAspectRatio
-        );
+            data.imageResolution
+            , data.imageAspectRatio
+            );
       }
 
       // -- imgui image resolution
       if (
-        ImGui::Checkbox(
-          "override imgui resolution"
-        , &data.overrideImGuiImageResolution
-        )
-      ) {
+          ImGui::Checkbox(
+            "override imgui resolution"
+            , &data.overrideImGuiImageResolution
+            )
+         ) {
         data.imguiImageResolution = data.imageResolution.x;
       }
 
@@ -486,7 +503,7 @@ void UiImageOutput(
 
       // must reallocate resources if resolution has changed
       if (previousResolution != data.imageResolution)
-        { mt::core::AllocateResources(data); }
+      { mt::core::AllocateResources(data); }
     }
 
     if (data.renderingFinished) {
@@ -494,43 +511,43 @@ void UiImageOutput(
     }
 
     ImGui::Text(
-      "image resolution <%u, %u>"
-    , data.imageResolution.x, data.imageResolution.y
-    );
+        "image resolution <%u, %u>"
+        , data.imageResolution.x, data.imageResolution.y
+        );
 
     if (data.overrideImGuiImageResolution) {
       uint16_t y;
       mt::ApplyAspectRatioY(
-        data.imageAspectRatio, data.imguiImageResolution, y
-      );
+          data.imageAspectRatio, data.imguiImageResolution, y
+          );
 
       ImGui::Text(
-        "imgui resolution <%u, %u>"
-      , data.imguiImageResolution
-      , static_cast<uint32_t>(y)
-      );
+          "imgui resolution <%u, %u>"
+          , data.imguiImageResolution
+          , static_cast<uint32_t>(y)
+          );
     }
 
     if (!integrator.RealTime()) {
       ImGui::Text("%lu dispatched cycles", data.dispatchedCycles);
 
       ImGui::Text(
-        "%lu / %lu finished pixels"
-      , mt::core::FinishedPixels(data), mt::core::FinishedPixelsGoal(data)
-      );
+          "%lu / %lu finished pixels"
+          , mt::core::FinishedPixels(data), mt::core::FinishedPixelsGoal(data)
+          );
 
       size_t finishedBlocks = 0;
       for (auto & blockIt : data.blockPixelsFinished) {
         finishedBlocks +=
           static_cast<size_t>(
-            blockIt >= data.blockIteratorStride*data.blockIteratorStride
-          );
+              blockIt >= data.blockIteratorStride*data.blockIteratorStride
+              );
       }
       ImGui::Text(
-        "%lu / %lu finished blocks"
-      , finishedBlocks
-      , data.blockPixelsFinished.size()
-      );
+          "%lu / %lu finished blocks"
+          , finishedBlocks
+          , data.blockPixelsFinished.size()
+          );
       ImGui::Text("%lu block iterator", data.blockIterator);
     }
 
@@ -546,122 +563,122 @@ void UiImageOutput(
 
     ImGui::Begin(label.c_str());
 
-      // get image resolution, which might be overriden by user
-      auto imageResolution = data.imageResolution;
-      if (data.overrideImGuiImageResolution) {
-        imageResolution.x = data.imguiImageResolution;
-        mt::ApplyAspectRatioY(
+    // get image resolution, which might be overriden by user
+    auto imageResolution = data.imageResolution;
+    if (data.overrideImGuiImageResolution) {
+      imageResolution.x = data.imguiImageResolution;
+      mt::ApplyAspectRatioY(
           data.imageAspectRatio, imageResolution.x, imageResolution.y
-        );
-      }
+          );
+    }
 
-      ImGui::Image(
+    ImGui::Image(
         reinterpret_cast<void*>(data.renderedTexture.handle)
-      , ImVec2(imageResolution.x, imageResolution.y)
-      );
+        , ImVec2(imageResolution.x, imageResolution.y)
+        );
 
-      // clear out the image pixel clicked from previous frame
-      data.imagePixelClicked = false;
+    // clear out the image pixel clicked from previous frame
+    data.imagePixelClicked = false;
 
-      // if image is clicked, approximate the clicked pixel, taking into account
-      // image resolution differences when displaying to imgui
-      if (ImGui::IsItemClicked()) {
-        auto const
-          imItemMin  = ImGui::GetItemRectMin()
+    // if image is clicked, approximate the clicked pixel, taking into account
+    // image resolution differences when displaying to imgui
+    if (ImGui::IsItemClicked()) {
+      auto const
+        imItemMin  = ImGui::GetItemRectMin()
         , imItemMax  = ImGui::GetItemRectMax()
         , imMousePos = ImGui::GetMousePos()
         ;
 
-        auto const
-          itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
+      auto const
+        itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
         , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
         , mousePos =
-            glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
+        glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
         ;
 
-        auto const resolutionRatio =
-          glm::vec2(imageResolution) / glm::vec2(data.imageResolution);
+      auto const resolutionRatio =
+        glm::vec2(imageResolution) / glm::vec2(data.imageResolution);
 
-        auto const pixel = (mousePos - itemMin) / resolutionRatio;
+      auto const pixel = (mousePos - itemMin) / resolutionRatio;
 
-        // store results, also have to tell render info which image was clicked
-        data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
-        data.imagePixelClicked = true;
-        render.lastIntegratorImageClicked = i;
-      }
+      // store results, also have to tell render info which image was clicked
+      data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
+      data.imagePixelClicked = true;
+      render.lastIntegratorImageClicked = i;
+    }
 
     ImGui::End();
   }
 }
 
 void UiDispatchers(
-  mt::core::RenderInfo & render
-, mt::PluginInfo const & plugin
-) {
+    mt::core::RenderInfo & render
+    , mt::PluginInfo const & plugin
+    ) {
   ImGui::Begin("dispatchers");
 
-    if (plugin.dispatchers.size() == 0) {
-      ImGui::Text("No dispatcher plugin");
-      ImGui::End();
-      return;
+  if (plugin.dispatchers.size() == 0) {
+    ImGui::Text("No dispatcher plugin");
+    ImGui::End();
+    return;
+  }
+
+  auto const IntegratorLabel = [&](size_t idx) -> char const * {
+    return idx == -1lu ? "N/A" : plugin.integrators[idx].PluginLabel();
+  };
+
+  for (size_t it = 0; it < Idx(mt::IntegratorTypeHint::Size); ++ it) {
+    auto & idx = render.integratorIndices[it];
+
+    auto comboStr =
+      fmt::format(
+          "Integrator {}"
+          , mt::ToString(static_cast<mt::IntegratorTypeHint>(it))
+          );
+    if (!ImGui::BeginCombo(comboStr.c_str(), IntegratorLabel(idx)))
+    { continue; }
+
+    if (ImGui::Selectable("None", idx == -1lu)) {
+      idx = -1lu;
+      render.ClearImageBuffers();
     }
 
-    auto const IntegratorLabel = [&](size_t idx) -> char const * {
-      return idx == -1lu ? "N/A" : plugin.integrators[idx].PluginLabel();
-    };
-
-    for (size_t it = 0; it < Idx(mt::IntegratorTypeHint::Size); ++ it) {
-      auto & idx = render.integratorIndices[it];
-
-      auto comboStr =
-        fmt::format(
-           "Integrator {}"
-        , mt::ToString(static_cast<mt::IntegratorTypeHint>(it))
-        );
-      if (!ImGui::BeginCombo(comboStr.c_str(), IntegratorLabel(idx)))
-        { continue; }
-
-      if (ImGui::Selectable("None", idx == -1lu)) {
-        idx = -1lu;
+    for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
+      bool isSelected = idx == i;
+      if (ImGui::Selectable(IntegratorLabel(i), isSelected)) {
+        idx = i;
         render.ClearImageBuffers();
       }
+    }
+    ImGui::EndCombo();
+  }
 
-      for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
+  auto const DispatcherLabel = [&](size_t idx) -> char const * {
+    return plugin.dispatchers[idx].PluginLabel();
+  };
+
+  { // select a primary dispatcher
+    auto & idx = render.primaryDispatcher;
+    if (ImGui::BeginCombo("Dispatcher", DispatcherLabel(idx))) {
+      for (size_t i = 0; i < plugin.dispatchers.size(); ++ i) {
         bool isSelected = idx == i;
-        if (ImGui::Selectable(IntegratorLabel(i), isSelected)) {
+        if (ImGui::Selectable(DispatcherLabel(i), isSelected)) {
           idx = i;
           render.ClearImageBuffers();
         }
       }
       ImGui::EndCombo();
     }
-
-    auto const DispatcherLabel = [&](size_t idx) -> char const * {
-      return plugin.dispatchers[idx].PluginLabel();
-    };
-
-    { // select a primary dispatcher
-      auto & idx = render.primaryDispatcher;
-      if (ImGui::BeginCombo("Dispatcher", DispatcherLabel(idx))) {
-        for (size_t i = 0; i < plugin.dispatchers.size(); ++ i) {
-          bool isSelected = idx == i;
-          if (ImGui::Selectable(DispatcherLabel(i), isSelected)) {
-            idx = i;
-            render.ClearImageBuffers();
-          }
-        }
-        ImGui::EndCombo();
-      }
-    }
+  }
 
   ImGui::End();
 }
 
 void UiEmitters(
-  mt::core::Scene & scene
-, mt::core::RenderInfo & render
-, mt::PluginInfo const & plugin
-) {
+    mt::core::Scene & scene
+    , mt::core::RenderInfo & render
+    , mt::PluginInfo const & plugin
+    ) {
   ImGui::Begin("emitters");
   { // -- select skybox emitter
     auto GetEmissionLabel = [&](size_t idx) -> char const * {
@@ -692,21 +709,21 @@ void UiEmitters(
 
 extern "C" {
 
-char const * PluginLabel() { return "base UI"; }
-mt::PluginType PluginType() { return mt::PluginType::UserInterface; }
+  char const * PluginLabel() { return "base UI"; }
+  mt::PluginType PluginType() { return mt::PluginType::UserInterface; }
 
-void Dispatch(
-  mt::core::Scene & scene
-, mt::core::RenderInfo & render
-, mt::PluginInfo const & plugin
-) {
-  ::UiCameraControls(scene, plugin, render);
-  ::UiPluginInfo(scene, render, plugin);
-  ::UiImageOutput(scene, render, plugin);
-  ::UiEmitters(scene, render, plugin);
-  ::UiDispatchers(render, plugin);
-  ::UiTextureEditor(scene);
-  ::UiMaterialEditor(scene, render, plugin);
+  void Dispatch(
+      mt::core::Scene & scene
+      , mt::core::RenderInfo & render
+      , mt::PluginInfo const & plugin
+      ) {
+    ::UiCameraControls(scene, plugin, render);
+    ::UiPluginInfo(scene, render, plugin);
+    ::UiImageOutput(scene, render, plugin);
+    ::UiEmitters(scene, render, plugin);
+    ::UiDispatchers(render, plugin);
+    ::UiTextureEditor(scene);
+    ::UiMaterialEditor(scene, render, plugin);
 }
 
 }

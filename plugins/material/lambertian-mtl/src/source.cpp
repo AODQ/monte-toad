@@ -21,6 +21,7 @@ struct MaterialInfo {
   glm::vec3 albedo;
 
   mt::core::Texture * albedoTexture = nullptr;
+  bool albedoTextureLinearSpace = false;
 };
 
 } // -- namespace
@@ -44,8 +45,14 @@ glm::vec3 BsdfFs(
   auto & material = *reinterpret_cast<MaterialInfo const *>(userdata.data);
 
   auto albedo = material.albedo;
-  if (material.albedoTexture)
-    { albedo = mt::core::Sample(*material.albedoTexture, surface.uvcoord); }
+  if (material.albedoTexture) {
+    albedo = mt::core::Sample(*material.albedoTexture, surface.uvcoord);
+    albedo =
+      glm::pow(
+        albedo,
+        glm::vec3(material.albedoTextureLinearSpace ? 1.0f : 2.2f)
+      );
+  }
 
   return glm::dot(wo, surface.normal) * glm::InvPi * albedo;
 }
@@ -91,9 +98,11 @@ void UiUpdate(
   auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
 
   if (!material.albedoTexture) {
-    if (ImGui::ColorPicker3("##albedo", &material.albedo.x)) {
-      render.ClearImageBuffers();
-    }
+    if (ImGui::ColorPicker3("##albedo", &material.albedo.x))
+      { render.ClearImageBuffers(); }
+  } else {
+    if (ImGui::Checkbox("Linear Space", &material.albedoTextureLinearSpace))
+      { render.ClearImageBuffers(); }
   }
 
   // -- albedo texture
