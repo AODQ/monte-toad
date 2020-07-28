@@ -276,10 +276,13 @@ void UiMaterialEditor(
 
   auto & material = scene.meshes[currentMtlIdx].material;
 
-  ImGui::SliderFloat(
-      "index of refraction"
-      , &material.indexOfRefraction, 0.0f, 1.0f
-      );
+  if (
+    ImGui::SliderFloat(
+      "index of refraction", &material.indexOfRefraction, 0.0f, 10.0f
+    )
+  ) {
+    render.ClearImageBuffers();
+  }
 
   ImGui::Separator();
   ImGui::Separator();
@@ -318,6 +321,7 @@ void UiMaterialEditor(
   if (ImGui::BeginCombo("##brdf", "add brdf")) {
     ImGui::Selectable("cancel", true);
     for (size_t i = 0; i < plugin.materials.size(); ++ i) {
+      if (!plugin.materials[i].IsReflective()) { continue; }
       if (ImGui::Selectable(plugin.materials[i].PluginLabel())) {
         mt::core::MaterialComponent component;
         component.probability = 1.0f;
@@ -335,6 +339,53 @@ void UiMaterialEditor(
   ImGui::Separator();
   ImGui::Separator();
   ImGui::Text("-- refractive --");
+  for (size_t bsdfIdx = 0; bsdfIdx < material.refractive.size(); ++ bsdfIdx) {
+    auto & bsdf = material.refractive[bsdfIdx];
+    auto & materialPlugin = plugin.materials[bsdf.pluginIdx];
+    ImGui::Separator();
+    ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
+    ImGui::Text("%s", materialPlugin.PluginLabel());
+    if (ImGui::SliderFloat("%", &bsdf.probability, 0.0f, 1.0f)) {
+      render.ClearImageBuffers();
+
+      // normalize bsdf probabilities
+      float total = 0.0f;
+      for (auto const & tBsdf : material.refractive) {
+        total += tBsdf.probability;
+      }
+      for (auto & tBsdf : material.refractive) {
+        tBsdf.probability /= total;
+      }
+    }
+
+    if (
+        materialPlugin.UiUpdate
+     && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
+    ) {
+      materialPlugin.UiUpdate(bsdf.userdata, render, scene);
+      ImGui::TreePop();
+    }
+  }
+
+  ImGui::Separator();
+
+  if (ImGui::BeginCombo("##btdf", "add btdf")) {
+    ImGui::Selectable("cancel", true);
+    for (size_t i = 0; i < plugin.materials.size(); ++ i) {
+      if (!plugin.materials[i].IsRefractive()) { continue; }
+      if (ImGui::Selectable(plugin.materials[i].PluginLabel())) {
+        mt::core::MaterialComponent component;
+        component.probability = 1.0f;
+        component.pluginIdx = i;
+        plugin.materials[i].Allocate(component.userdata);
+        material.refractive.emplace_back(std::move(component));
+
+        render.ClearImageBuffers();
+      }
+    }
+
+    ImGui::EndCombo();
+  }
 
   ImGui::End();
 }

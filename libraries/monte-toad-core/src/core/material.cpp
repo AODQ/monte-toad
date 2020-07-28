@@ -84,11 +84,13 @@ mt::core::BsdfSampleInfo mt::core::MaterialSample(
   for (size_t i = 0; i < material.reflective.size(); ++i) {
     probabilityIt += material.reflective[i].probability;
 
+    auto & bsdf = material.reflective[i];
+
     // probability found now just return the plugin's brdf sample
     if (probabilityIt >= probability) {
       return
-        plugin.materials[material.reflective[i].pluginIdx].BsdfSample(
-          material.reflective[i].userdata, plugin.random, surface
+        plugin.materials[bsdf.pluginIdx].BsdfSample(
+            bsdf.userdata, material.indexOfRefraction, plugin.random, surface
         );
     }
   }
@@ -108,15 +110,18 @@ float mt::core::MaterialPdf(
 , bool const reflection
 , size_t const componentIdx
 ) {
-  auto & material =
+  auto & material = scene.meshes[surface.material].material;
+  auto & bsdf =
       reflection
-    ? scene.meshes[surface.material].material.reflective[componentIdx]
-    : scene.meshes[surface.material].material.refractive[componentIdx]
+    ? material.reflective[componentIdx]
+    : material.refractive[componentIdx]
   ;
 
   return
-    material.probability
-  * plugin.materials[material.pluginIdx].BsdfPdf(material.userdata, surface, wo)
+    bsdf.probability
+  * plugin.materials[bsdf.pluginIdx].BsdfPdf(
+      bsdf.userdata, material.indexOfRefraction, surface, wo
+    )
   ;
 }
 
@@ -148,16 +153,15 @@ float mt::core::MaterialIndirectPdf(
 
   bool reflection = glm::dot(surface.incomingAngle, surface.normal) > 0.0f;
 
-  auto const & materials =
-      reflection
-    ? scene.meshes[surface.material].material.reflective
-    : scene.meshes[surface.material].material.refractive
-  ;
+  auto const & material = scene.meshes[surface.material].material;
 
-  for (auto const & mat : materials) {
+  auto const & bsdfs = reflection ? material.reflective : material.refractive;
+
+  for (auto const & bsdf : bsdfs) {
     pdf +=
-        mat.probability
-      * plugin.materials[mat.pluginIdx].BsdfPdf(mat.userdata, surface, wo)
+      bsdf.probability
+    * plugin.materials[bsdf.pluginIdx]
+        .BsdfPdf(bsdf.userdata, material.indexOfRefraction, surface, wo)
     ;
   }
 

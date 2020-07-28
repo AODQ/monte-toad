@@ -145,6 +145,9 @@ mt::BsdfSampleInfo BsdfSample(
   /* return { wo, BsdfPdf(self, surface, wo) }; */
 }
 
+bool IsReflective() { return true; }
+bool IsRefractive() { return true; }
+
 bool IsEmitter(
   mt::PluginInfoMaterial const & self
 , mt::core::Triangle const & triangle

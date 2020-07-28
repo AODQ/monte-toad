@@ -111,19 +111,19 @@ namespace mt {
     ) = nullptr;
 
     mt::core::BsdfSampleInfo (*BsdfSample)(
-      mt::core::Any const & data
+      mt::core::Any const & data, float const indexOfRefraction
     , mt::PluginInfoRandom const & random
     , mt::core::SurfaceInfo const & surface
     ) = nullptr;
 
     float (*BsdfPdf)(
-      mt::core::Any const & data
+      mt::core::Any const & data, float const indexOfRefraction
     , mt::core::SurfaceInfo const & surface
     , glm::vec3 const & wo
     ) = nullptr;
 
     glm::vec3 (*BsdfFs)(
-      mt::core::Any const & data
+      mt::core::Any const & data, float const indexOfRefraction
     , mt::core::SurfaceInfo const & surface
     , glm::vec3 const & wo
     ) = nullptr;
@@ -132,6 +132,11 @@ namespace mt {
       mt::core::Any const & data
     , mt::core::Triangle const & triangle
     );
+
+    // determines if bsdf can be used as a BRDF
+    bool (*IsReflective)();
+    // determines if bsdf can be used as a BTDF
+    bool (*IsRefractive)();
 
     mt::PluginType (*PluginType)();
     char const * (*PluginLabel)();

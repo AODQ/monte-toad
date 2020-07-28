@@ -83,6 +83,9 @@ mt::core::BsdfSampleInfo BsdfSample(
   return { wo, fs, pdf };
 }
 
+bool IsReflective() { return true; }
+bool IsRefractive() { return false; }
+
 bool IsEmitter(
   mt::PluginInfoMaterial const & /*self*/
 , mt::core::Triangle const & /*triangle*/

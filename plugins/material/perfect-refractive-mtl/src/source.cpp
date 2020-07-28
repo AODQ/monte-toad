@@ -1,4 +1,4 @@
-// perfect specular material
+// perfect refractive material
 
 #include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/any.hpp>
@@ -25,7 +25,7 @@ struct MaterialInfo {
 
 extern "C" {
 
-char const * PluginLabel() { return "perfect specular mtl"; }
+char const * PluginLabel() { return "perfect refractive mtl"; }
 mt::PluginType PluginType() { return mt::PluginType::Material; }
 
 void Allocate(mt::core::Any & userdata) {
@@ -56,16 +56,25 @@ mt::core::BsdfSampleInfo BsdfSample(
 , mt::PluginInfoRandom const & /*random*/
 , mt::core::SurfaceInfo const & surface
 ) {
+
+  glm::vec3 normal = surface.normal;
+  float eta = indexOfRefraction;
+  // flip normal if surface is incorrect for refraction
+  if (glm::dot(surface.incomingAngle, surface.normal) > 0.0f) {
+    normal = -surface.normal;
+    eta = 1.0f/eta;
+  }
+
   glm::vec3 const wo =
-    glm::normalize(glm::reflect(surface.incomingAngle, surface.normal));
+    glm::normalize(glm::refract(surface.incomingAngle, normal, eta));
 
   float pdf = 0.0f; // dirac delta
   glm::vec3 fs = BsdfFs(userdata, indexOfRefraction, surface, wo);
   return { wo, fs, pdf };
 }
 
-bool IsReflective() { return true; }
-bool IsRefractive() { return false; }
+bool IsReflective() { return false; }
+bool IsRefractive() { return true; }
 
 bool IsEmitter(
   mt::PluginInfoMaterial const & /*self*/

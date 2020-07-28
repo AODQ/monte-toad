@@ -96,6 +96,8 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
       ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
       ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
+      ctx.LoadFunction(unit.IsReflective, "IsReflective");
+      ctx.LoadFunction(unit.IsRefractive, "IsRefractive");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -235,11 +237,13 @@ bool mt::Valid(
     case mt::PluginType::Material:
       return
           idx < plugin.materials.size()
-       && plugin.materials[idx].BsdfFs     != nullptr
-       && plugin.materials[idx].BsdfPdf    != nullptr
+       && plugin.materials[idx].BsdfFs != nullptr
+       && plugin.materials[idx].BsdfPdf  != nullptr
        && plugin.materials[idx].BsdfSample != nullptr
-       && plugin.materials[idx].IsEmitter  != nullptr
-       && plugin.materials[idx].Allocate   != nullptr
+       && plugin.materials[idx].IsEmitter != nullptr
+       && plugin.materials[idx].IsReflective != nullptr
+       && plugin.materials[idx].IsRefractive != nullptr
+       && plugin.materials[idx].Allocate != nullptr
        && plugin.materials[idx].PluginType != nullptr
        && plugin.materials[idx].PluginType() == pluginType
        && plugin.materials[idx].PluginLabel != nullptr
@@ -314,14 +318,16 @@ void mt::Clean(
       plugin.kernel.PluginLabel = nullptr;
     break;
     case mt::PluginType::Material:
-      plugin.materials[idx].BsdfFs      = nullptr;
-      plugin.materials[idx].BsdfPdf     = nullptr;
-      plugin.materials[idx].BsdfSample  = nullptr;
-      plugin.materials[idx].IsEmitter   = nullptr;
-      plugin.materials[idx].Allocate    = nullptr;
-      plugin.materials[idx].UiUpdate    = nullptr;
-      plugin.materials[idx].PluginType  = nullptr;
-      plugin.materials[idx].PluginLabel = nullptr;
+      plugin.materials[idx].BsdfFs       = nullptr;
+      plugin.materials[idx].BsdfPdf      = nullptr;
+      plugin.materials[idx].BsdfSample   = nullptr;
+      plugin.materials[idx].IsEmitter    = nullptr;
+      plugin.materials[idx].IsRefractive = nullptr;
+      plugin.materials[idx].IsReflective = nullptr;
+      plugin.materials[idx].Allocate     = nullptr;
+      plugin.materials[idx].UiUpdate     = nullptr;
+      plugin.materials[idx].PluginType   = nullptr;
+      plugin.materials[idx].PluginLabel  = nullptr;
     break;
     case mt::PluginType::Camera:
       plugin.camera.Dispatch = nullptr;

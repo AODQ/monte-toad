@@ -300,7 +300,7 @@ mt::PixelInfo Dispatch(
   }
 
   // check if emitter
-  /* if (plugin.material.IsEmitter(plugin.material, *surface.triangle)) { */
+  /* if (plugin.material.IEmitter(plugin.material, *surface.triangle)) { */
   /*   auto const emission = */
   /*     plugin.material.BsdfFs(plugin.material, surface, glm::vec3(0)); */
 
