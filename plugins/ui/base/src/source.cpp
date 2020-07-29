@@ -387,6 +387,33 @@ void UiMaterialEditor(
     ImGui::EndCombo();
   }
 
+  ImGui::Separator();
+  ImGui::Separator();
+
+  ImGui::Text("-- emitter --");
+
+  if (ImGui::BeginCombo("##emitter", "add emitter")) {
+    ImGui::Selectable("cancel", true);
+    for (size_t i = 0; i < plugin.materials.size(); ++ i) {
+      if (ImGui::Selectable(plugin.materials[i].PluginLabel())) {
+        mt::core::MaterialComponent component;
+        component.probability = 1.0f;
+        component.pluginIdx = i;
+        plugin.materials[i].Allocate(component.userdata);
+        material.emitter = std::move(component);
+
+        render.ClearImageBuffers();
+      }
+    }
+
+    ImGui::EndCombo();
+  }
+
+  if (material.emitter.pluginIdx != -1lu) {
+    auto & materialPlugin = plugin.materials[material.emitter.pluginIdx];
+    materialPlugin.UiUpdate(material.emitter.userdata, render, scene);
+  }
+
   ImGui::End();
 }
 

@@ -208,22 +208,21 @@ PropagationStatus Propagate(
 
     // even tho we didn't hit a surface still record the origin
     nextSurface.origin = surface.origin + bsdf.wo*100.0f;
+  } else if (
+    mt::core::MaterialIsEmitter(nextSurface, scene, plugin)
+  ) {
+    auto emissiveColor =
+      mt::core::MaterialEmitterFs(nextSurface, scene, plugin);
+
+    /* float emitPdf = EmitterPdf(surface, nextSurface); */
+
+    accumulatedIrradiance +=
+      emissiveColor * radiance * bsdf.fs / bsdf.pdf;
+      // TODO use below
+    /* emissiveColor * radiance * bsdfFs / (bsdfPdf/(emitPdf + bsdfPdf)); */
+
+    propagationStatus = PropagationStatus::DirectAccumulation;
   }
-  /* } else if ( */
-  /*     plugin.material.IsEmitter(plugin.material, *nextSurface.triangle) */
-  /* ) { */
-  /*   auto emissiveColor = */
-  /*     plugin.material.BsdfFs(plugin.material, nextSurface, bsdf.wo); */
-
-  /*   /1* float emitPdf = EmitterPdf(surface, nextSurface); *1/ */
-
-  /*   accumulatedIrradiance += */
-  /*     emissiveColor * radiance * bsdf.fs / bsdf.pdf; */
-  /*     // TODO use below */
-  /* emissiveColor * radiance * bsdfFs / (bsdfPdf/(emitPdf + bsdfPdf)); *1/ */
-
-  /*   propagationStatus = PropagationStatus::DirectAccumulation; */
-  /* } */
 
   Join(
     propagationStatus,
@@ -300,12 +299,10 @@ mt::PixelInfo Dispatch(
   }
 
   // check if emitter
-  /* if (plugin.material.IEmitter(plugin.material, *surface.triangle)) { */
-  /*   auto const emission = */
-  /*     plugin.material.BsdfFs(plugin.material, surface, glm::vec3(0)); */
-
-  /*   return mt::PixelInfo{emission, true}; */
-  /* } */
+  if (mt::core::MaterialIsEmitter(surface, scene, plugin)) {
+    auto const emission = mt::core::MaterialEmitterFs(surface, scene, plugin);
+    return mt::PixelInfo{emission, true};
+  }
 
   bool hit = false;
   glm::vec3 radiance = glm::vec3(1.0f), accumulatedIrradiance = glm::vec3(0.0f);

@@ -7,6 +7,17 @@
 #include <monte-toad/core/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
 
+
+bool mt::core::MaterialIsEmitter(
+  mt::core::SurfaceInfo const & surface
+, mt::core::Scene const & scene
+, mt::PluginInfo const & /*plugin*/
+) {
+  auto & material = scene.meshes[surface.material].material;
+
+  return material.emitter.pluginIdx != -1lu;
+}
+
 mt::core::BsdfSampleInfo mt::core::MaterialSample(
   mt::core::SurfaceInfo const & surface
 , mt::core::Scene const & scene
@@ -123,6 +134,21 @@ float mt::core::MaterialPdf(
       bsdf.userdata, material.indexOfRefraction, surface, wo
     )
   ;
+}
+
+glm::vec3 mt::core::MaterialEmitterFs(
+  mt::core::SurfaceInfo const & surface
+, mt::core::Scene const & scene
+, mt::PluginInfo const & plugin
+) {
+  auto & material = scene.meshes[surface.material].material;
+  auto & bsdf = material.emitter;
+  return
+    plugin
+      .materials[bsdf.pluginIdx]
+      .BsdfFs(
+        bsdf.userdata, material.indexOfRefraction, surface, glm::vec3(0.0f)
+      );
 }
 
 glm::vec3 mt::core::MaterialFs(

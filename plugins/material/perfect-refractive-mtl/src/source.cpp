@@ -60,10 +60,10 @@ mt::core::BsdfSampleInfo BsdfSample(
   glm::vec3 normal = surface.normal;
   float eta = indexOfRefraction;
   // flip normal if surface is incorrect for refraction
-  if (glm::dot(surface.incomingAngle, surface.normal) > 0.0f) {
-    normal = -surface.normal;
-    eta = 1.0f/eta;
-  }
+  /* if (glm::dot(surface.incomingAngle, surface.normal) > 0.0f) { */
+  /*   normal = -surface.normal; */
+  /*   eta = 1.0f/eta; */
+  /* } */
 
   glm::vec3 const wo =
     glm::normalize(glm::refract(surface.incomingAngle, normal, eta));

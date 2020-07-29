@@ -20,6 +20,7 @@ namespace {
 struct MaterialInfo {
   glm::vec3 albedo;
 
+  float emission = 0.0f;
   mt::core::Texture * albedoTexture = nullptr;
   bool albedoTextureLinearSpace = false;
 };
@@ -54,6 +55,8 @@ glm::vec3 BsdfFs(
       );
   }
 
+  if (material.emission > 0.0f) { return material.emission * albedo; }
+
   return glm::dot(wo, surface.normal) * glm::InvPi * albedo;
 }
 
@@ -87,10 +90,13 @@ bool IsReflective() { return true; }
 bool IsRefractive() { return false; }
 
 bool IsEmitter(
-  mt::PluginInfoMaterial const & /*self*/
+  mt::core::Any const & userdata
 , mt::core::Triangle const & /*triangle*/
 ) {
-  return false;
+  auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
+  // Temporarily allow this material to be an emitter, though i should probably
+  // not use this for that case
+  return material.emission > 0.0f;
 }
 
 void UiUpdate(
@@ -99,6 +105,10 @@ void UiUpdate(
 , mt::core::Scene & scene
 ) {
   auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
+
+  if (ImGui::SliderFloat("emission", &material.emission, 0.0f, 4.0f)) {
+    render.ClearImageBuffers();
+  }
 
   if (!material.albedoTexture) {
     if (ImGui::ColorPicker3("##albedo", &material.albedo.x))

@@ -11,16 +11,23 @@ namespace mt { struct PluginInfo; }
 
 namespace mt::core {
   struct MaterialComponent {
-    float probability;
+    float probability = 0.0f;
 
-    size_t pluginIdx;
+    size_t pluginIdx = -1lu;
     mt::core::Any userdata;
   };
 
   struct Material {
+    MaterialComponent emitter;
     std::vector<MaterialComponent> reflective, refractive;
     float indexOfRefraction;
   };
+
+  bool MaterialIsEmitter(
+    mt::core::SurfaceInfo const & surface
+  , mt::core::Scene const & scene
+  , mt::PluginInfo const & plugin
+  );
 
   mt::core::BsdfSampleInfo MaterialSample(
     mt::core::SurfaceInfo const & surface
@@ -42,6 +49,12 @@ namespace mt::core {
   , mt::core::Scene const & scene
   , mt::PluginInfo const & plugin
   , glm::vec3 const & wo
+  );
+
+  glm::vec3 MaterialEmitterFs(
+    mt::core::SurfaceInfo const & surface
+  , mt::core::Scene const & scene
+  , mt::PluginInfo const & plugin
   );
 
   glm::vec3 MaterialFs(
