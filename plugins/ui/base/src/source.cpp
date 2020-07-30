@@ -307,6 +307,11 @@ void UiMaterialEditor(
       }
     }
 
+    if (ImGui::Button("delete")) {
+      material.reflective.erase(material.reflective.begin() + bsdfIdx);
+      -- bsdfIdx;
+    }
+
     if (
         materialPlugin.UiUpdate
      && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
@@ -358,6 +363,11 @@ void UiMaterialEditor(
       }
     }
 
+    if (ImGui::Button("delete")) {
+      material.refractive.erase(material.refractive.begin() + bsdfIdx);
+      -- bsdfIdx;
+    }
+
     if (
         materialPlugin.UiUpdate
      && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
@@ -407,6 +417,10 @@ void UiMaterialEditor(
     }
 
     ImGui::EndCombo();
+  }
+
+  if (ImGui::Button("delete")) {
+    material.emitter.pluginIdx = -1lu;
   }
 
   if (material.emitter.pluginIdx != -1lu) {
