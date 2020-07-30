@@ -501,6 +501,9 @@ void UiImageOutput(
       // don't clear data, but in case rendering is already complete allow it
       // to process again
       data.renderingFinished = false;
+      for (auto & blockIt : data.blockPixelsFinished)
+        { blockIt = 0; }
+      data.unfinishedPixelsCount = 0u;
     }
 
     if (ImGui::InputInt("paths per sample", &data.pathsPerSample)) {
