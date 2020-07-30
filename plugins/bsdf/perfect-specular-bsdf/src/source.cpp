@@ -26,7 +26,7 @@ struct MaterialInfo {
 extern "C" {
 
 char const * PluginLabel() { return "perfect specular mtl"; }
-mt::PluginType PluginType() { return mt::PluginType::Material; }
+mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {
   if (userdata.data == nullptr) { free(userdata.data); }
@@ -68,7 +68,7 @@ bool IsReflective() { return true; }
 bool IsRefractive() { return false; }
 
 bool IsEmitter(
-  mt::PluginInfoMaterial const & /*self*/
+  mt::core::Any const & /*self*/
 , mt::core::Triangle const & /*triangle*/
 ) {
   return false;

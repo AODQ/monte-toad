@@ -30,7 +30,7 @@ struct MaterialInfo {
 extern "C" {
 
 char const * PluginLabel() { return "lambertian mtl"; }
-mt::PluginType PluginType() { return mt::PluginType::Material; }
+mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {
   if (userdata.data == nullptr) { free(userdata.data); }
@@ -106,7 +106,7 @@ void UiUpdate(
 ) {
   auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
 
-  if (ImGui::SliderFloat("emission", &material.emission, 0.0f, 4.0f)) {
+  if (ImGui::SliderFloat("emission", &material.emission, 0.0f, 15.0f)) {
     render.ClearImageBuffers();
   }
 

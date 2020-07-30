@@ -75,7 +75,7 @@ mt::core::BsdfSampleInfo mt::core::MaterialSample(
       // probability found now just return the plugin's brdf sample
       if (probabilityIt >= probability) {
         return
-          plugin.materials[bsdf.pluginIdx].BsdfSample(
+          plugin.bsdfs[bsdf.pluginIdx].BsdfSample(
               bsdf.userdata, material.indexOfRefraction, plugin.random, surface
           );
       }
@@ -100,7 +100,7 @@ mt::core::BsdfSampleInfo mt::core::MaterialSample(
     // probability found now just return the plugin's brdf sample
     if (probabilityIt >= probability) {
       return
-        plugin.materials[bsdf.pluginIdx].BsdfSample(
+        plugin.bsdfs[bsdf.pluginIdx].BsdfSample(
             bsdf.userdata, material.indexOfRefraction, plugin.random, surface
         );
     }
@@ -130,7 +130,7 @@ float mt::core::MaterialPdf(
 
   return
     bsdf.probability
-  * plugin.materials[bsdf.pluginIdx].BsdfPdf(
+  * plugin.bsdfs[bsdf.pluginIdx].BsdfPdf(
       bsdf.userdata, material.indexOfRefraction, surface, wo
     )
   ;
@@ -145,7 +145,7 @@ glm::vec3 mt::core::MaterialEmitterFs(
   auto & bsdf = material.emitter;
   return
     plugin
-      .materials[bsdf.pluginIdx]
+      .bsdfs[bsdf.pluginIdx]
       .BsdfFs(
         bsdf.userdata, material.indexOfRefraction, surface, glm::vec3(0.0f)
       );
@@ -186,7 +186,7 @@ float mt::core::MaterialIndirectPdf(
   for (auto const & bsdf : bsdfs) {
     pdf +=
       bsdf.probability
-    * plugin.materials[bsdf.pluginIdx]
+    * plugin.bsdfs[bsdf.pluginIdx]
         .BsdfPdf(bsdf.userdata, material.indexOfRefraction, surface, wo)
     ;
   }

@@ -89,8 +89,8 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
     } break;
-    case mt::PluginType::Material: {
-      auto & unit = plugin.materials[ctx.idx];
+    case mt::PluginType::Bsdf: {
+      auto & unit = plugin.bsdfs[ctx.idx];
       ctx.LoadFunction(unit.Allocate, "Allocate");
       ctx.LoadFunction(unit.BsdfSample, "BsdfSample");
       ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
@@ -234,19 +234,19 @@ bool mt::Valid(
        && plugin.kernel.PluginType() == pluginType
        && plugin.kernel.PluginLabel != nullptr
       ;
-    case mt::PluginType::Material:
+    case mt::PluginType::Bsdf:
       return
-          idx < plugin.materials.size()
-       && plugin.materials[idx].BsdfFs != nullptr
-       && plugin.materials[idx].BsdfPdf  != nullptr
-       && plugin.materials[idx].BsdfSample != nullptr
-       && plugin.materials[idx].IsEmitter != nullptr
-       && plugin.materials[idx].IsReflective != nullptr
-       && plugin.materials[idx].IsRefractive != nullptr
-       && plugin.materials[idx].Allocate != nullptr
-       && plugin.materials[idx].PluginType != nullptr
-       && plugin.materials[idx].PluginType() == pluginType
-       && plugin.materials[idx].PluginLabel != nullptr
+          idx < plugin.bsdfs.size()
+       && plugin.bsdfs[idx].BsdfFs != nullptr
+       && plugin.bsdfs[idx].BsdfPdf  != nullptr
+       && plugin.bsdfs[idx].BsdfSample != nullptr
+       && plugin.bsdfs[idx].IsEmitter != nullptr
+       && plugin.bsdfs[idx].IsReflective != nullptr
+       && plugin.bsdfs[idx].IsRefractive != nullptr
+       && plugin.bsdfs[idx].Allocate != nullptr
+       && plugin.bsdfs[idx].PluginType != nullptr
+       && plugin.bsdfs[idx].PluginType() == pluginType
+       && plugin.bsdfs[idx].PluginLabel != nullptr
       ;
     case mt::PluginType::Camera:
       return
@@ -317,17 +317,17 @@ void mt::Clean(
       plugin.kernel.PluginType = nullptr;
       plugin.kernel.PluginLabel = nullptr;
     break;
-    case mt::PluginType::Material:
-      plugin.materials[idx].BsdfFs       = nullptr;
-      plugin.materials[idx].BsdfPdf      = nullptr;
-      plugin.materials[idx].BsdfSample   = nullptr;
-      plugin.materials[idx].IsEmitter    = nullptr;
-      plugin.materials[idx].IsRefractive = nullptr;
-      plugin.materials[idx].IsReflective = nullptr;
-      plugin.materials[idx].Allocate     = nullptr;
-      plugin.materials[idx].UiUpdate     = nullptr;
-      plugin.materials[idx].PluginType   = nullptr;
-      plugin.materials[idx].PluginLabel  = nullptr;
+    case mt::PluginType::Bsdf:
+      plugin.bsdfs[idx].BsdfFs       = nullptr;
+      plugin.bsdfs[idx].BsdfPdf      = nullptr;
+      plugin.bsdfs[idx].BsdfSample   = nullptr;
+      plugin.bsdfs[idx].IsEmitter    = nullptr;
+      plugin.bsdfs[idx].IsRefractive = nullptr;
+      plugin.bsdfs[idx].IsReflective = nullptr;
+      plugin.bsdfs[idx].Allocate     = nullptr;
+      plugin.bsdfs[idx].UiUpdate     = nullptr;
+      plugin.bsdfs[idx].PluginType   = nullptr;
+      plugin.bsdfs[idx].PluginLabel  = nullptr;
     break;
     case mt::PluginType::Camera:
       plugin.camera.Dispatch = nullptr;
@@ -377,7 +377,7 @@ char const * ToString(mt::PluginType pluginType) {
   switch (pluginType) {
     case mt::PluginType::Integrator:    return "Integrator";
     case mt::PluginType::Kernel:        return "Kernel";
-    case mt::PluginType::Material:      return "Material";
+    case mt::PluginType::Bsdf:          return "Bsdf";
     case mt::PluginType::Camera:        return "Camera";
     case mt::PluginType::Random:        return "Random";
     case mt::PluginType::UserInterface: return "UserInterface";

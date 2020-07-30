@@ -101,7 +101,7 @@ namespace mt {
     char const * (*PluginLabel)();
   };
 
-  struct PluginInfoMaterial {
+  struct PluginInfoBsdf {
     void (*Allocate)(mt::core::Any & userdata) = nullptr;
 
     void (*UiUpdate)(
@@ -246,7 +246,7 @@ namespace mt {
     std::vector<PluginInfoIntegrator> integrators;
     std::vector<PluginInfoEmitter> emitters;
     std::vector<PluginInfoDispatcher> dispatchers;
-    std::vector<PluginInfoMaterial> materials;
+    std::vector<PluginInfoBsdf> bsdfs;
     PluginInfoKernel kernel; // optional
     PluginInfoCamera camera; // optional
     PluginInfoRandom random;

@@ -290,7 +290,7 @@ void UiMaterialEditor(
 
   for (size_t bsdfIdx = 0; bsdfIdx < material.reflective.size(); ++ bsdfIdx) {
     auto & bsdf = material.reflective[bsdfIdx];
-    auto & materialPlugin = plugin.materials[bsdf.pluginIdx];
+    auto & materialPlugin = plugin.bsdfs[bsdf.pluginIdx];
     ImGui::Separator();
     ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
     ImGui::Text("%s", materialPlugin.PluginLabel());
@@ -320,13 +320,13 @@ void UiMaterialEditor(
 
   if (ImGui::BeginCombo("##brdf", "add brdf")) {
     ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.materials.size(); ++ i) {
-      if (!plugin.materials[i].IsReflective()) { continue; }
-      if (ImGui::Selectable(plugin.materials[i].PluginLabel())) {
+    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
+      if (!plugin.bsdfs[i].IsReflective()) { continue; }
+      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
         mt::core::MaterialComponent component;
         component.probability = 1.0f;
         component.pluginIdx = i;
-        plugin.materials[i].Allocate(component.userdata);
+        plugin.bsdfs[i].Allocate(component.userdata);
         material.reflective.emplace_back(std::move(component));
 
         render.ClearImageBuffers();
@@ -341,7 +341,7 @@ void UiMaterialEditor(
   ImGui::Text("-- refractive --");
   for (size_t bsdfIdx = 0; bsdfIdx < material.refractive.size(); ++ bsdfIdx) {
     auto & bsdf = material.refractive[bsdfIdx];
-    auto & materialPlugin = plugin.materials[bsdf.pluginIdx];
+    auto & materialPlugin = plugin.bsdfs[bsdf.pluginIdx];
     ImGui::Separator();
     ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
     ImGui::Text("%s", materialPlugin.PluginLabel());
@@ -371,13 +371,13 @@ void UiMaterialEditor(
 
   if (ImGui::BeginCombo("##btdf", "add btdf")) {
     ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.materials.size(); ++ i) {
-      if (!plugin.materials[i].IsRefractive()) { continue; }
-      if (ImGui::Selectable(plugin.materials[i].PluginLabel())) {
+    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
+      if (!plugin.bsdfs[i].IsRefractive()) { continue; }
+      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
         mt::core::MaterialComponent component;
         component.probability = 1.0f;
         component.pluginIdx = i;
-        plugin.materials[i].Allocate(component.userdata);
+        plugin.bsdfs[i].Allocate(component.userdata);
         material.refractive.emplace_back(std::move(component));
 
         render.ClearImageBuffers();
@@ -394,12 +394,12 @@ void UiMaterialEditor(
 
   if (ImGui::BeginCombo("##emitter", "add emitter")) {
     ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.materials.size(); ++ i) {
-      if (ImGui::Selectable(plugin.materials[i].PluginLabel())) {
+    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
+      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
         mt::core::MaterialComponent component;
         component.probability = 1.0f;
         component.pluginIdx = i;
-        plugin.materials[i].Allocate(component.userdata);
+        plugin.bsdfs[i].Allocate(component.userdata);
         material.emitter = std::move(component);
 
         render.ClearImageBuffers();
@@ -410,7 +410,7 @@ void UiMaterialEditor(
   }
 
   if (material.emitter.pluginIdx != -1lu) {
-    auto & materialPlugin = plugin.materials[material.emitter.pluginIdx];
+    auto & materialPlugin = plugin.bsdfs[material.emitter.pluginIdx];
     materialPlugin.UiUpdate(material.emitter.userdata, render, scene);
   }
 

@@ -7,7 +7,6 @@
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
-#include <monte-toad/material/layered.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #include <cxxopts.hpp>
@@ -154,11 +153,6 @@ int main(int argc, char** argv) {
   // -- load up renderinfo & plugin from config file
   mt::PluginInfo plugin;
   fileutil::LoadEditorConfig(render, plugin);
-
-    mt::material::layered::Data data;
-    data.layers = {
-      mt::material::layered::Data::Layer{0.0f, 0.2f, 0.2f, 0.9f, {}}
-    };
 
   if (!ui::Initialize(render, plugin)) {
     return 1;

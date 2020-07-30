@@ -1,0 +1,5 @@
+#add_subdirectory(ggx-mtl)
+add_subdirectory(perfect-specular-bsdf)
+add_subdirectory(perfect-refractive-bsdf)
+add_subdirectory(lambertian-bsdf)
+#add_subdirectory(wavefront-mtl)

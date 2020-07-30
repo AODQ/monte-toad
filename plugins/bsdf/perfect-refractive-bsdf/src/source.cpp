@@ -26,7 +26,7 @@ struct MaterialInfo {
 extern "C" {
 
 char const * PluginLabel() { return "perfect refractive mtl"; }
-mt::PluginType PluginType() { return mt::PluginType::Material; }
+mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {
   if (userdata.data == nullptr) { free(userdata.data); }
@@ -57,16 +57,16 @@ mt::core::BsdfSampleInfo BsdfSample(
 , mt::core::SurfaceInfo const & surface
 ) {
 
+  glm::vec3 wi = surface.incomingAngle;
   glm::vec3 normal = surface.normal;
   float eta = indexOfRefraction;
   // flip normal if surface is incorrect for refraction
-  /* if (glm::dot(surface.incomingAngle, surface.normal) > 0.0f) { */
-  /*   normal = -surface.normal; */
-  /*   eta = 1.0f/eta; */
-  /* } */
+  if (glm::dot(wi, surface.normal) < 0.0f) {
+    normal = -surface.normal;
+    // eta = 1.0f/eta;
+  }
 
-  glm::vec3 const wo =
-    glm::normalize(glm::refract(surface.incomingAngle, normal, eta));
+  glm::vec3 const wo = glm::normalize(glm::refract(wi, normal, eta));
 
   float pdf = 0.0f; // dirac delta
   glm::vec3 fs = BsdfFs(userdata, indexOfRefraction, surface, wo);
@@ -77,7 +77,7 @@ bool IsReflective() { return false; }
 bool IsRefractive() { return true; }
 
 bool IsEmitter(
-  mt::PluginInfoMaterial const & /*self*/
+  mt::core::Any const & /*self*/
 , mt::core::Triangle const & /*triangle*/
 ) {
   return false;

@@ -162,7 +162,7 @@ void UiPluginDisplayInfo(
       ImGui::Text("Realtime: %s", integrator.RealTime() ? "Yes" : "No");
     } break;
     case mt::PluginType::Kernel: break;
-    case mt::PluginType::Material: break;
+    case mt::PluginType::Bsdf: break;
     case mt::PluginType::Camera: break;
     case mt::PluginType::Random: break;
     case mt::PluginType::UserInterface: break;
@@ -187,8 +187,8 @@ void UiPlugin(mt::PluginInfo & plugin) {
     for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx)
       { DisplayPluginUi(mt::PluginType::Integrator, idx); }
 
-    for (size_t idx = 0; idx < plugin.materials.size(); ++ idx)
-      { DisplayPluginUi(mt::PluginType::Material, idx); }
+    for (size_t idx = 0; idx < plugin.bsdfs.size(); ++ idx)
+      { DisplayPluginUi(mt::PluginType::Bsdf, idx); }
 
     DisplayPluginUi(mt::PluginType::Kernel);
     DisplayPluginUi(mt::PluginType::Camera);

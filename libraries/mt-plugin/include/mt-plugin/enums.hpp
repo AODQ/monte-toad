@@ -7,7 +7,7 @@ namespace mt {
   enum struct PluginType : size_t {
     Integrator
   , Kernel
-  , Material
+  , Bsdf
   , Camera
   , Random
   , UserInterface

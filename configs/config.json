@@ -33,8 +33,8 @@
     , "file": "plugins/dispatcher-primary.mt-plugin"
     }
   , {
-      "type": "material",
-      "file": "plugins/ggx-mtl.mt-plugin"
+      "type": "bsdf",
+      "file": "plugins/ggx-bsdf.mt-plugin"
     }
   , {
       "type": "camera",

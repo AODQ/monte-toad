@@ -121,8 +121,8 @@ void fileutil::LoadEditorConfig(
       pluginType = mt::PluginType::Integrator;
     } else if (typeStr == "kernel") {
       pluginType = mt::PluginType::Kernel;
-    } else if (typeStr == "material") {
-      pluginType = mt::PluginType::Material;
+    } else if (typeStr == "bsdf") {
+      pluginType = mt::PluginType::Bsdf;
     } else if (typeStr == "camera") {
       pluginType = mt::PluginType::Camera;
     } else if (typeStr == "random") {
@@ -188,9 +188,9 @@ bool fileutil::LoadPlugin(
     render.integratorData.emplace_back();
     idx = plugin.integrators.size()-1;
   }
-  if (type == mt::PluginType::Material) {
-    plugin.materials.emplace_back();
-    idx = plugin.materials.size()-1;
+  if (type == mt::PluginType::Bsdf) {
+    plugin.bsdfs.emplace_back();
+    idx = plugin.bsdfs.size()-1;
   }
   if (type == mt::PluginType::Emitter) {
     plugin.emitters.emplace_back();
@@ -214,8 +214,8 @@ bool fileutil::LoadPlugin(
       render.integratorData.pop_back();
       plugin.integrators.pop_back();
     }
-    if (type == mt::PluginType::Material) {
-      plugin.materials.pop_back();
+    if (type == mt::PluginType::Bsdf) {
+      plugin.bsdfs.pop_back();
     }
     if (type == mt::PluginType::Emitter) {
       plugin.emitters.pop_back();
