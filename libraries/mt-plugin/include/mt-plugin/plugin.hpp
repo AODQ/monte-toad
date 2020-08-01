@@ -142,6 +142,60 @@ namespace mt {
     char const * (*PluginLabel)();
   };
 
+  struct PluginInfoMaterial {
+    void (*Allocate)(mt::core::Any & userdata) = nullptr;
+
+    bool (*IsEmitter)(
+      mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
+    );
+
+    mt::core::BsdfSampleInfo (*Sample)(
+      mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
+    );
+
+    float (*Pdf)(
+      mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
+    , glm::vec3 const & wo
+    , bool const reflection
+    , size_t const componentIdx
+    );
+
+    float (*IndirectPdf)(
+      mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
+    , glm::vec3 const & wo
+    );
+
+    glm::vec3 (*EmitterFs)(
+      mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
+    );
+
+    glm::vec3 (*Fs)(
+      mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
+    , glm::vec3 const & wo
+    );
+
+    void (*UiUpdate)(
+      mt::core::Scene & scene
+    , mt::core::RenderInfo & render
+    , mt::PluginInfo const & plugin
+    ) = nullptr;
+
+    mt::PluginType (*PluginType)();
+    char const * (*PluginLabel)();
+  };
+
   struct CameraDispatchInfo {
     glm::vec3 origin;
     glm::vec3 direction;
@@ -247,6 +301,7 @@ namespace mt {
     std::vector<PluginInfoEmitter> emitters;
     std::vector<PluginInfoDispatcher> dispatchers;
     std::vector<PluginInfoBsdf> bsdfs;
+    PluginInfoMaterial material;
     PluginInfoKernel kernel; // optional
     PluginInfoCamera camera; // optional
     PluginInfoRandom random;

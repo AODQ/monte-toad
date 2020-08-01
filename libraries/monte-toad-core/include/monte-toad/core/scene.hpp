@@ -1,7 +1,7 @@
 #pragma once
 
+#include <monte-toad/core/any.hpp>
 #include <monte-toad/core/accelerationstructure.hpp>
-#include <monte-toad/core/material.hpp>
 #include <monte-toad/core/span.hpp>
 #include <monte-toad/core/texture.hpp>
 
@@ -10,13 +10,14 @@
 #include <vector>
 
 namespace mt::core { struct SurfaceInfo; }
-namespace mt::core { struct Triangle; }
 namespace mt::core { struct Texture; }
+namespace mt::core { struct Triangle; }
+namespace mt { struct PluginInfo; }
 namespace mt { struct PluginInfoRandom; }
 
 namespace mt::core {
   struct Mesh {
-    mt::core::Material material;
+    mt::core::Any material;
     size_t idx;
   };
 
@@ -31,6 +32,7 @@ namespace mt::core {
   struct Scene {
     static void Construct(
       Scene & self
+    , mt::PluginInfo const & plugin
     , std::string const & filename
     );
 

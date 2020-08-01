@@ -101,6 +101,7 @@ std::shared_ptr<GuiSink> imGuiSink;
 void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
   mt::core::Scene::Construct(
     ::scene
+  , plugin
   , render.modelFile
   );
 
@@ -163,6 +164,7 @@ void UiPluginDisplayInfo(
     } break;
     case mt::PluginType::Kernel: break;
     case mt::PluginType::Bsdf: break;
+    case mt::PluginType::Material: break;
     case mt::PluginType::Camera: break;
     case mt::PluginType::Random: break;
     case mt::PluginType::UserInterface: break;
@@ -191,6 +193,7 @@ void UiPlugin(mt::PluginInfo & plugin) {
       { DisplayPluginUi(mt::PluginType::Bsdf, idx); }
 
     DisplayPluginUi(mt::PluginType::Kernel);
+    DisplayPluginUi(mt::PluginType::Material);
     DisplayPluginUi(mt::PluginType::Camera);
     DisplayPluginUi(mt::PluginType::Random);
     DisplayPluginUi(mt::PluginType::UserInterface);
@@ -443,6 +446,9 @@ void UiEntry(
       integrator.UiUpdate(scene, render, plugin, render.integratorData[idx]);
     }
   }
+
+  if (plugin.material.UiUpdate)
+    { plugin.material.UiUpdate(scene, render, plugin); }
 
   if (plugin.kernel.UiUpdate)
     { plugin.kernel.UiUpdate(scene, render, plugin); }

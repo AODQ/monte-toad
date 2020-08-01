@@ -10,7 +10,6 @@ target_sources(
     src/core/enum.cpp
     src/core/geometry.cpp
     src/core/glutil.cpp
-    src/core/material.cpp
     src/core/math.cpp
     src/core/renderinfo.cpp
     src/core/scene.cpp

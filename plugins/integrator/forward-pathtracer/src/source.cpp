@@ -4,7 +4,6 @@
 #include <monte-toad/core/geometry.hpp>
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
-#include <monte-toad/core/material.hpp>
 #include <monte-toad/core/math.hpp>
 #include <monte-toad/core/scene.hpp>
 #include <monte-toad/core/spectrum.hpp>
@@ -178,7 +177,7 @@ PropagationStatus Propagate(
 
   // generate bsdf sample (this will also be used for next propagation)
   mt::core::BsdfSampleInfo bsdf =
-    mt::core::MaterialSample(surface, scene, plugin);
+    plugin.material.Sample(surface, scene, plugin);
 
   // delta-dirac correct pdfs, valid only for direct emissions
   bsdf.pdf = bsdf.pdf == 0.0f ? 1.0f : bsdf.pdf;
@@ -208,11 +207,9 @@ PropagationStatus Propagate(
 
     // even tho we didn't hit a surface still record the origin
     nextSurface.origin = surface.origin + bsdf.wo*100.0f;
-  } else if (
-    mt::core::MaterialIsEmitter(nextSurface, scene, plugin)
-  ) {
+  } else if (plugin.material.IsEmitter(nextSurface, scene, plugin)) {
     auto emissiveColor =
-      mt::core::MaterialEmitterFs(nextSurface, scene, plugin);
+      plugin.material.EmitterFs(nextSurface, scene, plugin);
 
     /* float emitPdf = EmitterPdf(surface, nextSurface); */
 
@@ -299,8 +296,8 @@ mt::PixelInfo Dispatch(
   }
 
   // check if emitter
-  if (mt::core::MaterialIsEmitter(surface, scene, plugin)) {
-    auto const emission = mt::core::MaterialEmitterFs(surface, scene, plugin);
+  if (plugin.material.IsEmitter(surface, scene, plugin)) {
+    auto const emission = plugin.material.EmitterFs(surface, scene, plugin);
     return mt::PixelInfo{emission, true};
   }
 

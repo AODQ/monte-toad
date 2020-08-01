@@ -102,6 +102,19 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
     } break;
+    case mt::PluginType::Material:{
+      auto & unit = plugin.material;
+      ctx.LoadFunction(unit.Allocate, "Allocate");
+      ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
+      ctx.LoadFunction(unit.Sample, "Sample");
+      ctx.LoadFunction(unit.Pdf, "Pdf");
+      ctx.LoadFunction(unit.IndirectPdf, "IndirectPdf");
+      ctx.LoadFunction(unit.EmitterFs, "EmitterFs");
+      ctx.LoadFunction(unit.Fs, "Fs");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate");
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
     case mt::PluginType::Camera: {
       auto & unit = plugin.camera;
       ctx.LoadFunction(unit.Dispatch, "Dispatch");
@@ -248,6 +261,19 @@ bool mt::Valid(
        && plugin.bsdfs[idx].PluginType() == pluginType
        && plugin.bsdfs[idx].PluginLabel != nullptr
       ;
+    case mt::PluginType::Material:
+      return
+          plugin.material.Allocate != nullptr
+       && plugin.material.IsEmitter != nullptr
+       && plugin.material.Sample != nullptr
+       && plugin.material.Pdf != nullptr
+       && plugin.material.IndirectPdf != nullptr
+       && plugin.material.EmitterFs != nullptr
+       && plugin.material.Fs != nullptr
+       && plugin.material.PluginType != nullptr
+       && plugin.material.PluginType() == pluginType
+       && plugin.material.PluginLabel != nullptr
+      ;
     case mt::PluginType::Camera:
       return
           plugin.camera.Dispatch != nullptr
@@ -329,6 +355,17 @@ void mt::Clean(
       plugin.bsdfs[idx].PluginType   = nullptr;
       plugin.bsdfs[idx].PluginLabel  = nullptr;
     break;
+    case mt::PluginType::Material:
+      plugin.material.Allocate    = nullptr;
+      plugin.material.IsEmitter   = nullptr;
+      plugin.material.Sample      = nullptr;
+      plugin.material.Pdf         = nullptr;
+      plugin.material.IndirectPdf = nullptr;
+      plugin.material.EmitterFs   = nullptr;
+      plugin.material.Fs          = nullptr;
+      plugin.material.PluginType  = nullptr;
+      plugin.material.PluginLabel = nullptr;
+    break;
     case mt::PluginType::Camera:
       plugin.camera.Dispatch = nullptr;
       plugin.camera.PluginType = nullptr;
@@ -378,6 +415,7 @@ char const * ToString(mt::PluginType pluginType) {
     case mt::PluginType::Integrator:    return "Integrator";
     case mt::PluginType::Kernel:        return "Kernel";
     case mt::PluginType::Bsdf:          return "Bsdf";
+    case mt::PluginType::Material:      return "Material";
     case mt::PluginType::Camera:        return "Camera";
     case mt::PluginType::Random:        return "Random";
     case mt::PluginType::UserInterface: return "UserInterface";

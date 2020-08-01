@@ -8,6 +8,7 @@ namespace mt {
     Integrator
   , Kernel
   , Bsdf
+  , Material
   , Camera
   , Random
   , UserInterface

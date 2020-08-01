@@ -2,7 +2,6 @@
 
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
-#include <monte-toad/core/material.hpp>
 #include <monte-toad/core/scene.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
 #include <mt-plugin/plugin.hpp>
@@ -34,7 +33,7 @@ mt::PixelInfo Dispatch(
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   auto color =
-    mt::core::MaterialFs(
+    plugin.material.Fs(
       surface, scene, plugin, glm::reflect(eye.direction, surface.normal)
     );
 

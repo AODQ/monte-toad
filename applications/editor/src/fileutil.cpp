@@ -123,6 +123,8 @@ void fileutil::LoadEditorConfig(
       pluginType = mt::PluginType::Kernel;
     } else if (typeStr == "bsdf") {
       pluginType = mt::PluginType::Bsdf;
+    } else if (typeStr == "material") {
+      pluginType = mt::PluginType::Material;
     } else if (typeStr == "camera") {
       pluginType = mt::PluginType::Camera;
     } else if (typeStr == "random") {

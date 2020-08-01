@@ -3,9 +3,9 @@
 #include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/intersection.hpp>
 #include <monte-toad/core/log.hpp>
-#include <monte-toad/core/material.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
 #include <monte-toad/core/triangle.hpp>
+#include <mt-plugin/plugin.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -15,6 +15,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 std::vector<mt::core::Triangle> LoadAssetIntoScene(
   mt::core::Scene & model
+, mt::PluginInfo const & plugin
 , std::string const & filename
 ) {
   Assimp::Importer importer;
@@ -54,7 +55,8 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
   for (size_t meshIt = 0; meshIt < asset->mNumMeshes; ++ meshIt) {
     auto const & mesh = *asset->mMeshes[meshIt];
 
-    model.meshes.emplace_back(mt::core::Material(), meshIt);
+    model.meshes.emplace_back(mt::core::Any(), meshIt);
+    plugin.material.Allocate(model.meshes.back().material);
 
     for (size_t face = 0; face < mesh.mNumFaces; ++ face)
     for (size_t idx  = 0; idx < mesh.mFaces[face].mNumIndices/3; ++ idx) {
@@ -250,6 +252,7 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
 ////////////////////////////////////////////////////////////////////////////////
 void mt::core::Scene::Construct(
   mt::core::Scene & self
+, mt::PluginInfo const & plugin
 , std::string const & filename
 ) {
   self.bboxMin = glm::vec3(std::numeric_limits<float>::max());
@@ -258,7 +261,7 @@ void mt::core::Scene::Construct(
   // load models & parse into BVH tree
   mt::core::AccelerationStructure::Construct(
     self.accelStructure
-  , LoadAssetIntoScene(self, filename)
+  , LoadAssetIntoScene(self, plugin, filename)
   );
 }
 

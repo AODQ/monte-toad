@@ -4,12 +4,12 @@
 
 namespace mt::core {
   struct Any {
-    Any() {}
+    Any() : data{nullptr} {}
     ~Any();
     Any(mt::core::Any &&);
     mt::core::Any & operator=(mt::core::Any &&);
     Any(mt::core::Any const &) = delete;
 
-    void * data;
+    void * data = nullptr;
   };
 }

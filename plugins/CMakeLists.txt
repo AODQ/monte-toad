@@ -1,4 +1,5 @@
 add_subdirectory(camera)
+add_subdirectory(material)
 add_subdirectory(dispatcher)
 add_subdirectory(emitter)
 add_subdirectory(integrator)

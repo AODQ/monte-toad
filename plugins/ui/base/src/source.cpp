@@ -226,211 +226,6 @@ void ApplyImageResolutionConstraint(
   mt::ApplyAspectRatioY(aspectRatio, resolution.x, resolution.y);
 }
 
-void UiMaterialEditor(
-  mt::core::Scene & scene
-, mt::core::RenderInfo & render
-, mt::PluginInfo const & plugin
-) {
-  static size_t currentMtlIdx = -1lu;
-
-  // -- if an image is clicked then update where it was clicked;
-  if (render.lastIntegratorImageClicked != -1lu) {
-    auto & data = render.integratorData[render.lastIntegratorImageClicked];
-    auto uv =
-      glm::vec2(data.imagePixelClickedCoord)
-      / glm::vec2(data.imageResolution);
-
-    uv = (uv - glm::vec2(0.5f)) * 2.0f;
-    uv.y *=
-      data.imageResolution[1] / static_cast<float>(data.imageResolution[0]);
-
-    auto camera =
-      plugin.camera.Dispatch(
-          plugin.random, render.camera, data.imageResolution, uv
-          );
-
-    auto surface =
-      mt::core::Raycast(scene, camera.origin, camera.direction, nullptr);
-
-    currentMtlIdx =
-      static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);
-
-    render.lastIntegratorImageClicked = -1lu;
-  }
-
-  // reset in case something weird happens and idx is oob
-  if (currentMtlIdx != -1lu && currentMtlIdx >= scene.meshes.size())
-  { currentMtlIdx = 0; }
-
-  // -- material editor
-  if (!ImGui::Begin("Material editor")) {}
-
-  if (currentMtlIdx == -1lu) {
-    ImGui::End();
-    return;
-  }
-
-  ImGui::Text("selected material idx %lu\n", currentMtlIdx);
-
-  ImGui::Separator();
-
-  auto & material = scene.meshes[currentMtlIdx].material;
-
-  if (
-    ImGui::SliderFloat(
-      "index of refraction", &material.indexOfRefraction, 0.0f, 10.0f
-    )
-  ) {
-    render.ClearImageBuffers();
-  }
-
-  ImGui::Separator();
-  ImGui::Separator();
-  ImGui::Text("-- reflective --");
-
-  for (size_t bsdfIdx = 0; bsdfIdx < material.reflective.size(); ++ bsdfIdx) {
-    auto & bsdf = material.reflective[bsdfIdx];
-    auto & materialPlugin = plugin.bsdfs[bsdf.pluginIdx];
-    ImGui::Separator();
-    ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
-    ImGui::Text("%s", materialPlugin.PluginLabel());
-    if (ImGui::SliderFloat("%", &bsdf.probability, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-
-      // normalize bsdf probabilities
-      float total = 0.0f;
-      for (auto const & tBsdf : material.reflective) {
-        total += tBsdf.probability;
-      }
-      for (auto & tBsdf : material.reflective) {
-        tBsdf.probability /= total;
-      }
-    }
-
-    if (ImGui::Button("delete")) {
-      material.reflective.erase(material.reflective.begin() + bsdfIdx);
-      -- bsdfIdx;
-    }
-
-    if (
-        materialPlugin.UiUpdate
-     && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
-    ) {
-      materialPlugin.UiUpdate(bsdf.userdata, render, scene);
-      ImGui::TreePop();
-    }
-  }
-
-  ImGui::Separator();
-
-  if (ImGui::BeginCombo("##brdf", "add brdf")) {
-    ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
-      if (!plugin.bsdfs[i].IsReflective()) { continue; }
-      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
-        mt::core::MaterialComponent component;
-        component.probability = 1.0f;
-        component.pluginIdx = i;
-        plugin.bsdfs[i].Allocate(component.userdata);
-        material.reflective.emplace_back(std::move(component));
-
-        render.ClearImageBuffers();
-      }
-    }
-
-    ImGui::EndCombo();
-  }
-
-  ImGui::Separator();
-  ImGui::Separator();
-  ImGui::Text("-- refractive --");
-  for (size_t bsdfIdx = 0; bsdfIdx < material.refractive.size(); ++ bsdfIdx) {
-    auto & bsdf = material.refractive[bsdfIdx];
-    auto & materialPlugin = plugin.bsdfs[bsdf.pluginIdx];
-    ImGui::Separator();
-    ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
-    ImGui::Text("%s", materialPlugin.PluginLabel());
-    if (ImGui::SliderFloat("%", &bsdf.probability, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-
-      // normalize bsdf probabilities
-      float total = 0.0f;
-      for (auto const & tBsdf : material.refractive) {
-        total += tBsdf.probability;
-      }
-      for (auto & tBsdf : material.refractive) {
-        tBsdf.probability /= total;
-      }
-    }
-
-    if (ImGui::Button("delete")) {
-      material.refractive.erase(material.refractive.begin() + bsdfIdx);
-      -- bsdfIdx;
-    }
-
-    if (
-        materialPlugin.UiUpdate
-     && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
-    ) {
-      materialPlugin.UiUpdate(bsdf.userdata, render, scene);
-      ImGui::TreePop();
-    }
-  }
-
-  ImGui::Separator();
-
-  if (ImGui::BeginCombo("##btdf", "add btdf")) {
-    ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
-      if (!plugin.bsdfs[i].IsRefractive()) { continue; }
-      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
-        mt::core::MaterialComponent component;
-        component.probability = 1.0f;
-        component.pluginIdx = i;
-        plugin.bsdfs[i].Allocate(component.userdata);
-        material.refractive.emplace_back(std::move(component));
-
-        render.ClearImageBuffers();
-      }
-    }
-
-    ImGui::EndCombo();
-  }
-
-  ImGui::Separator();
-  ImGui::Separator();
-
-  ImGui::Text("-- emitter --");
-
-  if (ImGui::BeginCombo("##emitter", "add emitter")) {
-    ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
-      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
-        mt::core::MaterialComponent component;
-        component.probability = 1.0f;
-        component.pluginIdx = i;
-        plugin.bsdfs[i].Allocate(component.userdata);
-        material.emitter = std::move(component);
-
-        render.ClearImageBuffers();
-      }
-    }
-
-    ImGui::EndCombo();
-  }
-
-  if (ImGui::Button("delete")) {
-    material.emitter.pluginIdx = -1lu;
-  }
-
-  if (material.emitter.pluginIdx != -1lu) {
-    auto & materialPlugin = plugin.bsdfs[material.emitter.pluginIdx];
-    materialPlugin.UiUpdate(material.emitter.userdata, render, scene);
-  }
-
-  ImGui::End();
-}
-
 void UiTextureEditor(mt::core::Scene & scene) {
   ImGui::Begin("Textures");
 
@@ -800,25 +595,24 @@ void UiEmitters(
   ImGui::End();
 }
 
-} // -- namespace
+} // -- anon namespace
 
 extern "C" {
 
-  char const * PluginLabel() { return "base UI"; }
-  mt::PluginType PluginType() { return mt::PluginType::UserInterface; }
+char const * PluginLabel() { return "base UI"; }
+mt::PluginType PluginType() { return mt::PluginType::UserInterface; }
 
-  void Dispatch(
-      mt::core::Scene & scene
-      , mt::core::RenderInfo & render
-      , mt::PluginInfo const & plugin
-      ) {
-    ::UiCameraControls(scene, plugin, render);
-    ::UiPluginInfo(scene, render, plugin);
-    ::UiImageOutput(scene, render, plugin);
-    ::UiEmitters(scene, render, plugin);
-    ::UiDispatchers(render, plugin);
-    ::UiTextureEditor(scene);
-    ::UiMaterialEditor(scene, render, plugin);
+void Dispatch(
+  mt::core::Scene & scene
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
+  ::UiCameraControls(scene, plugin, render);
+  ::UiPluginInfo(scene, render, plugin);
+  ::UiImageOutput(scene, render, plugin);
+  ::UiEmitters(scene, render, plugin);
+  ::UiDispatchers(render, plugin);
+  ::UiTextureEditor(scene);
 }
 
-}
+} // -- extern C
