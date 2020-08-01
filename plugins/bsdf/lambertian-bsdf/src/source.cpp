@@ -29,7 +29,7 @@ struct MaterialInfo {
 
 extern "C" {
 
-char const * PluginLabel() { return "lambertian mtl"; }
+char const * PluginLabel() { return "lambertian bsdf"; }
 mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {

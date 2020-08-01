@@ -1,15 +1,15 @@
-add_library(perfect-refractive-mtl SHARED)
-target_sources(perfect-refractive-mtl PRIVATE src/source.cpp)
+add_library(perfect-refractive-bsdf SHARED)
+target_sources(perfect-refractive-bsdf PRIVATE src/source.cpp)
 
 target_link_libraries(
-  perfect-refractive-mtl
+  perfect-refractive-bsdf
   PRIVATE
     mt-plugin monte-toad-core
     imgui
 )
 
 set_target_properties(
-  perfect-refractive-mtl
+  perfect-refractive-bsdf
     PROPERTIES
       COMPILE_FLAGS
         "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
@@ -19,7 +19,7 @@ set_target_properties(
 )
 
 install(
-  TARGETS perfect-refractive-mtl
+  TARGETS perfect-refractive-bsdf
   LIBRARY NAMELINK_SKIP
   LIBRARY
     DESTINATION plugins/

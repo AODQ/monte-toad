@@ -25,7 +25,7 @@ struct MaterialInfo {
 
 extern "C" {
 
-char const * PluginLabel() { return "perfect refractive mtl"; }
+char const * PluginLabel() { return "perfect refractive bsdf"; }
 mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {
