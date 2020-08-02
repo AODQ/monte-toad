@@ -26,7 +26,7 @@ struct Material {
   ::MaterialComponent emitter;
   std::vector<MaterialComponent> diffuse, specular, refractive;
   float indexOfRefraction = 1.0f;
-  float fresnelMinimalReflection = 0.5f;
+  float fresnelMinimalReflection = 0.0f;
 };
 
 // TODO move to core or something
@@ -463,6 +463,24 @@ void UiUpdate(
   if (material.emitter.pluginIdx != -1lu) {
     auto & materialPlugin = plugin.bsdfs[material.emitter.pluginIdx];
     materialPlugin.UiUpdate(material.emitter.userdata, render, scene);
+  }
+
+  // -- sanity checks for material, would be better if uimaterialcomponent
+  //    returned a value so this can happen on those events TODO
+  if (
+      material.diffuse.size() == 0
+   && material.refractive.size() == 0
+   && material.specular.size() > 0
+  ) {
+    material.fresnelMinimalReflection = 1.0f;
+  }
+
+  if (
+      material.diffuse.size() == 0
+   && material.specular.size() == 0
+   && material.refractive.size() > 0
+  ) {
+    material.fresnelMinimalReflection = 0.0f;
   }
 
   ImGui::End();
