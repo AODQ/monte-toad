@@ -63,10 +63,10 @@ mt::core::BsdfSampleInfo BsdfSample(
   // flip normal if surface is incorrect for refraction
   if (glm::dot(wi, surface.normal) < 0.0f) {
     normal = -surface.normal;
-    // eta = 1.0f/eta;
+    eta = 1.0f/eta;
   }
 
-  glm::vec3 const wo = glm::normalize(glm::refract(wi, normal, eta));
+  glm::vec3 const wo = glm::normalize(glm::refract(wi, -normal, eta));
 
   float pdf = 0.0f; // dirac delta
   glm::vec3 fs = BsdfFs(userdata, indexOfRefraction, surface, wo);
