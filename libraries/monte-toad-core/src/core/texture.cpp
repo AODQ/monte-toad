@@ -189,3 +189,100 @@ glm::vec4 mt::core::Sample(mt::core::Texture const & texture, glm::vec3 dir) {
       )
     );
 }
+
+#include <monte-toad/core/scene.hpp>
+
+#include <imgui/imgui.hpp>
+
+bool SelectTexture(
+  mt::core::Scene const & scene
+, mt::core::Texture const * & tex
+, std::string const & label
+) {
+  bool change = false;
+  std::string const comboLabel = "Texture ##" + label;
+  if (!ImGui::BeginCombo(comboLabel.c_str(), tex ? tex->label.c_str() : "none"))
+    { return false; }
+
+  if (ImGui::Selectable("none", !tex)) {
+    tex = nullptr;
+    change = true;
+  }
+
+  for (auto & sceneTex : scene.textures) {
+    if (ImGui::Selectable(sceneTex.label.c_str(), &sceneTex == tex)) {
+      tex = &sceneTex;
+      change = true;
+    }
+  }
+
+  ImGui::EndCombo();
+
+  return change;
+}
+
+template <> bool mt::core::TextureOption<float>::GuiApply(
+  mt::core::Scene const & scene
+) {
+  bool change = false;
+  ImGui::Text("%s", this->label.c_str());
+  if (!this->userTexture) {
+    std::string const sliderLabel = "##" + this->label;
+    change =
+      ImGui::SliderFloat(
+        sliderLabel.c_str(), &this->userValue, this->minRange, this->maxRange
+      );
+  }
+
+  change |= SelectTexture(scene, this->userTexture, this->label);
+
+  return change;
+}
+
+template <> float mt::core::TextureOption<float>::Get(
+  glm::vec2 const & uv
+) const {
+  auto value = this->userValue;
+  if (this->userTexture) {
+    value = mt::core::Sample(*this->userTexture, uv).r;
+    value = glm::mix(this->minRange, this->maxRange, value);
+  }
+  return value;
+}
+
+template <> bool mt::core::TextureOption<glm::vec3>::GuiApply(
+  mt::core::Scene const & scene
+) {
+  bool change = false;
+  ImGui::Text("%s", this->label.c_str());
+  if (!this->userTexture) {
+    std::string const sliderLabel = "##" + this->label;
+
+    if (this->minRange == 0.0f && this->maxRange == 1.0f){
+      change = ImGui::ColorPicker3(sliderLabel.c_str(), &this->userValue.x);
+    } else {
+      change =
+        ImGui::SliderFloat3(
+          sliderLabel.c_str()
+        , &this->userValue.x, this->minRange, this->maxRange
+        );
+    }
+  }
+
+  change |= SelectTexture(scene, this->userTexture, this->label);
+
+  return change;
+}
+
+template <> glm::vec3 mt::core::TextureOption<glm::vec3>::Get(
+  glm::vec2 const & uv
+) const {
+  auto value = this->userValue;
+  if (this->userTexture) {
+    auto v = mt::core::Sample(*this->userTexture, uv);
+    value.x = v.x; value.y = v.y; value.z = v.z;
+    value =
+      glm::mix(glm::vec3(this->minRange), glm::vec3(this->maxRange), value);
+  }
+  return value;
+}

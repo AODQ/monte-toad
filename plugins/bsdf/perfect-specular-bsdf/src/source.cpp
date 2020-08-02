@@ -10,6 +10,7 @@
 #include <monte-toad/core/scene.hpp>
 #include <monte-toad/core/spectrum.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
+#include <monte-toad/core/texture.hpp>
 #include <monte-toad/core/triangle.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -18,7 +19,7 @@
 namespace {
 
 struct MaterialInfo {
-  glm::vec3 albedo;
+  mt::core::TextureOption<glm::vec3> albedo { "albedo" };
 };
 
 } // -- namespace
@@ -29,18 +30,18 @@ char const * PluginLabel() { return "perfect specular bsdf"; }
 mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {
-  if (userdata.data == nullptr) { free(userdata.data); }
-  userdata.data = ::malloc(sizeof(MaterialInfo));
-  *reinterpret_cast<MaterialInfo*>(userdata.data) = {};
+  if (userdata.data == nullptr)
+    { delete reinterpret_cast<::MaterialInfo*>(userdata.data); }
+  userdata.data = new ::MaterialInfo{};
 }
 
 glm::vec3 BsdfFs(
   mt::core::Any const & userdata, float const /*indexOfRefraction*/
-, mt::core::SurfaceInfo const & /*surface*/
+, mt::core::SurfaceInfo const & surface
 , glm::vec3 const &
 ) {
   auto & material = *reinterpret_cast<MaterialInfo const *>(userdata.data);
-  return material.albedo;
+  return material.albedo.Get(surface.uvcoord);
 }
 
 float BsdfPdf(
@@ -76,17 +77,14 @@ bool IsEmitter(
 void UiUpdate(
   mt::core::Any & userdata
 , mt::core::RenderInfo & render
-, mt::core::Scene & /*scene*/
+, mt::core::Scene & scene
 ) {
   auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
 
   ImGui::Separator();
 
-  ImGui::Text("albedo");
-
-  if (ImGui::ColorPicker3("##albedo", &material.albedo.x)) {
-    render.ClearImageBuffers();
-  }
+  if (material.albedo.GuiApply(scene))
+    { render.ClearImageBuffers(); }
 }
 
 } // -- end extern "C"

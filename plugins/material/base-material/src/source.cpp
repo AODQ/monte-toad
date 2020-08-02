@@ -6,6 +6,7 @@
 #include <monte-toad/core/scene.hpp>
 #include <monte-toad/core/spectrum.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
+#include <monte-toad/core/texture.hpp>
 #include <monte-toad/core/triangle.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -25,8 +26,10 @@ struct MaterialComponent {
 struct Material {
   ::MaterialComponent emitter;
   std::vector<MaterialComponent> diffuse, specular, refractive;
-  float indexOfRefraction = 1.0f;
-  float fresnelMinimalReflection = 0.0f;
+  mt::core::TextureOption<float>
+    indexOfRefraction { "index of refraction (IOR)", 1.0f, 5.0f, 1.0f }
+  , fresnelMinimalReflection { "fresnel minimal reflection (F0)" }
+  ;
 };
 
 // TODO move to core or something
@@ -193,18 +196,26 @@ mt::core::BsdfSampleInfo Sample(
     *reinterpret_cast<::Material*>(
       scene.meshes[surface.material].material.data
     );
-  float const ior = material.indexOfRefraction;
+  float const ior = material.indexOfRefraction.Get(surface.uvcoord);
+
+  if (
+      material.specular.size() == 0ul
+   && material.refractive.size() == 0ul
+   && material.diffuse.size() == 0ul
+  ) { return mt::core::BsdfSampleInfo{}; }
 
   mt::BsdfTypeHint sampleType = mt::BsdfTypeHint::Transmittive;
-  float specularChance = material.fresnelMinimalReflection;
-  float transmissionChance = 1.0f - material.fresnelMinimalReflection;
+  float const fresnelMinimalReflection =
+    material.fresnelMinimalReflection.Get(surface.uvcoord);
+  float specularChance = fresnelMinimalReflection;
+  float transmissionChance = 1.0f - fresnelMinimalReflection;
 
   if (specularChance > 0.0f) {
     specularChance =
       ::FresnelReflectAmount(
         surface.exitting ? ior : 1.0f
       , surface.exitting ? 1.0f : ior
-      , material.fresnelMinimalReflection, 1.0f
+      , fresnelMinimalReflection, 1.0f
       , surface.normal, -surface.incomingAngle
       );
   }
@@ -214,7 +225,7 @@ mt::core::BsdfSampleInfo Sample(
       ::FresnelReflectAmount(
         surface.exitting ? ior : 1.0f
       , surface.exitting ? 1.0f : ior
-      , 1.0f - material.fresnelMinimalReflection, 1.0f
+      , 1.0f - fresnelMinimalReflection, 1.0f
       , surface.normal, -surface.incomingAngle
       );
   }
@@ -289,7 +300,8 @@ glm::vec3 EmitterFs(
     plugin
       .bsdfs[bsdf.pluginIdx]
       .BsdfFs(
-        bsdf.userdata, material.indexOfRefraction, surface, glm::vec3(0.0f)
+        bsdf.userdata, material.indexOfRefraction.Get(surface.uvcoord)
+      , surface, glm::vec3(0.0f)
       );
 }
 
@@ -332,7 +344,10 @@ float IndirectPdf(
     pdf +=
       bsdf.probability
     * plugin.bsdfs[bsdf.pluginIdx]
-        .BsdfPdf(bsdf.userdata, material.indexOfRefraction, surface, wo)
+        .BsdfPdf(
+          bsdf.userdata, material.indexOfRefraction.Get(surface.uvcoord)
+        , surface, wo
+        )
     ;
   }
 
@@ -390,25 +405,13 @@ void UiUpdate(
   auto & material =
     *reinterpret_cast<::Material*>(scene.meshes[currentMtlIdx].material.data);
 
-  ImGui::Text("index of refraction (IOR)");
-  if (
-    ImGui::SliderFloat(
-      "##index of refraction", &material.indexOfRefraction, 1.0f, 5.0f
-    )
-  ) {
-    render.ClearImageBuffers();
-  }
+  if (material.indexOfRefraction.GuiApply(scene))
+    { render.ClearImageBuffers(); }
 
   ImGui::Separator();
 
-  ImGui::Text("fresnel minimal reflection (F0)");
-  if (
-    ImGui::SliderFloat(
-      "##fresnel min refl", &material.fresnelMinimalReflection, 0.0f, 1.0f
-    )
-  ) {
-    render.ClearImageBuffers();
-  }
+  if (material.fresnelMinimalReflection.GuiApply(scene))
+    { render.ClearImageBuffers(); }
 
   ImGui::Separator();
   ImGui::Separator();
@@ -456,8 +459,11 @@ void UiUpdate(
     ImGui::EndCombo();
   }
 
-  if (ImGui::Button("delete")) {
-    material.emitter.pluginIdx = -1lu;
+  if (material.emitter.pluginIdx != -1lu) {
+    if (ImGui::Button("delete")) {
+      material.emitter.pluginIdx = -1lu;
+      // TODO can't delete bc don't know type
+    }
   }
 
   if (material.emitter.pluginIdx != -1lu) {
@@ -472,7 +478,7 @@ void UiUpdate(
    && material.refractive.size() == 0
    && material.specular.size() > 0
   ) {
-    material.fresnelMinimalReflection = 1.0f;
+    material.fresnelMinimalReflection.userValue = 1.0f;
   }
 
   if (
@@ -480,7 +486,7 @@ void UiUpdate(
    && material.specular.size() == 0
    && material.refractive.size() > 0
   ) {
-    material.fresnelMinimalReflection = 0.0f;
+    material.fresnelMinimalReflection.userValue = 0.0f;
   }
 
   ImGui::End();

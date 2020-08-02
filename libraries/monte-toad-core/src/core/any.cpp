@@ -1,7 +1,7 @@
 #include <monte-toad/core/any.hpp>
 
 mt::core::Any::~Any() {
-  if (data) { free(data) ;}
+  if (data) { /* TODO report leaked memory */ }
 }
 
 mt::core::Any::Any(mt::core::Any && other) : data(other.data) {

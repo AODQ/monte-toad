@@ -4,8 +4,10 @@
 #include <string>
 #include <vector>
 
+namespace mt::core { struct Scene; }
+
 namespace mt::core {
-  ////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
   struct Texture {
     uint64_t width, height;
     std::vector<glm::vec4> data;
@@ -20,6 +22,16 @@ namespace mt::core {
 
     bool Valid() const { return data.size() > 0; }
     size_t Idx(size_t x, size_t y) const { return y*this->width + x; }
+  };
+
+  template <typename T> struct TextureOption {
+    bool GuiApply(mt::core::Scene const & scene);
+    T Get(glm::vec2 const & uv) const;
+
+    std::string label = "N/A";
+    float minRange = 0.0f, maxRange = 1.0f;
+    T userValue { 0.0f };
+    mt::core::Texture const * userTexture = nullptr;
   };
 
   /* struct CubemapTexture { */

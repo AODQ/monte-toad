@@ -18,10 +18,8 @@
 namespace {
 
 struct MaterialInfo {
-  glm::vec3 albedo;
-
-  float emission = 0.0f;
-  mt::core::Texture * albedoTexture = nullptr;
+  mt::core::TextureOption<glm::vec3> albedo {"albedo"};
+  mt::core::TextureOption<float> emission {"emission", 0.0f, 10.0f};
   bool albedoTextureLinearSpace = false;
 };
 
@@ -33,9 +31,9 @@ char const * PluginLabel() { return "lambertian bsdf"; }
 mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {
-  if (userdata.data == nullptr) { free(userdata.data); }
-  userdata.data = ::malloc(sizeof(MaterialInfo));
-  *reinterpret_cast<MaterialInfo*>(userdata.data) = {};
+  if (userdata.data == nullptr)
+    { delete reinterpret_cast<::MaterialInfo*>(userdata.data); }
+  userdata.data = new ::MaterialInfo{};
 }
 
 glm::vec3 BsdfFs(
@@ -45,18 +43,15 @@ glm::vec3 BsdfFs(
 ) {
   auto & material = *reinterpret_cast<MaterialInfo const *>(userdata.data);
 
-  auto albedo = material.albedo;
-  glm::vec2 uv = surface.uvcoord;
-  if (material.albedoTexture) {
-    albedo = mt::core::Sample(*material.albedoTexture, uv);
-    albedo =
-      glm::pow(
-        albedo,
-        glm::vec3(material.albedoTextureLinearSpace ? 1.0f : 2.2f)
-      );
-  }
+  auto albedo = material.albedo.Get(surface.uvcoord);
+  albedo =
+    glm::pow(
+      albedo,
+      glm::vec3(material.albedoTextureLinearSpace ? 1.0f : 2.2f)
+    );
 
-  if (material.emission > 0.0f) { return material.emission * albedo; }
+  float emission = material.emission.Get(surface.uvcoord);
+  if (emission > 0.0f) { return emission * albedo; }
 
   return glm::dot(wo, surface.normal) * glm::InvPi * albedo;
 }
@@ -96,7 +91,10 @@ bool IsEmitter(
   auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
   // Temporarily allow this material to be an emitter, though i should probably
   // not use this for that case
-  return material.emission > 0.0f;
+  return
+      material.emission.userValue > 0.0f
+   || material.emission.userTexture != nullptr
+  ;
 }
 
 void UiUpdate(
@@ -106,43 +104,11 @@ void UiUpdate(
 ) {
   auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
 
-  if (ImGui::SliderFloat("emission", &material.emission, 0.0f, 15.0f)) {
-    render.ClearImageBuffers();
-  }
+  if (material.emission.GuiApply(scene))
+    { render.ClearImageBuffers(); }
 
-  if (!material.albedoTexture) {
-    if (ImGui::ColorPicker3("##albedo", &material.albedo.x))
-      { render.ClearImageBuffers(); }
-  } else {
-    if (ImGui::Checkbox("Linear Space", &material.albedoTextureLinearSpace))
-      { render.ClearImageBuffers(); }
-  }
-
-  // -- albedo texture
-  if (
-    ImGui::BeginCombo(
-      "Texture"
-    , material.albedoTexture ? material.albedoTexture->label.c_str() : "none"
-    )
-  ) {
-    if (ImGui::Selectable("none", !material.albedoTexture)) {
-      material.albedoTexture = nullptr;
-      render.ClearImageBuffers();
-    }
-
-    for (auto & tex : scene.textures) {
-      if (
-        ImGui::Selectable(
-          tex.label.c_str()
-        , &tex == material.albedoTexture
-        )
-      ) {
-        material.albedoTexture = &tex;
-        render.ClearImageBuffers();
-      }
-    }
-    ImGui::EndCombo();
-  }
+  if (material.albedo.GuiApply(scene))
+    { render.ClearImageBuffers(); }
 }
 
 } // -- end extern "C"

@@ -40,5 +40,5 @@ target_link_libraries(
   PUBLIC
     glm spdlog fmt bvh monte-toad-util
   PRIVATE
-    glad mt-plugin
+    glad mt-plugin imgui
 )
