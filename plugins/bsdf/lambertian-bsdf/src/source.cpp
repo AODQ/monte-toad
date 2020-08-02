@@ -46,8 +46,9 @@ glm::vec3 BsdfFs(
   auto & material = *reinterpret_cast<MaterialInfo const *>(userdata.data);
 
   auto albedo = material.albedo;
+  glm::vec2 uv = surface.uvcoord;
   if (material.albedoTexture) {
-    albedo = mt::core::Sample(*material.albedoTexture, surface.uvcoord);
+    albedo = mt::core::Sample(*material.albedoTexture, uv);
     albedo =
       glm::pow(
         albedo,
@@ -86,8 +87,7 @@ mt::core::BsdfSampleInfo BsdfSample(
   return { wo, fs, pdf };
 }
 
-bool IsReflective() { return true; }
-bool IsRefractive() { return false; }
+mt::BsdfTypeHint BsdfType() { return mt::BsdfTypeHint::Diffuse; }
 
 bool IsEmitter(
   mt::core::Any const & userdata

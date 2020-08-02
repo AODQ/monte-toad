@@ -36,8 +36,8 @@ namespace mt {
   enum struct BsdfTypeHint : uint8_t {
     Diffuse
   , Specular
-  , Refractive
-  , Reflective
+  , Transmittive
+  , Size
   };
 
   enum struct AspectRatio : uint8_t {

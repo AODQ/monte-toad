@@ -64,8 +64,7 @@ mt::core::BsdfSampleInfo BsdfSample(
   return { wo, fs, pdf };
 }
 
-bool IsReflective() { return true; }
-bool IsRefractive() { return false; }
+mt::BsdfTypeHint BsdfType() { return mt::BsdfTypeHint::Specular; }
 
 bool IsEmitter(
   mt::core::Any const & /*self*/

@@ -96,8 +96,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
       ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
       ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
-      ctx.LoadFunction(unit.IsReflective, "IsReflective");
-      ctx.LoadFunction(unit.IsRefractive, "IsRefractive");
+      ctx.LoadFunction(unit.BsdfType, "BsdfType");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -254,8 +253,7 @@ bool mt::Valid(
        && plugin.bsdfs[idx].BsdfPdf  != nullptr
        && plugin.bsdfs[idx].BsdfSample != nullptr
        && plugin.bsdfs[idx].IsEmitter != nullptr
-       && plugin.bsdfs[idx].IsReflective != nullptr
-       && plugin.bsdfs[idx].IsRefractive != nullptr
+       && plugin.bsdfs[idx].BsdfType != nullptr
        && plugin.bsdfs[idx].Allocate != nullptr
        && plugin.bsdfs[idx].PluginType != nullptr
        && plugin.bsdfs[idx].PluginType() == pluginType
@@ -344,16 +342,15 @@ void mt::Clean(
       plugin.kernel.PluginLabel = nullptr;
     break;
     case mt::PluginType::Bsdf:
-      plugin.bsdfs[idx].BsdfFs       = nullptr;
-      plugin.bsdfs[idx].BsdfPdf      = nullptr;
-      plugin.bsdfs[idx].BsdfSample   = nullptr;
-      plugin.bsdfs[idx].IsEmitter    = nullptr;
-      plugin.bsdfs[idx].IsRefractive = nullptr;
-      plugin.bsdfs[idx].IsReflective = nullptr;
-      plugin.bsdfs[idx].Allocate     = nullptr;
-      plugin.bsdfs[idx].UiUpdate     = nullptr;
-      plugin.bsdfs[idx].PluginType   = nullptr;
-      plugin.bsdfs[idx].PluginLabel  = nullptr;
+      plugin.bsdfs[idx].BsdfFs      = nullptr;
+      plugin.bsdfs[idx].BsdfPdf     = nullptr;
+      plugin.bsdfs[idx].BsdfSample  = nullptr;
+      plugin.bsdfs[idx].IsEmitter   = nullptr;
+      plugin.bsdfs[idx].BsdfType    = nullptr;
+      plugin.bsdfs[idx].Allocate    = nullptr;
+      plugin.bsdfs[idx].UiUpdate    = nullptr;
+      plugin.bsdfs[idx].PluginType  = nullptr;
+      plugin.bsdfs[idx].PluginLabel = nullptr;
     break;
     case mt::PluginType::Material:
       plugin.material.Allocate    = nullptr;

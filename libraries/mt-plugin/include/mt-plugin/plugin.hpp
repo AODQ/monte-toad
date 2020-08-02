@@ -26,6 +26,7 @@ namespace mt::core { struct Scene; }
 namespace mt::core { struct SurfaceInfo; }
 namespace mt::core { struct Triangle; }
 namespace mt::debugutil { struct IntegratorPathUnit; }
+namespace mt { enum struct BsdfTypeHint : uint8_t; }
 namespace mt { struct PluginInfo; }
 
 namespace mt {
@@ -133,10 +134,9 @@ namespace mt {
     , mt::core::Triangle const & triangle
     );
 
-    // determines if bsdf can be used as a BRDF
-    bool (*IsReflective)();
-    // determines if bsdf can be used as a BTDF
-    bool (*IsRefractive)();
+    // helps determine what type of bsdf it is to help with bsdf picking in
+    // material
+    mt::BsdfTypeHint (*BsdfType)();
 
     mt::PluginType (*PluginType)();
     char const * (*PluginLabel)();

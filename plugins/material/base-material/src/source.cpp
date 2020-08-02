@@ -24,9 +24,135 @@ struct MaterialComponent {
 
 struct Material {
   ::MaterialComponent emitter;
-  std::vector<MaterialComponent> reflective, refractive;
-  float indexOfRefraction;
+  std::vector<MaterialComponent> diffuse, specular, refractive;
+  float indexOfRefraction = 1.0f;
+  float fresnelMinimalReflection = 0.5f;
 };
+
+// TODO move to core or something
+float FresnelReflectAmount(
+  float const iorStart
+, float const iorEnd
+, float const f0, float const f90
+, glm::vec3 const & normal
+, glm::vec3 const & wi
+) {
+  // schlick approx but correct iorStart/iorEnd and check for TIR
+  float r0 = (iorStart-iorEnd) / (iorStart+iorEnd);
+  r0 *= r0;
+  float cosTheta = dot(normal, wi);
+  if (iorStart > iorEnd) {
+    float const n = iorStart/iorEnd;
+    float sinT2 = n*n*(1.0f - cosTheta*cosTheta);
+    // total internal reflection
+    if (sinT2 > 1.0f) { return f90; }
+    cosTheta = glm::sqrt(1.0f - sinT2);
+  }
+  float const x = 1.0f - cosTheta;
+
+  // adjust reflection multiplier
+  return glm::mix(f0, f90, r0 + (1.0f-r0)*x*x*x*x*x);
+}
+
+
+mt::core::BsdfSampleInfo SampleMaterial(
+  std::vector<MaterialComponent> const & component
+, float const indexOfRefraction
+, mt::core::SurfaceInfo const & surface
+, mt::PluginInfo const & plugin
+) {
+  // choose probability, don't sample a uniform if there's only one brdf
+  float const probability =
+    component.size() <= 1 ? 0.0f : plugin.random.SampleUniform1()
+  ;
+
+  // locate the corresponding material and calculate results
+  float probabilityIt = 0.0f;
+  for (size_t i = 0; i < component.size(); ++i) {
+    probabilityIt += component[i].probability;
+
+    auto & bsdf = component[i];
+
+    // probability found now just return the plugin's brdf sample
+    if (probabilityIt >= probability) {
+      return
+        plugin.bsdfs[bsdf.pluginIdx].BsdfSample(
+            bsdf.userdata, indexOfRefraction, plugin.random, surface
+        );
+    }
+  }
+
+  return mt::core::BsdfSampleInfo{};
+}
+
+void UiMaterialComponent(
+  std::vector<MaterialComponent> & components
+, mt::BsdfTypeHint const bsdfType
+, std::string const & guiLabel
+, mt::core::Scene & scene
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
+  ImGui::Text("%s", guiLabel.c_str());
+
+  for (size_t bsdfIdx = 0; bsdfIdx < components.size(); ++ bsdfIdx) {
+    auto & bsdf = components[bsdfIdx];
+    auto & materialPlugin = plugin.bsdfs[bsdf.pluginIdx];
+    ImGui::Separator();
+    ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
+    ImGui::Text("%s", materialPlugin.PluginLabel());
+    if (ImGui::SliderFloat("%", &bsdf.probability, 0.0f, 1.0f)) {
+      render.ClearImageBuffers();
+
+      // normalize bsdf probabilities
+      float total = 0.0f;
+      for (auto const & tBsdf : components) {
+        total += tBsdf.probability;
+      }
+      for (auto & tBsdf : components) {
+        tBsdf.probability /= total;
+      }
+    }
+
+    if (ImGui::Button("delete")) {
+      components.erase(components.begin() + bsdfIdx);
+      -- bsdfIdx;
+    }
+
+    if (
+        materialPlugin.UiUpdate
+     && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
+    ) {
+      materialPlugin.UiUpdate(bsdf.userdata, render, scene);
+      ImGui::TreePop();
+    }
+  }
+
+  ImGui::Separator();
+
+  std::string const
+    hiddenLabel = "##" + guiLabel
+  , addLabel    = "add " + guiLabel
+  ;
+
+  if (ImGui::BeginCombo(hiddenLabel.c_str(), addLabel.c_str())) {
+    ImGui::Selectable("cancel", true);
+    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
+      if (plugin.bsdfs[i].BsdfType() != bsdfType) { continue; }
+      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
+        ::MaterialComponent component;
+        component.probability = 1.0f;
+        component.pluginIdx = i;
+        plugin.bsdfs[i].Allocate(component.userdata);
+        components.emplace_back(std::move(component));
+
+        render.ClearImageBuffers();
+      }
+    }
+
+    ImGui::EndCombo();
+  }
+}
 
 } // -- anon namespace
 
@@ -40,7 +166,8 @@ void Allocate(mt::core::Any & userdata) {
   userdata.data = ::calloc(1, sizeof(::Material));
   auto & m = *reinterpret_cast<::Material*>(userdata.data);
   m = {};
-  m.reflective.resize(0);
+  m.specular.resize(0);
+  m.diffuse.resize(0);
   m.refractive.resize(0);
 }
 
@@ -66,119 +193,86 @@ mt::core::BsdfSampleInfo Sample(
     *reinterpret_cast<::Material*>(
       scene.meshes[surface.material].material.data
     );
+  float const ior = material.indexOfRefraction;
 
-  mt::core::BsdfSampleInfo sampleInfo;
+  mt::BsdfTypeHint sampleType = mt::BsdfTypeHint::Transmittive;
+  float specularChance = material.fresnelMinimalReflection;
+  float transmissionChance = 1.0f - material.fresnelMinimalReflection;
 
-  bool reflection = true;
-  // if IOR is <100, the material has a probability to refract
-  if (material.indexOfRefraction < 100.0f)
-  {
-    auto const cosTheta = glm::dot(-surface.incomingAngle, surface.normal);
-    glm::vec3 normal = surface.normal;
-    float eta = material.indexOfRefraction;
-
-    // flip normal if surface is incorrect for refraction
-    if (glm::dot(-surface.incomingAngle, surface.normal) < 0.0f) {
-      normal = -surface.normal;
-      // eta = 1.0f/eta;
-    }
-
-    float const f0 = glm::sqr((1.0f - eta) / (1.0f + eta));
-
-    float const fresnel = f0 + (1.0f - f0)*glm::pow(1.0f - cosTheta, 5.0f);
-
-    reflection =
-        fresnel <= 0.0001f
-     || fresnel > plugin.random.SampleUniform1()
-    ;
-
-    // total internal reflection
-    /* if (1.0f - eta*eta*(1.0f - cosTheta*cosTheta) < 0.0f) { */
-    /*   reflection = true; */
-    /* } */
+  if (specularChance > 0.0f) {
+    specularChance =
+      ::FresnelReflectAmount(
+        surface.exitting ? ior : 1.0f
+      , surface.exitting ? 1.0f : ior
+      , material.fresnelMinimalReflection, 1.0f
+      , surface.normal, -surface.incomingAngle
+      );
   }
 
-  if (!reflection) {
-    // -- refraction
-    if (material.refractive.size() == 0) { return mt::core::BsdfSampleInfo{}; }
-
-    // choose probability, don't sample a uniform if there's only one brdf
-    float const probability =
-      material.refractive.size() <= 1 ? 0.0f : plugin.random.SampleUniform1()
-    ;
-
-    // locate the corresponding material and calculate results
-    float probabilityIt = 0.0f;
-    for (size_t i = 0; i < material.refractive.size(); ++i) {
-      probabilityIt += material.refractive[i].probability;
-
-      auto & bsdf = material.refractive[i];
-
-      // probability found now just return the plugin's brdf sample
-      if (probabilityIt >= probability) {
-        return
-          plugin.bsdfs[bsdf.pluginIdx].BsdfSample(
-              bsdf.userdata, material.indexOfRefraction, plugin.random, surface
-          );
-      }
-    }
+  if (transmissionChance > 0.0f) {
+    transmissionChance =
+      ::FresnelReflectAmount(
+        surface.exitting ? ior : 1.0f
+      , surface.exitting ? 1.0f : ior
+      , 1.0f - material.fresnelMinimalReflection, 1.0f
+      , surface.normal, -surface.incomingAngle
+      );
   }
 
-  // -- reflection
-  if (material.reflective.size() == 0) { return mt::core::BsdfSampleInfo{}; }
+  if (material.specular.size() == 0ul) { specularChance = 0.0f; }
+  if (material.refractive.size() == 0ul) { transmissionChance = 0.0f; }
 
-  // choose probability, don't sample a uniform if there's only one brdf
-  float const probability =
-    material.reflective.size() <= 1 ? 0.0f : plugin.random.SampleUniform1()
-  ;
+  float const fresnelProbability = plugin.random.SampleUniform1();
+  if (specularChance > 0.0f && specularChance > fresnelProbability)
+    { sampleType = mt::BsdfTypeHint::Specular; }
+  else if (
+      transmissionChance > 0.0f
+   && transmissionChance + specularChance > fresnelProbability
+  )
+    { sampleType = mt::BsdfTypeHint::Transmittive; }
+  else
+    { sampleType = mt::BsdfTypeHint::Diffuse; }
 
-  // locate the corresponding material and calculate results
-  float probabilityIt = 0.0f;
-  for (size_t i = 0; i < material.reflective.size(); ++i) {
-    probabilityIt += material.reflective[i].probability;
-
-    auto & bsdf = material.reflective[i];
-
-    // probability found now just return the plugin's brdf sample
-    if (probabilityIt >= probability) {
-      return
-        plugin.bsdfs[bsdf.pluginIdx].BsdfSample(
-            bsdf.userdata, material.indexOfRefraction, plugin.random, surface
-        );
-    }
+  switch (sampleType) {
+    default: break;
+    case mt::BsdfTypeHint::Specular:
+      return ::SampleMaterial(material.specular, ior, surface, plugin);
+    case mt::BsdfTypeHint::Diffuse:
+      return ::SampleMaterial(material.diffuse, ior, surface, plugin);
+    case mt::BsdfTypeHint::Transmittive:
+      return ::SampleMaterial(material.refractive, ior, surface, plugin);
   }
 
-  spdlog::critical(
-    "material probability picker failed, idx {}", surface.material
-  );
-
+  assert(0);
   return mt::core::BsdfSampleInfo{};
 }
 
 float Pdf(
-  mt::core::SurfaceInfo const & surface
-, mt::core::Scene const & scene
-, mt::PluginInfo const & plugin
-, glm::vec3 const & wo
-, bool const reflection
-, size_t const componentIdx
+  mt::core::SurfaceInfo const & /*surface*/
+, mt::core::Scene const & /*scene*/
+, mt::PluginInfo const & /*plugin*/
+, glm::vec3 const & /*wo*/
+, bool const /*reflection*/
+, size_t const /*componentIdx*/
 ) {
-  auto const & material =
-    *reinterpret_cast<::Material*>(
-      scene.meshes[surface.material].material.data
-    );
-  auto & bsdf =
-      reflection
-    ? material.reflective[componentIdx]
-    : material.refractive[componentIdx]
-  ;
+  /* auto const & material = */
+  /*   *reinterpret_cast<::Material*>( */
+  /*     scene.meshes[surface.material].material.data */
+  /*   ); */
+  // TODO
+  return 0.0f;
+  /* auto & bsdf = */
+  /*     reflection */
+  /*   ? material.reflective[componentIdx] */
+  /*   : material.refractive[componentIdx] */
+  /* ; */
 
-  return
-    bsdf.probability
-  * plugin.bsdfs[bsdf.pluginIdx].BsdfPdf(
-      bsdf.userdata, material.indexOfRefraction, surface, wo
-    )
-  ;
+  /* return */
+  /*   bsdf.probability */
+  /* * plugin.bsdfs[bsdf.pluginIdx].BsdfPdf( */
+  /*     bsdf.userdata, material.indexOfRefraction, surface, wo */
+  /*   ) */
+  /* ; */
 }
 
 glm::vec3 EmitterFs(
@@ -232,7 +326,7 @@ float IndirectPdf(
       scene.meshes[surface.material].material.data
     );
 
-  auto const & bsdfs = reflection ? material.reflective : material.refractive;
+  auto const & bsdfs = reflection ? material.diffuse : material.refractive;
 
   for (auto const & bsdf : bsdfs) {
     pdf +=
@@ -296,9 +390,21 @@ void UiUpdate(
   auto & material =
     *reinterpret_cast<::Material*>(scene.meshes[currentMtlIdx].material.data);
 
+  ImGui::Text("index of refraction (IOR)");
   if (
     ImGui::SliderFloat(
-      "index of refraction", &material.indexOfRefraction, 0.0f, 10.0f
+      "##index of refraction", &material.indexOfRefraction, 1.0f, 5.0f
+    )
+  ) {
+    render.ClearImageBuffers();
+  }
+
+  ImGui::Separator();
+
+  ImGui::Text("fresnel minimal reflection (F0)");
+  if (
+    ImGui::SliderFloat(
+      "##fresnel min refl", &material.fresnelMinimalReflection, 0.0f, 1.0f
     )
   ) {
     render.ClearImageBuffers();
@@ -306,116 +412,27 @@ void UiUpdate(
 
   ImGui::Separator();
   ImGui::Separator();
-  ImGui::Text("-- reflective --");
 
-  for (size_t bsdfIdx = 0; bsdfIdx < material.reflective.size(); ++ bsdfIdx) {
-    auto & bsdf = material.reflective[bsdfIdx];
-    auto & materialPlugin = plugin.bsdfs[bsdf.pluginIdx];
-    ImGui::Separator();
-    ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
-    ImGui::Text("%s", materialPlugin.PluginLabel());
-    if (ImGui::SliderFloat("%", &bsdf.probability, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
-
-      // normalize bsdf probabilities
-      float total = 0.0f;
-      for (auto const & tBsdf : material.reflective) {
-        total += tBsdf.probability;
-      }
-      for (auto & tBsdf : material.reflective) {
-        tBsdf.probability /= total;
-      }
-    }
-
-    if (ImGui::Button("delete")) {
-      material.reflective.erase(material.reflective.begin() + bsdfIdx);
-      -- bsdfIdx;
-    }
-
-    if (
-        materialPlugin.UiUpdate
-     && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
-    ) {
-      materialPlugin.UiUpdate(bsdf.userdata, render, scene);
-      ImGui::TreePop();
-    }
-  }
-
-  ImGui::Separator();
-
-  if (ImGui::BeginCombo("##brdf", "add brdf")) {
-    ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
-      if (!plugin.bsdfs[i].IsReflective()) { continue; }
-      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
-        ::MaterialComponent component;
-        component.probability = 1.0f;
-        component.pluginIdx = i;
-        plugin.bsdfs[i].Allocate(component.userdata);
-        material.reflective.emplace_back(std::move(component));
-
-        render.ClearImageBuffers();
-      }
-    }
-
-    ImGui::EndCombo();
-  }
+  ::UiMaterialComponent(
+    material.diffuse, mt::BsdfTypeHint::Diffuse, "diffuse"
+  , scene, render, plugin
+  );
 
   ImGui::Separator();
   ImGui::Separator();
-  ImGui::Text("-- refractive --");
-  for (size_t bsdfIdx = 0; bsdfIdx < material.refractive.size(); ++ bsdfIdx) {
-    auto & bsdf = material.refractive[bsdfIdx];
-    auto & materialPlugin = plugin.bsdfs[bsdf.pluginIdx];
-    ImGui::Separator();
-    ImGui::PushID(fmt::format("{}", bsdfIdx).c_str());
-    ImGui::Text("%s", materialPlugin.PluginLabel());
-    if (ImGui::SliderFloat("%", &bsdf.probability, 0.0f, 1.0f)) {
-      render.ClearImageBuffers();
 
-      // normalize bsdf probabilities
-      float total = 0.0f;
-      for (auto const & tBsdf : material.refractive) {
-        total += tBsdf.probability;
-      }
-      for (auto & tBsdf : material.refractive) {
-        tBsdf.probability /= total;
-      }
-    }
-
-    if (ImGui::Button("delete")) {
-      material.refractive.erase(material.refractive.begin() + bsdfIdx);
-      -- bsdfIdx;
-    }
-
-    if (
-        materialPlugin.UiUpdate
-     && ImGui::TreeNode(fmt::format("==================##{}", bsdfIdx).c_str())
-    ) {
-      materialPlugin.UiUpdate(bsdf.userdata, render, scene);
-      ImGui::TreePop();
-    }
-  }
+  ::UiMaterialComponent(
+    material.specular, mt::BsdfTypeHint::Specular, "specular"
+  , scene, render, plugin
+  );
 
   ImGui::Separator();
+  ImGui::Separator();
 
-  if (ImGui::BeginCombo("##btdf", "add btdf")) {
-    ImGui::Selectable("cancel", true);
-    for (size_t i = 0; i < plugin.bsdfs.size(); ++ i) {
-      if (!plugin.bsdfs[i].IsRefractive()) { continue; }
-      if (ImGui::Selectable(plugin.bsdfs[i].PluginLabel())) {
-        ::MaterialComponent component;
-        component.probability = 1.0f;
-        component.pluginIdx = i;
-        plugin.bsdfs[i].Allocate(component.userdata);
-        material.refractive.emplace_back(std::move(component));
-
-        render.ClearImageBuffers();
-      }
-    }
-
-    ImGui::EndCombo();
-  }
+  ::UiMaterialComponent(
+    material.refractive, mt::BsdfTypeHint::Transmittive, "transmittive"
+  , scene, render, plugin
+  );
 
   ImGui::Separator();
   ImGui::Separator();
