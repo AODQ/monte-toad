@@ -239,6 +239,7 @@ void DispatchBlockRegion(
     if (pixelCount >= integratorData.samplesPerPixel) { continue; }
 
     glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
+    uv.x = 1.0f - uv.x; // flip X axis for image
     uv = (uv - glm::vec2(0.5f)) * 2.0f;
     uv.y *= resolutionAspectRatio;
 

@@ -98,11 +98,11 @@ void UiCameraControls(
   * 0.001f * cameraRelativeVelocity * ::msTime;
 
   if (glfwGetKey(window, GLFW_KEY_A)) {
-    render.camera.origin -= cameraRight * cameraVelocity;
+    render.camera.origin += cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_D)) {
-    render.camera.origin += cameraRight * cameraVelocity;
+    render.camera.origin -= cameraRight * cameraVelocity;
   }
 
   if (glfwGetKey(window, GLFW_KEY_W)) {
@@ -137,7 +137,7 @@ void UiCameraControls(
   glm::vec2 delta = glm::vec2(deltaX - prevX, deltaY - prevY);
 
   render.camera.direction +=
-    (delta.x * cameraRight + delta.y * cameraUp)
+    (-delta.x * cameraRight + delta.y * cameraUp)
   * 0.00025f * ::mouseSensitivity * ::msTime
   ;
   render.camera.direction = glm::normalize(render.camera.direction);
@@ -480,7 +480,7 @@ void UiImageOutput(
         ;
 
       auto const
-        itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
+          itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
         , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
         , mousePos =
         glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
@@ -489,7 +489,10 @@ void UiImageOutput(
       auto const resolutionRatio =
         glm::vec2(imageResolution) / glm::vec2(data.imageResolution);
 
-      auto const pixel = (mousePos - itemMin) / resolutionRatio;
+      auto pixel = (mousePos - itemMin) / resolutionRatio;
+
+      // flip X axis of pixel
+      pixel.x = data.imageResolution.x - pixel.x;
 
       // store results, also have to tell render info which image was clicked
       data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
