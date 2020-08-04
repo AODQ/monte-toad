@@ -362,7 +362,7 @@ void UiUpdate(
     uv.y *=
       data.imageResolution[1] / static_cast<float>(data.imageResolution[0]);
 
-    auto camera =
+    auto const camera =
       plugin.camera.Dispatch(
           plugin.random, render.camera, data.imageResolution, uv
           );
