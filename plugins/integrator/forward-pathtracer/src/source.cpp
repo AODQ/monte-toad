@@ -235,6 +235,9 @@ PropagationStatus Propagate(
   radiance *= bsdf.fs / bsdf.pdf;
 
   // -- save raycastinfo
+  surface.previousSurface.reset();
+  nextSurface.previousSurface =
+    std::make_shared<mt::core::SurfaceInfo>(surface);
   surface = nextSurface;
 
   return propagationStatus;

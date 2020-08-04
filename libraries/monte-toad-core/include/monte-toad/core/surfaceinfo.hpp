@@ -4,6 +4,8 @@ namespace mt::core { struct Scene; }
 namespace mt::core { struct Triangle; }
 namespace mt::core { struct BvhIntersection; }
 
+#include <memory>
+
 namespace mt::core {
   struct SurfaceInfo {
     SurfaceInfo() = default;
@@ -20,7 +22,10 @@ namespace mt::core {
 
     glm::vec3 incomingAngle = glm::vec3(0.0f);
 
-    size_t material;
+    size_t material = -1lu;
+
+    // TODO i really shouldn't need a shared ptr
+    std::shared_ptr<mt::core::SurfaceInfo> previousSurface = nullptr;
 
     bool Valid() const { return triangle != nullptr; }
 
