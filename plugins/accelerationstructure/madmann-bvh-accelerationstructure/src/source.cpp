@@ -24,10 +24,21 @@
   #include <bvh/sweep_sah_builder.hpp>
 #pragma GCC diagnostic pop
 
+#include <imgui/imgui.hpp>
+
 #include <vector>
 #include <optional>
 
 namespace {
+
+enum struct Builder : uint8_t {
+  BinnedSah, SweepSah, SpatialSplit, LocallyOrderedClustering, Linear
+};
+Builder builder = Builder::LocallyOrderedClustering;
+bool optimizeLayout = false;
+bool collapseLeaves = false;
+bool parallelReinsertion = false;
+float preSplitPercent = false;
 
 bvh::Vector3<float> ToBvh(glm::vec3 v) {
   return bvh::Vector3<float>(v.x, v.y, v.z);
@@ -92,30 +103,92 @@ mt::core::Any Construct(std::vector<mt::core::Triangle> && trianglesMv) {
 
   auto referenceCount = self.triangles.size();
 
-  {
-    bvh::LocallyOrderedClusteringBuilder<bvh::Bvh<float>, uint32_t>
-      builder { self.boundingVolume };
-    builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
+  bvh::HeuristicPrimitiveSplitter<mt::core::Triangle> splitter;
+
+  // -- presplit
+  if (::preSplitPercent > 0.0f) {
+    std::tie(referenceCount, bboxes, centers) =
+      splitter.split(
+          globalBbox
+        , self.triangles.data(), self.triangles.size()
+        , ::preSplitPercent
+      );
   }
 
-  {
-    bvh::LeafCollapser leafCollapser(self.boundingVolume);
+  // -- build bvh/accel tree
+  switch (::builder) {
+    case ::Builder::BinnedSah: {
+      auto builder =
+        bvh::BinnedSahBuilder<bvh::Bvh<float>, 16ul>(self.boundingVolume);
+      builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
+    } break;
+    case ::Builder::SweepSah: {
+      auto builder = bvh::SweepSahBuilder<bvh::Bvh<float>>(self.boundingVolume);
+      builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
+    } break;
+    case ::Builder::SpatialSplit: {
+      auto builder =
+        bvh::SpatialSplitBvhBuilder<bvh::Bvh<float>, mt::core::Triangle, 64ul>(
+          self.boundingVolume
+        );
+      builder.build(
+        globalBbox, self.triangles.data(), bboxes.get(), centers.get()
+      , referenceCount
+      );
+    } break;
+    case ::Builder::LocallyOrderedClustering: {
+      auto builder =
+        bvh::LocallyOrderedClusteringBuilder<bvh::Bvh<float>, uint32_t>(
+          self.boundingVolume
+        );
+      builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
+    } break;
+    case ::Builder::Linear: {
+      auto builder =
+        bvh::LinearBvhBuilder<bvh::Bvh<float>, uint32_t>(self.boundingVolume);
+      builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
+    } break;
+  }
+
+  // -- presplit repair leaves
+  if (::preSplitPercent > 0.0f) {
+    splitter.repair_bvh_leaves(self.boundingVolume);
+  }
+
+  // -- parallel reinsertion optimizer
+  if (::parallelReinsertion) {
+    auto reinsertionOptimizer =
+      bvh::ParallelReinsertionOptimizer<bvh::Bvh<float>>(self.boundingVolume);
+    reinsertionOptimizer.optimize();
+  }
+
+  // -- optimize node layout
+  if (::optimizeLayout) {
+    auto layoutOptimizer = bvh::NodeLayoutOptimizer(self.boundingVolume);
+    layoutOptimizer.optimize();
+  }
+
+  // -- collapse leaves
+  if (::collapseLeaves) {
+    auto leafCollapser = bvh::LeafCollapser(self.boundingVolume);
     leafCollapser.collapse();
   }
 
-  auto shuffledTriangles =
-    bvh::shuffle_primitives(
-      self.triangles.data()
-    , self.boundingVolume.primitive_indices.get()
-    , referenceCount
-    );
+  { // -- preshuffle triangles
+    auto shuffledTriangles =
+      bvh::shuffle_primitives(
+        self.triangles.data()
+      , self.boundingVolume.primitive_indices.get()
+      , referenceCount
+      );
 
-  self.triangles.resize(referenceCount);
-  std::memcpy(
-    reinterpret_cast<void *>(self.triangles.data())
-  , reinterpret_cast<void *>(shuffledTriangles.get())
-  , referenceCount * sizeof(mt::core::Triangle)
-  );
+    self.triangles.resize(referenceCount);
+    std::memcpy(
+      reinterpret_cast<void *>(self.triangles.data())
+    , reinterpret_cast<void *>(shuffledTriangles.get())
+    , referenceCount * sizeof(mt::core::Triangle)
+    );
+  }
 
   mt::core::Any any;
   any.data = new ::BvhAccelerationStructure{std::move(self)};
@@ -163,6 +236,27 @@ void UiUpdate(
 , mt::core::RenderInfo & /*render*/
 , mt::PluginInfo const & /*plugin*/
 ) {
+  ImGui::Begin("acceleration structure");
+
+  auto buildButton = [&](char const * label, ::Builder b) {
+    if (ImGui::RadioButton(label, ::builder == b))
+      { ::builder = b; }
+  };
+
+  buildButton("binned sah", ::Builder::BinnedSah);
+  buildButton("sweep sah", ::Builder::SweepSah);
+  buildButton("spatial split", ::Builder::SpatialSplit);
+  buildButton("local ordered clustering", ::Builder::LocallyOrderedClustering);
+  buildButton("linear", ::Builder::Linear);
+
+  ImGui::Separator();
+
+  ImGui::Checkbox("optimize layout", &::optimizeLayout);
+  ImGui::Checkbox("collapse leaves", &::collapseLeaves);
+  ImGui::Checkbox("parallel reinsertion", &::parallelReinsertion);
+  ImGui::SliderFloat("presplit %", &::preSplitPercent, 0.0f, 1.0f);
+
+  ImGui::End();
 }
 
 }
