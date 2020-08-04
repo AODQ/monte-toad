@@ -165,13 +165,9 @@ char const * PluginLabel() { return "base material"; }
 mt::PluginType PluginType() { return mt::PluginType::Material; }
 
 void Allocate(mt::core::Any & userdata) {
-  if (userdata.data == nullptr) { free(userdata.data); }
-  userdata.data = ::calloc(1, sizeof(::Material));
-  auto & m = *reinterpret_cast<::Material*>(userdata.data);
-  m = {};
-  m.specular.resize(0);
-  m.diffuse.resize(0);
-  m.refractive.resize(0);
+  if (userdata.data == nullptr)
+    { delete reinterpret_cast<::Material*>(userdata.data); }
+  userdata.data = new ::Material{};
 }
 
 bool IsEmitter(
