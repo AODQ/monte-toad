@@ -108,6 +108,9 @@ void UiUpdate(
 
   if (material.albedo.GuiApply(scene))
     { render.ClearImageBuffers(); }
+
+  if (ImGui::Checkbox("linear space", &material.albedoTextureLinearSpace))
+    { render.ClearImageBuffers(); }
 }
 
 } // -- end extern "C"
