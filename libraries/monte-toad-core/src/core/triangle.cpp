@@ -18,39 +18,42 @@ bvh::Vector3<float> ToBvh(glm::vec3 v) {
   return bvh::Vector3<float>(v.x, v.y, v.z);
 }
 
+glm::vec3 ToGlm(bvh::Vector3<float> const & v) {
+  return glm::vec3(v[0], v[1], v[2]);
+}
+
 std::optional<mt::core::BvhIntersection> RayTriangleIntersection(
   bvh::Ray<float> const & ray
 , mt::core::Triangle const & triangle
 //, mt::core::CullFace /*cullFace*/
 //, float /*epsilon*/
 ) {
-  // Adapted from BVH triangle intersection code, as my personal intersection
-  // code doesn't seem to work with the library (neither does replacing these
-  // bvh::* operations with glm::* , maybe should investigate as to why later?)
-  auto const p0 = ToBvh(triangle.v0);
-  auto const e1 = ToBvh(triangle.v0 - triangle.v1);
-  auto const e2 = ToBvh(triangle.v2 - triangle.v0);
-  auto const n = bvh::cross(e1, e2);
+  auto const ro = ::ToGlm(ray.origin), rd = ::ToGlm(ray.direction);
+  glm::vec3 const
+    v1v0 = triangle.v1 - triangle.v0
+  , v2v0 = triangle.v2 - triangle.v0
+  , rov0 = ro          - triangle.v0
+  ;
 
-  static constexpr float tolerance = 1e-5f;
+  // cramer's rule adapted from iq's code shadertoy.com/view/MlGcDz
+  glm::vec3 const
+    n = glm::cross(v1v0, v2v0)
+  , q = glm::cross(rov0, rd)
+  ;
 
-  auto const c = p0 - ray.origin;
-  auto const r = bvh::cross(ray.direction, c);
-  auto const det = bvh::dot(n, ray.direction);
-  auto const absDet = std::fabs(det);
+  float const
+    d = 1.0f/glm::dot(rd, n)
+  , u = d*glm::dot(-q, v2v0)
+  , v = d*glm::dot( q, v1v0)
+  , t = d*glm::dot(-n, rov0)
+  ;
 
-  auto const u = bvh::product_sign(bvh::dot(r, e2), det);
-  auto const v = bvh::product_sign(bvh::dot(r, e1), det);
-  auto const w = absDet - u - v;
+  if (u < 0.0f || v < 0.0f || u+v > 1.0f)
+    { return std::nullopt; }
 
-  if (u < -tolerance || v < -tolerance || w < -tolerance) return std::nullopt;
-  auto t = bvh::product_sign(bvh::dot(n, c), det);
-  if (t < absDet * ray.tmin || absDet * ray.tmax <= t) return std::nullopt;
-
-  auto invDet = 1.0f / absDet;
   mt::core::BvhIntersection intersection;
-  intersection.length = t * invDet;
-  intersection.barycentricUv = glm::vec2(u, v) * invDet;
+  intersection.length = t;
+  intersection.barycentricUv = glm::vec2(u, v);
   return intersection;
 }
 
