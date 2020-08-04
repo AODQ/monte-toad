@@ -86,19 +86,12 @@ namespace mt {
   };
 
   struct PluginInfoKernel {
-    glm::vec3 (*Tonemap)(
+    void (*Apply)(
       glm::vec2 const & uv
-    , glm::vec3 color
+    , glm::vec3 & color
     , mt::core::RenderInfo const & render
     , mt::PluginInfo const & plugin
     , mt::core::IntegratorData const & integratorData
-    ) = nullptr;
-
-    glm::vec3 (*Denoise)(
-      glm::vec2 uv, glm::vec2 resolution
-    , glm::vec3 color
-    , mt::core::RenderInfo const & render
-    , mt::PluginInfo const & plugin
     ) = nullptr;
 
     void (*UiUpdate)(

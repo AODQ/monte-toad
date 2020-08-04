@@ -10,3 +10,6 @@
 [submodule "third-party/glm"]
 	path = third-party/glm
 	url = https://github.com/g-truc/glm
+[submodule "third-party/open-image-denoise"]
+	path = third-party/open-image-denoise
+	url = https://github.com/open-image-denoise/oidn

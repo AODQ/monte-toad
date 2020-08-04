@@ -92,8 +92,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
     } break;
     case mt::PluginType::Kernel: {
       auto & unit = plugin.kernel;
-      ctx.LoadFunction(unit.Tonemap, "Tonemap");
-      ctx.LoadFunction(unit.Denoise, "Denoise");
+      ctx.LoadFunction(unit.Apply, "Apply");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -259,8 +258,7 @@ bool mt::Valid(
       ;
     case mt::PluginType::Kernel:
       return
-          plugin.kernel.Denoise != nullptr
-       && plugin.kernel.Tonemap != nullptr
+          plugin.kernel.Apply != nullptr
        && plugin.kernel.PluginType() == pluginType
        && plugin.kernel.PluginLabel != nullptr
       ;
@@ -361,8 +359,7 @@ void mt::Clean(
       plugin.accelerationStructure.PluginLabel = nullptr;
     break;
     case mt::PluginType::Kernel:
-      plugin.kernel.Denoise = nullptr;
-      plugin.kernel.Tonemap = nullptr;
+      plugin.kernel.Apply = nullptr;
       plugin.kernel.UiUpdate = nullptr;
       plugin.kernel.PluginType = nullptr;
       plugin.kernel.PluginLabel = nullptr;
