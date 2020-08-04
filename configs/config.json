@@ -1,11 +1,23 @@
 {
   "plugins": [
     {
+      "type": "accelerationstructure",
+      "file": "plugins/madmann-bvh-accelerationstructure.mt-plugin"
+    }
+  , {
+      "type": "integrator",
+      "file": "plugins/integrator-triangle-id.mt-plugin",
+      "state": "on-change",
+      "aspect-ratio": "4x3",
+      "resolution": 256,
+      "imgui-resolution": 256
+    }
+  , {
       "type": "integrator",
       "file": "plugins/integrator-depth.mt-plugin",
       "state": "on-change",
       "aspect-ratio": "4x3",
-      "resolution": 64,
+      "resolution": 256,
       "imgui-resolution": 256
     }
   , {
@@ -13,8 +25,8 @@
       "file": "plugins/integrator-normal.mt-plugin",
       "state": "on-change",
       "aspect-ratio": "4x3",
-      "resolution": 64,
-      "imgui-resolution": 128
+      "resolution": 256,
+      "imgui-resolution": 256
     }
   , {
       "type": "integrator",
@@ -33,8 +45,24 @@
     , "file": "plugins/dispatcher-primary.mt-plugin"
     }
   , {
+      "type": "material"
+    , "file": "plugins/base-material.mt-plugin"
+    }
+  , {
       "type": "bsdf",
-      "file": "plugins/ggx-bsdf.mt-plugin"
+      "file": "plugins/perfect-specular-bsdf.mt-plugin"
+    }
+  , {
+      "type": "bsdf",
+      "file": "plugins/lambertian-bsdf.mt-plugin"
+    }
+  , {
+      "type": "bsdf",
+      "file": "plugins/perfect-refractive-bsdf.mt-plugin"
+    }
+  , {
+      "type": "bsdf",
+      "file": "plugins/dielectric-perfect-refractive-bsdf.mt-plugin"
     }
   , {
       "type": "camera",
@@ -61,5 +89,5 @@
       "file": "plugins/emitter-furnace.mt-plugin"
     }
   ]
-, "scene": [ "test-models/mcguire/cornell-box/CornellBox-Sphere.obj" ]
+, "scene": [ "/home/toad/Downloads/model_dump/uploads_files_898927_rock.obj" ]
 }
