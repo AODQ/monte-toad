@@ -217,13 +217,7 @@ mt::core::BsdfSampleInfo Sample(
   }
 
   if (transmissionChance > 0.0f) {
-    transmissionChance =
-      ::FresnelReflectAmount(
-        surface.exitting ? ior : 1.0f
-      , surface.exitting ? 1.0f : ior
-      , 1.0f - fresnelMinimalReflection, 1.0f
-      , surface.normal, -surface.incomingAngle
-      );
+    transmissionChance = 1.0f - specularChance;
   }
 
   if (material.specular.size() == 0ul) { specularChance = 0.0f; }
