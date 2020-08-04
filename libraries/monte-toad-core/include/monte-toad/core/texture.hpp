@@ -24,6 +24,7 @@ namespace mt::core {
     size_t Idx(size_t x, size_t y) const { return y*this->width + x; }
   };
 
+  // TODO BELOW should probably go into a different header
   template <typename T> struct TextureOption {
     bool GuiApply(mt::core::Scene const & scene);
     T Get(glm::vec2 const & uv) const;

@@ -66,6 +66,10 @@ void LoadPluginEmitter(nlohmann::json /*json*/) {
 }
 
 [[maybe_unused]]
+void LoadPluginAccelerationStructure(nlohmann::json /*json*/) {
+}
+
+[[maybe_unused]]
 void LoadPluginKernel(nlohmann::json /*json*/) {
 }
 
@@ -119,6 +123,8 @@ void fileutil::LoadEditorConfig(
 
     if (typeStr == "integrator") {
       pluginType = mt::PluginType::Integrator;
+    } else if (typeStr == "accelerationstructure") {
+      pluginType = mt::PluginType::AccelerationStructure;
     } else if (typeStr == "kernel") {
       pluginType = mt::PluginType::Kernel;
     } else if (typeStr == "bsdf") {

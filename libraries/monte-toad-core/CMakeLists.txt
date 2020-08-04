@@ -4,7 +4,6 @@ target_include_directories(monte-toad-core PUBLIC "include/")
 target_sources(
   monte-toad-core
   PRIVATE
-    src/core/accelerationstructure.cpp
     src/core/any.cpp
     src/core/camerainfo.cpp
     src/core/enum.cpp
@@ -38,7 +37,7 @@ set_target_properties(
 target_link_libraries(
   monte-toad-core
   PUBLIC
-    glm spdlog fmt bvh monte-toad-util
+    glm spdlog fmt monte-toad-util
   PRIVATE
-    glad mt-plugin imgui
+    glad mt-plugin imgui bvh
 )

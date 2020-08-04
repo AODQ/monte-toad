@@ -1,6 +1,5 @@
 // perfect specular material
 
-#include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/any.hpp>
 #include <monte-toad/core/geometry.hpp>
 #include <monte-toad/core/integratordata.hpp>

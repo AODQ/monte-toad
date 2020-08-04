@@ -27,7 +27,9 @@ mt::PixelInfo Dispatch(
       plugin.random, camera, integratorData.imageResolution, uv
     );
 
-  auto surface = mt::core::Raycast(scene, eye.origin, eye.direction, nullptr);
+  auto const surface =
+    mt::core::Raycast(scene, plugin, eye.origin, eye.direction, nullptr);
+
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   auto surfaceNormal = surface.normal;

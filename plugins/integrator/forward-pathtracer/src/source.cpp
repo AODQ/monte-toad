@@ -98,7 +98,7 @@ PropagationStatus ApplyIndirectEmission(
 
   /* { // apply indirect emission from random emitter in scene */
   /*   auto [emissionTriangle, emissionBarycentricUvCoord] = */
-  /*     mt::core::EmissionSourceTriangle(scene, plugin.random); */
+  /*     mt::core::EmissionSourceTriangle(scene, plugin); */
 
   /*   if (!emissionTriangle) { return propagationStatus; } */
 
@@ -184,7 +184,7 @@ PropagationStatus Propagate(
 
   // grab information of next surface
   mt::core::SurfaceInfo nextSurface =
-    mt::core::Raycast(scene, surface.origin, bsdf.wo, surface.triangle);
+    mt::core::Raycast(scene, plugin, surface.origin, bsdf.wo, surface.triangle);
 
   // check if an emitter or skybox (which could be a blackbody) was hit
   if (nextSurface.triangle == nullptr) {
@@ -276,7 +276,8 @@ mt::PixelInfo Dispatch(
       });
     }
 
-    surface = mt::core::Raycast(scene, eye.origin, eye.direction, nullptr);
+    surface =
+      mt::core::Raycast(scene, plugin, eye.origin, eye.direction, nullptr);
   }
 
   // return skybox

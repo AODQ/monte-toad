@@ -13,12 +13,14 @@
     #include <glm/fwd.hpp>
 #pragma GCC diagnostic pop
 
+#include <optional>
 #include <vector>
 
 // TODO implement functional instead of ptrs
 
 namespace mt::core { struct Any; }
 namespace mt::core { struct BsdfSampleInfo; }
+namespace mt::core { struct BvhIntersection; }
 namespace mt::core { struct CameraInfo; }
 namespace mt::core { struct IntegratorData; }
 namespace mt::core { struct RenderInfo; }
@@ -28,6 +30,7 @@ namespace mt::core { struct Triangle; }
 namespace mt::debugutil { struct IntegratorPathUnit; }
 namespace mt { enum struct BsdfTypeHint : uint8_t; }
 namespace mt { struct PluginInfo; }
+template <typename T> struct span;
 
 namespace mt {
 
@@ -56,6 +59,30 @@ namespace mt {
     bool (*RealTime)();
     mt::PluginType (*PluginType)();
     char const * (*PluginLabel)();
+  };
+
+  struct PluginInfoAccelerationStructure {
+    mt::core::Any (*Construct)(
+      std::vector<mt::core::Triangle> && triangles
+    ) = nullptr;
+
+    std::optional<mt::core::BvhIntersection> (*IntersectClosest)(
+      mt::core::Any const & self
+    , glm::vec3 const & ori
+    , glm::vec3 const & dir
+    , mt::core::Triangle const * const ignoredTriangle
+    );
+
+    span<mt::core::Triangle> (*GetTriangles)(mt::core::Any const & self);
+
+    void (*UiUpdate)(
+      mt::core::Scene & scene
+    , mt::core::RenderInfo & render
+    , mt::PluginInfo const & plugin
+    ) = nullptr;
+
+    mt::PluginType (*PluginType)() = nullptr;
+    char const * (*PluginLabel)() = nullptr;
   };
 
   struct PluginInfoKernel {
@@ -301,6 +328,7 @@ namespace mt {
     std::vector<PluginInfoEmitter> emitters;
     std::vector<PluginInfoDispatcher> dispatchers;
     std::vector<PluginInfoBsdf> bsdfs;
+    PluginInfoAccelerationStructure accelerationStructure;
     PluginInfoMaterial material;
     PluginInfoKernel kernel; // optional
     PluginInfoCamera camera; // optional

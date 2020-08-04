@@ -22,7 +22,7 @@ namespace mt::core {
 
     size_t material;
 
-    bool Valid() { return triangle != nullptr; }
+    bool Valid() const { return triangle != nullptr; }
 
     // creates an invalid surface; not triangle was hit
     static SurfaceInfo Construct(glm::vec3 origin, glm::vec3 incomingAngle);

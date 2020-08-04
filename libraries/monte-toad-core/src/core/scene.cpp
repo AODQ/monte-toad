@@ -1,6 +1,5 @@
 #include <monte-toad/core/scene.hpp>
 
-#include <monte-toad/core/accelerationstructure.hpp>
 #include <monte-toad/core/intersection.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/surfaceinfo.hpp>
@@ -259,20 +258,24 @@ void mt::core::Scene::Construct(
   self.bboxMax = glm::vec3(std::numeric_limits<float>::min());
 
   // load models & parse into BVH tree
-  mt::core::AccelerationStructure::Construct(
-    self.accelStructure
-  , LoadAssetIntoScene(self, plugin, filename)
-  );
+  self.accelStructure =
+    plugin
+      .accelerationStructure
+      .Construct(LoadAssetIntoScene(self, plugin, filename))
+  ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 mt::core::SurfaceInfo mt::core::Raycast(
   mt::core::Scene const & scene
+, mt::PluginInfo const & plugin
 , glm::vec3 ori, glm::vec3 dir
 , mt::core::Triangle const * ignoredTriangle
 ) {
   auto const hit =
-    mt::core::IntersectClosest(scene.accelStructure, ori, dir, ignoredTriangle);
+    plugin.accelerationStructure.IntersectClosest(
+      scene.accelStructure, ori, dir, ignoredTriangle
+    );
 
   if (!hit.has_value()) {
     return mt::core::SurfaceInfo::Construct(ori, dir);
@@ -281,7 +284,9 @@ mt::core::SurfaceInfo mt::core::Raycast(
   return
     mt::core::SurfaceInfo::Construct(
       scene
-    , scene.accelStructure.Triangles().data() + hit->triangleIdx
+    , plugin
+        .accelerationStructure
+        .GetTriangles(scene.accelStructure).data() + hit->triangleIdx
     , *hit
     , ori + dir*hit->length, dir
     );
@@ -293,7 +298,7 @@ mt::core::SurfaceInfo mt::core::Raycast(
 std::tuple<mt::core::Triangle const *, glm::vec2>
 mt::core::EmissionSourceTriangle(
   mt::core::Scene const & scene
-, mt::PluginInfoRandom const & random
+, mt::PluginInfo const & plugin
 ) {
   if (scene.emissionSource.triangles.size() == 0)
     { return std::make_pair(nullptr, glm::vec2()); }
@@ -301,14 +306,16 @@ mt::core::EmissionSourceTriangle(
   // this needs to take into account triangle surface area as that plays heavily
   // into which ones need to be sampled
   auto const & tri =
-    scene.accelStructure.Triangles()[
-      scene.emissionSource.triangles[
-        random.SampleUniform1() * scene.emissionSource.triangles.size()
-      ]
-    ];
+    plugin
+      .accelerationStructure
+      .GetTriangles(scene.accelStructure)[
+        scene.emissionSource.triangles[
+          plugin.random.SampleUniform1() * scene.emissionSource.triangles.size()
+        ]
+      ];
 
   // generate random barycentric coords
-  glm::vec2 u = random.SampleUniform2();
+  glm::vec2 u = plugin.random.SampleUniform2();
   u.y *= (1.0f - u.x);
   return std::make_pair(&tri, u);
 }

@@ -377,8 +377,10 @@ void UiUpdate(
           plugin.random, render.camera, data.imageResolution, uv
           );
 
-    auto surface =
-      mt::core::Raycast(scene, camera.origin, camera.direction, nullptr);
+    auto const surface =
+      mt::core::Raycast(
+        scene, plugin, camera.origin, camera.direction, nullptr
+      );
 
     currentMtlIdx =
       static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);

@@ -151,8 +151,6 @@ bool mt::core::DispatchRender(
 , mt::PluginInfo const & plugin
 , size_t integratorIdx
 ) {
-  if (self.renderingFinished) { return false; }
-  if (plugin.dispatchers.size() == 0) { return false; }
   switch (self.renderingState) {
     default: return false;
     case mt::RenderingState::Off: return false;

@@ -99,6 +99,13 @@ public:
 std::shared_ptr<GuiSink> imGuiSink;
 
 void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
+  if (!mt::Valid(plugin, mt::PluginType::AccelerationStructure)) {
+    spdlog::error(
+      "Need to have an acceleration structure plugin in order to load the scene"
+    );
+    return;
+  }
+
   mt::core::Scene::Construct(
     ::scene
   , plugin
@@ -151,30 +158,6 @@ void UiPluginLoadFile(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-[[maybe_unused]]
-void UiPluginDisplayInfo(
-  mt::PluginInfo const & plugin
-, mt::PluginType pluginType
-, size_t idx = 0
-) {
-  switch (pluginType) {
-    case mt::PluginType::Integrator: {
-      auto & integrator = plugin.integrators[idx];
-      ImGui::Text("Realtime: %s", integrator.RealTime() ? "Yes" : "No");
-    } break;
-    case mt::PluginType::Kernel: break;
-    case mt::PluginType::Bsdf: break;
-    case mt::PluginType::Material: break;
-    case mt::PluginType::Camera: break;
-    case mt::PluginType::Random: break;
-    case mt::PluginType::UserInterface: break;
-    case mt::PluginType::Emitter: break;
-    case mt::PluginType::Dispatcher: break;
-    default: break;
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 void UiPlugin(mt::PluginInfo & plugin) {
   ImGui::Begin("Plugins");
     auto DisplayPluginUi = [&](mt::PluginType pluginType, size_t idx = 0) {
@@ -186,50 +169,22 @@ void UiPlugin(mt::PluginInfo & plugin) {
       ImGui::Separator();
     };
 
-    for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx)
-      { DisplayPluginUi(mt::PluginType::Integrator, idx); }
+  for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx)
+    { DisplayPluginUi(mt::PluginType::Integrator, idx); }
 
-    for (size_t idx = 0; idx < plugin.bsdfs.size(); ++ idx)
-      { DisplayPluginUi(mt::PluginType::Bsdf, idx); }
+  for (size_t idx = 0; idx < plugin.bsdfs.size(); ++ idx)
+    { DisplayPluginUi(mt::PluginType::Bsdf, idx); }
 
-    DisplayPluginUi(mt::PluginType::Kernel);
-    DisplayPluginUi(mt::PluginType::Material);
-    DisplayPluginUi(mt::PluginType::Camera);
-    DisplayPluginUi(mt::PluginType::Random);
-    DisplayPluginUi(mt::PluginType::UserInterface);
-    DisplayPluginUi(mt::PluginType::Emitter);
-    DisplayPluginUi(mt::PluginType::Dispatcher);
+  DisplayPluginUi(mt::PluginType::AccelerationStructure);
+  DisplayPluginUi(mt::PluginType::Camera);
+  DisplayPluginUi(mt::PluginType::Dispatcher);
+  DisplayPluginUi(mt::PluginType::Emitter);
+  DisplayPluginUi(mt::PluginType::Kernel);
+  DisplayPluginUi(mt::PluginType::Material);
+  DisplayPluginUi(mt::PluginType::Random);
+  DisplayPluginUi(mt::PluginType::UserInterface);
 
   ImGui::End();
-
-  /* // try to iterate plugin name information in a way that it doesn't have to be */
-  /* // manually maintained */
-  /* for (size_t i = 0; i < static_cast<size_t>(mt::PluginType::Size); ++ i) { */
-  /*   auto pluginType = static_cast<mt::PluginType>(i); */
-
-  /*   std::string const infoStr = */
-  /*     std::string{ToString(pluginType)} */
-  /*   + "(" + pluginPath.filename().string() + ")"; */
-
-  /*   std::string const buttonStr = "Load##" + std::string{ToString(pluginType)}; */
-
-  /*   auto treeNodeResult = ImGui::TreeNode(infoStr.c_str()); */
-
-  /*   if (!mt::Valid(plugin, pluginType)) { */
-  /*     ImGui::SameLine(); */
-  /*     ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Not loaded"); */
-  /*   } */
-
-  /*   if (treeNodeResult) { */
-  /*     UiPluginDisplayInfo(plugin, pluginType); */
-  /*     ImGui::TreePop(); */
-  /*   } */
-
-  /*   if (ImGui::Button(buttonStr.c_str())) */
-  /*     { UiPluginLoadFile(plugin, pluginType, pluginName); } */
-
-  /*   ImGui::Separator(); */
-  /* } */
 }
 
 //------------------------------------------------------------------------------
@@ -370,6 +325,8 @@ void DispatchRender(
 
   // make sure plugin is valid
   if (plugin.integrators.size() == 0) { return; }
+  if (plugin.dispatchers.size() == 0) { return; }
+  if (!mt::Valid(plugin, mt::PluginType::AccelerationStructure)) { return; }
 
   glUseProgram(::imageTransitionProgram.handle);
 
@@ -377,6 +334,8 @@ void DispatchRender(
   // dispatches
   for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
     auto & integratorData = render.integratorData[idx];
+
+    if (integratorData.renderingFinished) { continue; }
 
     mt::core::DispatchRender(integratorData, ::scene, render, plugin, idx);
   }
@@ -449,6 +408,9 @@ void UiEntry(
 
   if (plugin.material.UiUpdate)
     { plugin.material.UiUpdate(scene, render, plugin); }
+
+  if (plugin.accelerationStructure.UiUpdate)
+    { plugin.accelerationStructure.UiUpdate(scene, render, plugin); }
 
   if (plugin.kernel.UiUpdate)
     { plugin.kernel.UiUpdate(scene, render, plugin); }

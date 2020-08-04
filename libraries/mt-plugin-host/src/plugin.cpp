@@ -81,6 +81,15 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
     } break;
+    case mt::PluginType::AccelerationStructure: {
+      auto & unit = plugin.accelerationStructure;
+      ctx.LoadFunction(unit.Construct, "Construct");
+      ctx.LoadFunction(unit.IntersectClosest, "IntersectClosest");
+      ctx.LoadFunction(unit.GetTriangles, "GetTriangles");
+      ctx.LoadFunction(unit.UiUpdate, "UiUpdate");
+      ctx.LoadFunction(unit.PluginType, "PluginType");
+      ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
+    } break;
     case mt::PluginType::Kernel: {
       auto & unit = plugin.kernel;
       ctx.LoadFunction(unit.Tonemap, "Tonemap");
@@ -239,6 +248,15 @@ bool mt::Valid(
        && plugin.integrators[idx].PluginLabel != nullptr
        && plugin.integrators[idx].RealTime != nullptr
       ;
+    case mt::PluginType::AccelerationStructure:
+      return
+          plugin.accelerationStructure.Construct != nullptr
+       && plugin.accelerationStructure.IntersectClosest != nullptr
+       && plugin.accelerationStructure.GetTriangles != nullptr
+       && plugin.accelerationStructure.PluginType != nullptr
+       && plugin.accelerationStructure.PluginType() == pluginType
+       && plugin.accelerationStructure.PluginLabel != nullptr
+      ;
     case mt::PluginType::Kernel:
       return
           plugin.kernel.Denoise != nullptr
@@ -334,6 +352,14 @@ void mt::Clean(
       plugin.integrators[idx].PluginType = nullptr;
       plugin.integrators[idx].PluginLabel = nullptr;
     break;
+    case mt::PluginType::AccelerationStructure:
+      plugin.accelerationStructure.Construct = nullptr;
+      plugin.accelerationStructure.IntersectClosest = nullptr;
+      plugin.accelerationStructure.GetTriangles = nullptr;
+      plugin.accelerationStructure.UiUpdate = nullptr;
+      plugin.accelerationStructure.PluginType = nullptr;
+      plugin.accelerationStructure.PluginLabel = nullptr;
+    break;
     case mt::PluginType::Kernel:
       plugin.kernel.Denoise = nullptr;
       plugin.kernel.Tonemap = nullptr;
@@ -409,15 +435,16 @@ void mt::Clean(
 //------------------------------------------------------------------------------
 char const * ToString(mt::PluginType pluginType) {
   switch (pluginType) {
-    case mt::PluginType::Integrator:    return "Integrator";
-    case mt::PluginType::Kernel:        return "Kernel";
-    case mt::PluginType::Bsdf:          return "Bsdf";
-    case mt::PluginType::Material:      return "Material";
-    case mt::PluginType::Camera:        return "Camera";
-    case mt::PluginType::Random:        return "Random";
-    case mt::PluginType::UserInterface: return "UserInterface";
-    case mt::PluginType::Emitter:       return "Emitter";
-    case mt::PluginType::Dispatcher:    return "Dispatcher";
+    case mt::PluginType::Integrator:            return "Integrator";
+    case mt::PluginType::AccelerationStructure: return "AccelerationStructure";
+    case mt::PluginType::Kernel:                return "Kernel";
+    case mt::PluginType::Bsdf:                  return "Bsdf";
+    case mt::PluginType::Material:              return "Material";
+    case mt::PluginType::Camera:                return "Camera";
+    case mt::PluginType::Random:                return "Random";
+    case mt::PluginType::UserInterface:         return "UserInterface";
+    case mt::PluginType::Emitter:               return "Emitter";
+    case mt::PluginType::Dispatcher:            return "Dispatcher";
     default: return "N/A";
   }
 }
