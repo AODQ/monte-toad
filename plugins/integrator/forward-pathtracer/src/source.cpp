@@ -1,4 +1,4 @@
-// foward path tracer
+// forward path tracer
 
 #include <monte-toad/core/enum.hpp>
 #include <monte-toad/core/geometry.hpp>

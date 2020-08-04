@@ -40,8 +40,8 @@ bool collapseLeaves = true;
 bool parallelReinsertion = false;
 float preSplitPercent = false;
 
-bvh::Vector3<double> ToBvh(glm::vec3 v) {
-  return bvh::Vector3<double>(v.x, v.y, v.z);
+bvh::Vector3<float> ToBvh(glm::vec3 v) {
+  return bvh::Vector3<float>(v.x, v.y, v.z);
 }
 
 struct Intersector {
@@ -58,7 +58,7 @@ struct Intersector {
     , ignoredTriangle(ignoredTriangle_)
   {}
 
-  std::optional<Result> intersect(size_t idx, bvh::Ray<double> const & ray)
+  std::optional<Result> intersect(size_t idx, bvh::Ray<float> const & ray)
     const
   {
     auto const & triangle = triangles[idx];
@@ -73,7 +73,7 @@ struct Intersector {
 
 struct BvhAccelerationStructure {
   std::vector<mt::core::Triangle> triangles;
-  bvh::Bvh<double> boundingVolume;
+  bvh::Bvh<float> boundingVolume;
 };
 
 } // -- anon namespace
@@ -114,16 +114,16 @@ mt::core::Any Construct(std::vector<mt::core::Triangle> && trianglesMv) {
   switch (::builder) {
     case ::Builder::BinnedSah: {
       auto builder =
-        bvh::BinnedSahBuilder<bvh::Bvh<double>, 16ul>(self.boundingVolume);
+        bvh::BinnedSahBuilder<bvh::Bvh<float>, 16ul>(self.boundingVolume);
       builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
     } break;
     case ::Builder::SweepSah: {
-      auto builder = bvh::SweepSahBuilder<bvh::Bvh<double>>(self.boundingVolume);
+      auto builder = bvh::SweepSahBuilder<bvh::Bvh<float>>(self.boundingVolume);
       builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
     } break;
     case ::Builder::SpatialSplit: {
       auto builder =
-        bvh::SpatialSplitBvhBuilder<bvh::Bvh<double>, mt::core::Triangle, 64ul>(
+        bvh::SpatialSplitBvhBuilder<bvh::Bvh<float>, mt::core::Triangle, 64ul>(
           self.boundingVolume
         );
       builder.build(
@@ -133,14 +133,14 @@ mt::core::Any Construct(std::vector<mt::core::Triangle> && trianglesMv) {
     } break;
     case ::Builder::LocallyOrderedClustering: {
       auto builder =
-        bvh::LocallyOrderedClusteringBuilder<bvh::Bvh<double>, uint32_t>(
+        bvh::LocallyOrderedClusteringBuilder<bvh::Bvh<float>, uint32_t>(
           self.boundingVolume
         );
       builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
     } break;
     case ::Builder::Linear: {
       auto builder =
-        bvh::LinearBvhBuilder<bvh::Bvh<double>, uint32_t>(self.boundingVolume);
+        bvh::LinearBvhBuilder<bvh::Bvh<float>, uint32_t>(self.boundingVolume);
       builder.build(globalBbox, bboxes.get(), centers.get(), referenceCount);
     } break;
   }
@@ -153,7 +153,7 @@ mt::core::Any Construct(std::vector<mt::core::Triangle> && trianglesMv) {
   // -- parallel reinsertion optimizer
   if (::parallelReinsertion) {
     auto reinsertionOptimizer =
-      bvh::ParallelReinsertionOptimizer<bvh::Bvh<double>>(self.boundingVolume);
+      bvh::ParallelReinsertionOptimizer<bvh::Bvh<float>>(self.boundingVolume);
     reinsertionOptimizer.optimize();
   }
 
@@ -201,7 +201,7 @@ std::optional<mt::core::BvhIntersection> IntersectClosest(
   auto intersector = ::Intersector(make_span(self.triangles), ignoredTriangle);
 
   auto traversal =
-    bvh::SingleRayTraverser<bvh::Bvh<double>> {self.boundingVolume};
+    bvh::SingleRayTraverser<bvh::Bvh<float>> {self.boundingVolume};
 
   // weird hack to make sure none of the components are 0, as BVH doesn't seem
   // to work with it (or maybe how I interact with BVH)

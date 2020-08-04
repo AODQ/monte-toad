@@ -15,29 +15,29 @@ namespace mt::core {
   struct Triangle {
     uint16_t meshIdx;
 
-    using ScalarType = double;
+    using ScalarType = float;
     using IntersectionType = BvhIntersection;
 
-    glm::dvec3 v0, v1, v2;
+    glm::vec3 v0, v1, v2;
     glm::vec3 n0, n1, n2;
     glm::vec2 uv0, uv1, uv2;
 
     // Required by BVH if splitting is to be performed
-    std::pair<bvh::BoundingBox<double>, bvh::BoundingBox<double>> split(
+    std::pair<bvh::BoundingBox<float>, bvh::BoundingBox<float>> split(
       size_t axis
     , float position
     ) const;
 
     // Required by BVH if splitting is to be performed
-    bvh::BoundingBox<double> bounding_box() const;
+    bvh::BoundingBox<float> bounding_box() const;
 
     // Required by BVH if splitting is to be performed
-    bvh::Vector<double, 3> center() const;
+    bvh::Vector<float, 3> center() const;
     glm::vec3 Center() const;
 
     // Required by BVH if splitting is to be performed
     float area() const;
 
-    std::optional<BvhIntersection> intersect(bvh::Ray<double> const & ray) const;
+    std::optional<BvhIntersection> intersect(bvh::Ray<float> const & ray) const;
   };
 }
