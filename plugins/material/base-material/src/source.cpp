@@ -28,7 +28,9 @@ struct Material {
   std::vector<MaterialComponent> diffuse, specular, refractive;
   mt::core::TextureOption<float>
     indexOfRefraction { "index of refraction (IOR)", 1.0f, 5.0f, 1.0f }
-  , fresnelMinimalReflection { "fresnel minimal reflection (F0)" }
+  , fresnelMinimalReflection {
+      "fresnel minimal reflection (F0)", 0.0f, 1.0f, 0.0f, 2.2f
+    }
   ;
 };
 
