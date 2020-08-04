@@ -110,8 +110,11 @@ void UiUpdate(
   if (material.albedo.GuiApply(scene))
     { render.ClearImageBuffers(); }
 
-  if (ImGui::SliderFloat("dist", &material.distanceScale, 0.001f, 100.0f))
-    { render.ClearImageBuffers(); }
+  if (
+    ImGui::SliderFloat(
+      "dist", &material.distanceScale, 0.001f, 100.0f, "%.3f", 2.2f
+    )
+  ) { render.ClearImageBuffers(); }
 }
 
 } // -- end extern "C"
