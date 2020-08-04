@@ -333,6 +333,11 @@ mt::PixelInfo Dispatch(
       hit = true;
       break;
     }
+
+    // apply russian roulette
+    float p = glm::max(radiance.r, glm::max(radiance.g, radiance.b));
+    if (plugin.random.SampleUniform1() > p) { break; }
+    radiance /= p; // add energy lost by other terminated paths
   }
 
   // store final surface info
