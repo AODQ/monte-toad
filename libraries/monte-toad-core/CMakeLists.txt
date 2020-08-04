@@ -30,7 +30,7 @@ set_target_properties(
     PROPERTIES
       COMPILE_FLAGS
         "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
-         -Wundef"
+         -Wundef -fno-exceptions"
       POSITION_INDEPENDENT_CODE ON
 )
 

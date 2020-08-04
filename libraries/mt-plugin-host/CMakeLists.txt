@@ -15,7 +15,7 @@ set_target_properties(
     PROPERTIES
       COMPILE_FLAGS
         "-Wshadow -Wdouble-promotion -Wall -Wformat=2 -Wextra -Wpedantic \
-         -Wundef"
+         -Wundef -fno-exceptions"
 )
 
 target_link_libraries(mt-plugin-host PUBLIC mt-plugin spdlog)
