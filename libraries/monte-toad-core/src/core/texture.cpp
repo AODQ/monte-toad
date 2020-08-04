@@ -231,6 +231,7 @@ template <> bool mt::core::TextureOption<float>::GuiApply(
     change =
       ImGui::SliderFloat(
         sliderLabel.c_str(), &this->userValue, this->minRange, this->maxRange
+      , this->format.c_str(), this->power
       );
   }
 
@@ -265,6 +266,7 @@ template <> bool mt::core::TextureOption<glm::vec3>::GuiApply(
         ImGui::SliderFloat3(
           sliderLabel.c_str()
         , &this->userValue.x, this->minRange, this->maxRange
+        , this->format.c_str(), this->power
         );
     }
   }

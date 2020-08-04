@@ -32,6 +32,8 @@ namespace mt::core {
     std::string label = "N/A";
     float minRange = 0.0f, maxRange = 1.0f;
     T userValue { 0.0f };
+    float power = 1.0f;
+    std::string format = "%.3f";
     mt::core::Texture const * userTexture = nullptr;
   };
 
