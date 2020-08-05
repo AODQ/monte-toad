@@ -8,6 +8,7 @@
 #include <mt-plugin/plugin.hpp>
 
 #include <imgui/imgui.hpp>
+#include <omp.h>
 
 namespace mt::core { struct Scene; }
 namespace mt { struct PluginInfo; }

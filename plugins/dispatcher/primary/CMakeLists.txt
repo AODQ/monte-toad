@@ -5,6 +5,7 @@ target_link_libraries(
   dispatcher-primary
   PRIVATE
     mt-plugin monte-toad-core imgui monte-toad-debug-util
+    omp
 )
 
 set_target_properties(
