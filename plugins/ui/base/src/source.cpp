@@ -571,6 +571,7 @@ void UiDispatchers(
     plugin.kernel.ApplyKernel && primaryIdx != -1lu && ImGui::Button("KERNEL")
   ) {
     plugin.kernel.ApplyKernel(render, plugin, render.integratorData[primaryIdx]);
+    render.integratorData[primaryIdx].renderingFinished = false;
   }
 
   ImGui::End();
