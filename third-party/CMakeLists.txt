@@ -33,8 +33,8 @@ target_precompile_headers(
     glm/include/glm/ext/matrix_transform.hpp
 )
 
-set(OIDN_STATIC_LIB ON)
-set(OIDN_STATIC_RUNTIME OFF)
-set(OIDN_APPS OFF)
-set(OIDN_APPS_OPENIMAGEIO OFF)
+set(OIDN_STATIC_LIB ON CACHE INTERNAL "")
+set(OIDN_STATIC_RUNTIME OFF CACHE INTERNAL "")
+set(OIDN_APPS OFF CACHE INTERNAL "")
+set(OIDN_APPS_OPENIMAGEIO OFF CACHE INTERNAL "")
 add_subdirectory(open-image-denoise)
