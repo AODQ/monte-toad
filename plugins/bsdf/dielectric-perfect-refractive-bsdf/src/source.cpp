@@ -56,6 +56,13 @@ glm::vec3 BsdfFs(
   return absorb * material.albedo.Get(surface.uvcoord);
 }
 
+glm::vec3 AlbedoApproximation(
+  mt::core::Any const & data, float const indexOfRefraction
+, mt::core::SurfaceInfo const & surface
+) {
+  return BsdfFs(data, indexOfRefraction, surface, glm::vec3(0.0f));
+}
+
 float BsdfPdf(
   mt::core::Any const & /*userdata*/, float const /*indexOfRefraction*/
 , mt::core::SurfaceInfo const & /*surface*/

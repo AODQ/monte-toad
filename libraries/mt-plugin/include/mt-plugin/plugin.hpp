@@ -141,6 +141,11 @@ namespace mt {
     , glm::vec3 const & wo
     ) = nullptr;
 
+    glm::vec3 (*AlbedoApproximation)(
+      mt::core::Any const & data, float const indexOfRefraction
+    , mt::core::SurfaceInfo const & surface
+    );
+
     glm::vec3 (*BsdfFs)(
       mt::core::Any const & data, float const indexOfRefraction
     , mt::core::SurfaceInfo const & surface
@@ -202,6 +207,12 @@ namespace mt {
     , mt::core::Scene const & scene
     , mt::PluginInfo const & plugin
     , glm::vec3 const & wo
+    );
+
+    glm::vec3 (*AlbedoApproximation)(
+      mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
     );
 
     void (*UiUpdate)(

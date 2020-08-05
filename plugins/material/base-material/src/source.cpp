@@ -313,6 +313,75 @@ glm::vec3 BsdfFs(
   /* return plugin.material.BsdfFs(material.userdata, surface, wo); */
 }
 
+glm::vec3 AlbedoApproximation(
+  mt::core::SurfaceInfo const & surface
+, mt::core::Scene const & scene
+, mt::PluginInfo const & plugin
+) {
+  auto const & material =
+    *reinterpret_cast<::Material*>(
+      scene.meshes[surface.material].material.data
+    );
+  auto fresnelMin = material.fresnelMinimalReflection.Get(surface.uvcoord);
+  auto ior = material.indexOfRefraction.Get(surface.uvcoord);
+  bool const hasSpecular =
+      material.specular.size() > 0ul
+   && fresnelMin >= 0.01f
+  ;
+
+  bool const hasDiffuse = material.diffuse.size();
+
+  bool const hasRefractive =
+      material.refractive.size() > 0ul
+   && material.fresnelMinimalReflection.Get(surface.uvcoord) <= 0.99f
+  ;
+
+  // TODO if specular or refractive then want to probably take a first-attempt
+  // guess via raycast
+
+  // get diffuse
+  glm::vec3 diff = glm::vec3(0.0f);
+  for (auto & bsdf : material.diffuse) {
+    diff +=
+        bsdf.probability
+      * plugin
+          .bsdfs[bsdf.pluginIdx]
+          .AlbedoApproximation(bsdf.userdata, ior, surface);
+  }
+
+  // get refraction
+  glm::vec3 refr = glm::vec3(0.0f);
+  for (auto & bsdf : material.refractive) {
+    refr +=
+        bsdf.probability
+      * plugin
+          .bsdfs[bsdf.pluginIdx]
+          .AlbedoApproximation(bsdf.userdata, ior, surface);
+  }
+
+  // get specular
+  glm::vec3 spec = glm::vec3(0.0f);
+  for (auto & bsdf : material.specular) {
+    spec +=
+        bsdf.probability
+      * plugin
+          .bsdfs[bsdf.pluginIdx]
+          .AlbedoApproximation(bsdf.userdata, ior, surface);
+  }
+
+  if (!hasRefractive && !hasSpecular) { return diff; }
+  if (!hasDiffuse && hasSpecular) { return spec; }
+  if (!hasDiffuse && hasRefractive) { return refr; }
+
+  if (hasSpecular && !hasRefractive)
+    { return glm::mix(diff, spec, fresnelMin); }
+
+  if (hasSpecular && hasRefractive)
+    { return glm::mix(refr, spec, fresnelMin); }
+
+  return glm::mix(refr, diff, fresnelMin);
+}
+
 float IndirectPdf(
   mt::core::SurfaceInfo const & surface
 , mt::core::Scene const & scene

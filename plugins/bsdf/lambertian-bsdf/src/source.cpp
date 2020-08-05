@@ -55,6 +55,25 @@ glm::vec3 BsdfFs(
   return glm::dot(wo, surface.normal) * glm::InvPi * albedo;
 }
 
+glm::vec3 AlbedoApproximation(
+  mt::core::Any const & userdata, float const /*indexOfRefraction*/
+, mt::core::SurfaceInfo const & surface
+) {
+  auto & material = *reinterpret_cast<MaterialInfo const *>(userdata.data);
+
+  auto albedo = material.albedo.Get(surface.uvcoord);
+  albedo =
+    glm::pow(
+      albedo,
+      glm::vec3(material.albedoTextureLinearSpace ? 1.0f : 2.2f)
+    );
+
+  float emission = material.emission.Get(surface.uvcoord);
+  if (emission > 0.0f) { return emission * albedo; }
+
+  return albedo;
+}
+
 float BsdfPdf(
   mt::core::Any & /*userdata*/
 , mt::core::SurfaceInfo const & surface

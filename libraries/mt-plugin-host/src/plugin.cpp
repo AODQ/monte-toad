@@ -103,6 +103,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.BsdfSample, "BsdfSample");
       ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
       ctx.LoadFunction(unit.BsdfPdf, "BsdfPdf");
+      ctx.LoadFunction(unit.AlbedoApproximation, "AlbedoApproximation");
       ctx.LoadFunction(unit.IsEmitter, "IsEmitter");
       ctx.LoadFunction(unit.BsdfType, "BsdfType");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
@@ -118,6 +119,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.IndirectPdf, "IndirectPdf");
       ctx.LoadFunction(unit.EmitterFs, "EmitterFs");
       ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
+      ctx.LoadFunction(unit.AlbedoApproximation, "AlbedoApproximation");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate");
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -267,6 +269,7 @@ bool mt::Valid(
           idx < plugin.bsdfs.size()
        && plugin.bsdfs[idx].BsdfFs != nullptr
        && plugin.bsdfs[idx].BsdfPdf  != nullptr
+       && plugin.bsdfs[idx].AlbedoApproximation != nullptr
        && plugin.bsdfs[idx].BsdfSample != nullptr
        && plugin.bsdfs[idx].IsEmitter != nullptr
        && plugin.bsdfs[idx].BsdfType != nullptr
@@ -284,6 +287,7 @@ bool mt::Valid(
        && plugin.material.IndirectPdf != nullptr
        && plugin.material.EmitterFs != nullptr
        && plugin.material.BsdfFs != nullptr
+       && plugin.material.AlbedoApproximation != nullptr
        && plugin.material.PluginType != nullptr
        && plugin.material.PluginType() == pluginType
        && plugin.material.PluginLabel != nullptr
@@ -365,26 +369,28 @@ void mt::Clean(
       plugin.kernel.PluginLabel = nullptr;
     break;
     case mt::PluginType::Bsdf:
-      plugin.bsdfs[idx].BsdfFs      = nullptr;
-      plugin.bsdfs[idx].BsdfPdf     = nullptr;
-      plugin.bsdfs[idx].BsdfSample  = nullptr;
-      plugin.bsdfs[idx].IsEmitter   = nullptr;
-      plugin.bsdfs[idx].BsdfType    = nullptr;
-      plugin.bsdfs[idx].Allocate    = nullptr;
-      plugin.bsdfs[idx].UiUpdate    = nullptr;
-      plugin.bsdfs[idx].PluginType  = nullptr;
-      plugin.bsdfs[idx].PluginLabel = nullptr;
+      plugin.bsdfs[idx].BsdfFs              = nullptr;
+      plugin.bsdfs[idx].BsdfPdf             = nullptr;
+      plugin.bsdfs[idx].AlbedoApproximation = nullptr;
+      plugin.bsdfs[idx].BsdfSample          = nullptr;
+      plugin.bsdfs[idx].IsEmitter           = nullptr;
+      plugin.bsdfs[idx].BsdfType            = nullptr;
+      plugin.bsdfs[idx].Allocate            = nullptr;
+      plugin.bsdfs[idx].UiUpdate            = nullptr;
+      plugin.bsdfs[idx].PluginType          = nullptr;
+      plugin.bsdfs[idx].PluginLabel         = nullptr;
     break;
     case mt::PluginType::Material:
-      plugin.material.Allocate    = nullptr;
-      plugin.material.IsEmitter   = nullptr;
-      plugin.material.Sample      = nullptr;
-      plugin.material.Pdf         = nullptr;
-      plugin.material.IndirectPdf = nullptr;
-      plugin.material.EmitterFs   = nullptr;
-      plugin.material.BsdfFs      = nullptr;
-      plugin.material.PluginType  = nullptr;
-      plugin.material.PluginLabel = nullptr;
+      plugin.material.Allocate            = nullptr;
+      plugin.material.IsEmitter           = nullptr;
+      plugin.material.Sample              = nullptr;
+      plugin.material.Pdf                 = nullptr;
+      plugin.material.IndirectPdf         = nullptr;
+      plugin.material.EmitterFs           = nullptr;
+      plugin.material.BsdfFs              = nullptr;
+      plugin.material.AlbedoApproximation = nullptr;
+      plugin.material.PluginType          = nullptr;
+      plugin.material.PluginLabel         = nullptr;
     break;
     case mt::PluginType::Camera:
       plugin.camera.Dispatch = nullptr;
