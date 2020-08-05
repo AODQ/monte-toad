@@ -86,12 +86,10 @@ namespace mt {
   };
 
   struct PluginInfoKernel {
-    void (*Apply)(
-      glm::vec2 const & uv
-    , glm::vec3 & color
-    , mt::core::RenderInfo const & render
+    void (*ApplyKernel)(
+      mt::core::RenderInfo & render
     , mt::PluginInfo const & plugin
-    , mt::core::IntegratorData const & integratorData
+    , mt::core::IntegratorData & integratorData
     ) = nullptr;
 
     void (*UiUpdate)(
@@ -199,7 +197,7 @@ namespace mt {
     , mt::PluginInfo const & plugin
     );
 
-    glm::vec3 (*Fs)(
+    glm::vec3 (*BsdfFs)(
       mt::core::SurfaceInfo const & surface
     , mt::core::Scene const & scene
     , mt::PluginInfo const & plugin

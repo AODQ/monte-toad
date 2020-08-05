@@ -92,7 +92,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
     } break;
     case mt::PluginType::Kernel: {
       auto & unit = plugin.kernel;
-      ctx.LoadFunction(unit.Apply, "Apply");
+      ctx.LoadFunction(unit.ApplyKernel, "ApplyKernel");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -117,7 +117,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.Pdf, "Pdf");
       ctx.LoadFunction(unit.IndirectPdf, "IndirectPdf");
       ctx.LoadFunction(unit.EmitterFs, "EmitterFs");
-      ctx.LoadFunction(unit.Fs, "Fs");
+      ctx.LoadFunction(unit.BsdfFs, "BsdfFs");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate");
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -258,7 +258,7 @@ bool mt::Valid(
       ;
     case mt::PluginType::Kernel:
       return
-          plugin.kernel.Apply != nullptr
+          plugin.kernel.ApplyKernel != nullptr
        && plugin.kernel.PluginType() == pluginType
        && plugin.kernel.PluginLabel != nullptr
       ;
@@ -283,7 +283,7 @@ bool mt::Valid(
        && plugin.material.Pdf != nullptr
        && plugin.material.IndirectPdf != nullptr
        && plugin.material.EmitterFs != nullptr
-       && plugin.material.Fs != nullptr
+       && plugin.material.BsdfFs != nullptr
        && plugin.material.PluginType != nullptr
        && plugin.material.PluginType() == pluginType
        && plugin.material.PluginLabel != nullptr
@@ -359,7 +359,7 @@ void mt::Clean(
       plugin.accelerationStructure.PluginLabel = nullptr;
     break;
     case mt::PluginType::Kernel:
-      plugin.kernel.Apply = nullptr;
+      plugin.kernel.ApplyKernel = nullptr;
       plugin.kernel.UiUpdate = nullptr;
       plugin.kernel.PluginType = nullptr;
       plugin.kernel.PluginLabel = nullptr;
@@ -382,7 +382,7 @@ void mt::Clean(
       plugin.material.Pdf         = nullptr;
       plugin.material.IndirectPdf = nullptr;
       plugin.material.EmitterFs   = nullptr;
-      plugin.material.Fs          = nullptr;
+      plugin.material.BsdfFs      = nullptr;
       plugin.material.PluginType  = nullptr;
       plugin.material.PluginLabel = nullptr;
     break;

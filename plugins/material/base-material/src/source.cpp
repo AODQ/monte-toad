@@ -297,7 +297,7 @@ glm::vec3 EmitterFs(
       );
 }
 
-glm::vec3 Fs(
+glm::vec3 BsdfFs(
   mt::core::SurfaceInfo const & /*surface*/
 , mt::core::Scene const & /*scene*/
 , mt::PluginInfo const & /*plugin*/

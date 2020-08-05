@@ -35,7 +35,7 @@ mt::PixelInfo Dispatch(
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   auto color =
-    plugin.material.Fs(
+    plugin.material.BsdfFs(
       surface, scene, plugin, glm::reflect(eye.direction, surface.normal)
     );
 

@@ -505,9 +505,9 @@ void UiImageOutput(
 }
 
 void UiDispatchers(
-    mt::core::RenderInfo & render
-    , mt::PluginInfo const & plugin
-    ) {
+  mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
   ImGui::Begin("dispatchers");
 
   if (plugin.dispatchers.size() == 0) {
