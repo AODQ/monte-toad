@@ -5,6 +5,7 @@ target_link_libraries(
   integrator-normal
   PRIVATE
     mt-plugin monte-toad-core
+    imgui
 )
 
 set_target_properties(
