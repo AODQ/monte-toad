@@ -94,7 +94,7 @@ void DrawPath(mt::PluginInfo const & plugin, mt::core::RenderInfo & render) {
         size_t idx = y*depthResolution.x + x;
         if (idx < depthIntegratorData.mappedImageTransitionBuffer.size()) {
           depthIntegratorData.mappedImageTransitionBuffer[idx] =
-            glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+            glm::vec3(1.0f, 0.0f, 0.0f);
         }
       }
     );

@@ -268,9 +268,9 @@ void mt::core::DispatchImageCopy(
   glTexImage2D(
     GL_TEXTURE_2D
   , 0
-  , GL_RGBA32F
+  , GL_RGB32F
   , self.imageResolution.x, self.imageResolution.y
-  , 0, GL_RGBA, GL_FLOAT
+  , 0, GL_RGB, GL_FLOAT
   , self.mappedImageTransitionBuffer.data()
   );
 }
@@ -294,9 +294,9 @@ void mt::core::AllocateResources(mt::core::IntegratorData & self) {
   glTexImage2D(
     GL_TEXTURE_2D
   , 0
-  , GL_RGBA32F
+  , GL_RGB32F
   , self.imageResolution.x, self.imageResolution.y
-  , 0, GL_RGBA, GL_FLOAT
+  , 0, GL_RGB, GL_FLOAT
   , nullptr
   );
 

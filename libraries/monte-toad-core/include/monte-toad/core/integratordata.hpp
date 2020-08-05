@@ -7,7 +7,7 @@
 
 namespace mt::core {
   struct IntegratorData {
-    std::vector<glm::vec4> mappedImageTransitionBuffer;
+    std::vector<glm::vec3> mappedImageTransitionBuffer;
     std::vector<uint16_t> pixelCountBuffer;
     mt::core::GlTexture renderedTexture;
 

@@ -38,7 +38,7 @@ void ApplyKernel(
       .setImage(
         "albedo"
       , data.mappedImageTransitionBuffer.data()
-      , oidn::Format::Float4
+      , oidn::Format::Float3
       , data.imageResolution.x, data.imageResolution.y
       );
   }
@@ -49,7 +49,7 @@ void ApplyKernel(
       .setImage(
         "normal"
       , data.mappedImageTransitionBuffer.data()
-      , oidn::Format::Float4
+      , oidn::Format::Float3
       , data.imageResolution.x, data.imageResolution.y
       );
   }
@@ -57,14 +57,14 @@ void ApplyKernel(
   filter
     .setImage(
       "color", integratorData.mappedImageTransitionBuffer.data()
-    , oidn::Format::Float4
+    , oidn::Format::Float3
     , integratorData.imageResolution.x, integratorData.imageResolution.y
     );
 
   filter
     .setImage(
       "output", integratorData.mappedImageTransitionBuffer.data()
-    , oidn::Format::Float4
+    , oidn::Format::Float3
     , integratorData.imageResolution.x, integratorData.imageResolution.y
     );
 
