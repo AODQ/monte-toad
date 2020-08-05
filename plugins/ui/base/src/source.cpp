@@ -564,6 +564,15 @@ void UiDispatchers(
     }
   }
 
+  // -- apply kernel TEMPORARY PLACEMENT TODO MOVE
+  auto const primaryIdx =
+    render.integratorIndices[Idx(mt::IntegratorTypeHint::Primary)];
+  if (
+    plugin.kernel.ApplyKernel && primaryIdx != -1lu && ImGui::Button("KERNEL")
+  ) {
+    plugin.kernel.ApplyKernel(render, plugin, render.integratorData[primaryIdx]);
+  }
+
   ImGui::End();
 }
 
