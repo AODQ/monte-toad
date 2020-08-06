@@ -247,8 +247,15 @@ void UiTextureEditor(mt::core::Scene & scene) {
     }
   }
 
-  for (auto & tex : scene.textures) {
-    ImGui::Text("%s", tex.label.c_str());
+  for (size_t texIt = 0; texIt != scene.textures.size(); ++ texIt) {
+    // delete texture if requested
+    if (ImGui::Button(fmt::format("X##{}", texIt).c_str())) {
+      scene.textures.erase(scene.textures.begin() + texIt);
+      -- texIt;
+      continue;
+    }
+    ImGui::SameLine();
+    ImGui::Text("%s##%lu", scene.textures[texIt].label.c_str(), texIt);
   }
 
   ImGui::End();
