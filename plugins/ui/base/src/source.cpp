@@ -230,13 +230,13 @@ void UiTextureEditor(mt::core::Scene & scene) {
   ImGui::Begin("Textures");
 
   if (ImGui::Button("Load Texture")) {
-    auto filename =
-      mt::util::FilePicker(
+    auto files =
+      mt::util::FilePickerMultiple(
           " --file-filter=\"image files | "
           " *.jpeg *.jpg *.png *.tga *.bmp *.psd *.gif *.hdr *.pic *.ppm"
           " *.pgm\""
           );
-    if (filename != "") {
+    for (auto const & filename : files) {
       auto texture = mt::util::LoadTexture(filename);
       if (texture.Valid()) {
         texture.label = filename;
