@@ -45,14 +45,12 @@ mt::core::Any Construct(mt::core::TriangleMesh && triangleMeshMv) {
   self.triangleMesh = std::move(triangleMeshMv);
 
   // construct faces in a way that will skip normals uv coords and meshIdx
-  self.faces.reserve(self.triangleMesh.origins.size());
-  for (size_t i = 0; i < self.faces.size(); ++ i) {
-    self.faces.emplace_back(i/3ul);
-    self.faces.emplace_back(i/3ul);
-    self.faces.emplace_back(i/3ul);
+  for (size_t i = 0; i < self.triangleMesh.origins.size(); ++ i) {
+    self.faces.emplace_back(i);
   }
 
   nanort::BVHBuildOptions<float> buildOptions;
+  buildOptions.cache_bbox = true;
 
   auto mesh =
     nanort::TriangleMesh<float>(
@@ -63,7 +61,14 @@ mt::core::Any Construct(mt::core::TriangleMesh && triangleMeshMv) {
       &self.triangleMesh.origins[0].x, self.faces.data(), sizeof(glm::vec3)
     );
 
-  self.accel.Build(self.faces.size()/3, mesh, sahPred, buildOptions);
+  bool success =
+    self.accel.Build(self.faces.size()/3, mesh, sahPred, buildOptions);
+
+  if (!success) {
+    spdlog::error("failed to build acceleration tree");
+    return mt::core::Any{};
+  }
+
   self.triangleIntersector =
     std::make_unique<nanort::TriangleIntersector<float>>(
       &self.triangleMesh.origins[0].x, self.faces.data(), sizeof(glm::vec3)
@@ -79,6 +84,7 @@ std::optional<mt::core::BvhIntersection> IntersectClosest(
 , glm::vec3 const & ori, glm::vec3 const & dir
 , size_t const ignoredTriangleIdx
 ) {
+  if (selfAny.data == nullptr) { return std::nullopt; }
   auto const & self =
     *reinterpret_cast<::NanoAccelerationStructure const *>(selfAny.data);
 
