@@ -104,7 +104,7 @@ mt::BsdfTypeHint BsdfType() { return mt::BsdfTypeHint::Diffuse; }
 
 bool IsEmitter(
   mt::core::Any const & userdata
-, mt::core::Triangle const & /*triangle*/
+, mt::core::Triangle const /*triangle*/
 ) {
   auto & material = *reinterpret_cast<::MaterialInfo*>(userdata.data);
   // Temporarily allow this material to be an emitter, though i should probably

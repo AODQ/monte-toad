@@ -19,7 +19,7 @@ namespace {
 struct MaterialComponent {
   float probability = 0.0f;
 
-  size_t pluginIdx = -1lu;
+  size_t pluginIdx = -1ul;
   mt::core::Any userdata;
 };
 
@@ -439,12 +439,10 @@ void UiUpdate(
           );
 
     auto const surface =
-      mt::core::Raycast(
-        scene, plugin, camera.origin, camera.direction, nullptr
-      );
+      mt::core::Raycast(scene, plugin, camera.origin, camera.direction, -1ul);
 
     currentMtlIdx =
-      static_cast<size_t>(surface.Valid() ? surface.triangle->meshIdx : -1);
+      static_cast<size_t>(surface.Valid() ? surface.triangle.MeshIdx() : -1ul);
 
     render.lastIntegratorImageClicked = -1lu;
   }
@@ -454,14 +452,29 @@ void UiUpdate(
   { currentMtlIdx = 0; }
 
   // -- material editor
-  if (!ImGui::Begin("Material editor")) {}
+  ImGui::Begin("Material editor");
 
   if (currentMtlIdx == -1lu) {
+    if (scene.meshes.size() > 0 && ImGui::Button("+"))
+      { currentMtlIdx = 0lu; }
     ImGui::End();
     return;
   }
 
-  ImGui::Text("selected material idx %lu\n", currentMtlIdx);
+  if (ImGui::Button("-")) {
+    currentMtlIdx =
+      (currentMtlIdx - 1 + scene.meshes.size()) % scene.meshes.size();
+  }
+
+  ImGui::SameLine();
+  if (ImGui::Button("+")) {
+    currentMtlIdx = (currentMtlIdx + 1lu) % scene.meshes.size();
+  }
+
+  ImGui::SameLine();
+  ImGui::Text(
+    "selected material %lu / %lu", currentMtlIdx, scene.meshes.size()-1
+  );
 
   ImGui::Separator();
 

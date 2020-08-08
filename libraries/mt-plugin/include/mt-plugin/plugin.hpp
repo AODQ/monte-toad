@@ -26,6 +26,7 @@ namespace mt::core { struct RenderInfo; }
 namespace mt::core { struct Scene; }
 namespace mt::core { struct SurfaceInfo; }
 namespace mt::core { struct Triangle; }
+namespace mt::core { struct TriangleMesh; }
 namespace mt::debugutil { struct IntegratorPathUnit; }
 namespace mt { enum struct BsdfTypeHint : uint8_t; }
 namespace mt { struct PluginInfo; }
@@ -62,17 +63,19 @@ namespace mt {
 
   struct PluginInfoAccelerationStructure {
     mt::core::Any (*Construct)(
-      std::vector<mt::core::Triangle> && triangles
+      mt::core::TriangleMesh && triangleMesh
     ) = nullptr;
 
     std::optional<mt::core::BvhIntersection> (*IntersectClosest)(
       mt::core::Any const & self
     , glm::vec3 const & ori
     , glm::vec3 const & dir
-    , mt::core::Triangle const * const ignoredTriangle
+    , size_t const ignoredTriangle
     );
 
-    span<mt::core::Triangle> (*GetTriangles)(mt::core::Any const & self);
+    mt::core::Triangle (*GetTriangle)(
+      mt::core::Any const & self, size_t const triangleIdx
+    );
 
     void (*UiUpdate)(
       mt::core::Scene & scene
@@ -151,9 +154,11 @@ namespace mt {
     , glm::vec3 const & wo
     ) = nullptr;
 
+    // TODO consider changing triangle to mesh index since either the entire
+    //      mesh is an emitter or it's not
     bool (*IsEmitter)(
       mt::core::Any const & data
-    , mt::core::Triangle const & triangle
+    , mt::core::Triangle const triangle
     );
 
     // helps determine what type of bsdf it is to help with bsdf picking in

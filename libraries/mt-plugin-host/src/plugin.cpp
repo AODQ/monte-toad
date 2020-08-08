@@ -85,7 +85,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       auto & unit = plugin.accelerationStructure;
       ctx.LoadFunction(unit.Construct, "Construct");
       ctx.LoadFunction(unit.IntersectClosest, "IntersectClosest");
-      ctx.LoadFunction(unit.GetTriangles, "GetTriangles");
+      ctx.LoadFunction(unit.GetTriangle, "GetTriangle");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate");
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -253,7 +253,7 @@ bool mt::Valid(
       return
           plugin.accelerationStructure.Construct != nullptr
        && plugin.accelerationStructure.IntersectClosest != nullptr
-       && plugin.accelerationStructure.GetTriangles != nullptr
+       && plugin.accelerationStructure.GetTriangle != nullptr
        && plugin.accelerationStructure.PluginType != nullptr
        && plugin.accelerationStructure.PluginType() == pluginType
        && plugin.accelerationStructure.PluginLabel != nullptr
@@ -357,7 +357,7 @@ void mt::Clean(
     case mt::PluginType::AccelerationStructure:
       plugin.accelerationStructure.Construct = nullptr;
       plugin.accelerationStructure.IntersectClosest = nullptr;
-      plugin.accelerationStructure.GetTriangles = nullptr;
+      plugin.accelerationStructure.GetTriangle = nullptr;
       plugin.accelerationStructure.UiUpdate = nullptr;
       plugin.accelerationStructure.PluginType = nullptr;
       plugin.accelerationStructure.PluginLabel = nullptr;

@@ -12,7 +12,7 @@
 
 namespace {
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<mt::core::Triangle> LoadAssetIntoScene(
+mt::core::TriangleMesh LoadAssetIntoScene(
   mt::core::Scene & model
 , mt::PluginInfo const & plugin
 , std::string const & filename
@@ -49,7 +49,7 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
     return {};
   }
 
-  std::vector<mt::core::Triangle> triangles;
+  mt::core::TriangleMesh triangleMesh;
 
   for (size_t meshIt = 0; meshIt < asset->mNumMeshes; ++ meshIt) {
     auto const & mesh = *asset->mMeshes[meshIt];
@@ -89,21 +89,16 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
       }
 
       // add to scene
-      triangles
-        .emplace_back(
-          mt::core::Triangle (
-            meshIt
-          , glm::vec3{v0.x, v0.y, v0.z}
-          , glm::vec3{v1.x, v1.y, v1.z}
-          , glm::vec3{v2.x, v2.y, v2.z}
-          , glm::vec3{n0.x, n0.y, n0.z}
-          , glm::vec3{n1.x, n1.y, n1.z}
-          , glm::vec3{n2.x, n2.y, n2.z}
-          , glm::abs(glm::vec2{uv0.x, uv0.y})
-          , glm::abs(glm::vec2{uv1.x, uv1.y})
-          , glm::abs(glm::vec2{uv2.x, uv2.y})
-          )
-        );
+      triangleMesh.origins.emplace_back(glm::vec3{v0.x, v0.y, v0.z});
+      triangleMesh.origins.emplace_back(glm::vec3{v1.x, v1.y, v1.z});
+      triangleMesh.origins.emplace_back(glm::vec3{v2.x, v2.y, v2.z});
+      triangleMesh.normals.emplace_back(glm::vec3{n0.x, n0.y, n0.z});
+      triangleMesh.normals.emplace_back(glm::vec3{n1.x, n1.y, n1.z});
+      triangleMesh.normals.emplace_back(glm::vec3{n2.x, n2.y, n2.z});
+      triangleMesh.uvCoords.emplace_back(glm::abs(glm::vec2{uv0.x, uv0.y}));
+      triangleMesh.uvCoords.emplace_back(glm::abs(glm::vec2{uv1.x, uv1.y}));
+      triangleMesh.uvCoords.emplace_back(glm::abs(glm::vec2{uv2.x, uv2.y}));
+      triangleMesh.meshIndices.emplace_back(meshIt);
 
       // assign bbox
       for (auto vert : {v0, v1, v2}) {
@@ -123,7 +118,7 @@ std::vector<mt::core::Triangle> LoadAssetIntoScene(
     }
   }
 
-  return triangles;
+  return triangleMesh;
 }
 
 /* //////////////////////////////////////////////////////////////////////////////// */
@@ -270,7 +265,7 @@ mt::core::SurfaceInfo mt::core::Raycast(
   mt::core::Scene const & scene
 , mt::PluginInfo const & plugin
 , glm::vec3 ori, glm::vec3 dir
-, mt::core::Triangle const * ignoredTriangle
+, size_t ignoredTriangle
 ) {
   auto const hit =
     plugin.accelerationStructure.IntersectClosest(
@@ -286,7 +281,7 @@ mt::core::SurfaceInfo mt::core::Raycast(
       scene
     , plugin
         .accelerationStructure
-        .GetTriangles(scene.accelStructure).data() + hit->triangleIdx
+        .GetTriangle(scene.accelStructure, hit->triangleIdx)
     , *hit
     , ori + dir*hit->length, dir
     );
@@ -295,27 +290,28 @@ mt::core::SurfaceInfo mt::core::Raycast(
 #include <mt-plugin/plugin.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
-std::tuple<mt::core::Triangle const *, glm::vec2>
+std::tuple<mt::core::Triangle, glm::vec2>
 mt::core::EmissionSourceTriangle(
   mt::core::Scene const & scene
 , mt::PluginInfo const & plugin
 ) {
   if (scene.emissionSource.triangles.size() == 0)
-    { return std::make_pair(nullptr, glm::vec2()); }
+    { return std::make_pair(mt::core::Triangle{}, glm::vec2()); }
 
   // this needs to take into account triangle surface area as that plays heavily
   // into which ones need to be sampled
-  auto const & tri =
+  auto const tri =
     plugin
       .accelerationStructure
-      .GetTriangles(scene.accelStructure)[
-        scene.emissionSource.triangles[
+      .GetTriangle(
+        scene.accelStructure
+      , scene.emissionSource.triangles[
           plugin.random.SampleUniform1() * scene.emissionSource.triangles.size()
         ]
-      ];
+      );
 
   // generate random barycentric coords
   glm::vec2 u = plugin.random.SampleUniform2();
   u.y *= (1.0f - u.x);
-  return std::make_pair(&tri, u);
+  return std::make_pair(tri, u);
 }

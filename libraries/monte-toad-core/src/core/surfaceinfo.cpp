@@ -17,7 +17,7 @@ mt::core::SurfaceInfo mt::core::SurfaceInfo::Construct(
 
 mt::core::SurfaceInfo mt::core::SurfaceInfo::Construct(
   mt::core::Scene const & /*scene*/
-, mt::core::Triangle const * triangle
+, mt::core::Triangle const triangle
 , mt::core::BvhIntersection const & intersection
 , glm::vec3 origin
 , glm::vec3 incomingAngle
@@ -28,16 +28,20 @@ mt::core::SurfaceInfo mt::core::SurfaceInfo::Construct(
   surface.incomingAngle = incomingAngle;
   surface.distance = intersection.length;
   surface.barycentricUv = intersection.barycentricUv;
-  surface.material = surface.triangle->meshIdx;
 
-  if (triangle) {
+  if (triangle.Valid()) {
+    auto const & mesh = *triangle.mesh;
+    auto const idx = triangle.idx;
+    surface.material = mesh.meshIndices[idx];
     surface.normal =
       BarycentricInterpolation(
-        triangle->n0, triangle->n1, triangle->n2, surface.barycentricUv
+        mesh.normals[idx*3+0], mesh.normals[idx*3+1], mesh.normals[idx*3+2]
+      , surface.barycentricUv
       );
     surface.uvcoord =
       BarycentricInterpolation(
-        triangle->uv0, triangle->uv1, triangle->uv2, surface.barycentricUv
+        mesh.uvCoords[idx*3+0], mesh.uvCoords[idx*3+1], mesh.uvCoords[idx*3+2]
+      , surface.barycentricUv
       );
 
     // flip normal if surface is being exitted

@@ -156,7 +156,7 @@ void UiPluginInfo(
 , mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
-  if (!ImGui::Begin("Plugin Info")) { ImGui::End(); return; }
+  ImGui::Begin("Plugin Info");
 
   float
     min = glm::min(scene.bboxMin.x, glm::min(scene.bboxMin.y, scene.bboxMin.z))
@@ -540,15 +540,11 @@ void UiDispatchers(
 
     if (ImGui::Selectable("None", idx == -1lu)) {
       idx = -1lu;
-      render.ClearImageBuffers();
     }
 
     for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
       bool isSelected = idx == i;
-      if (ImGui::Selectable(IntegratorLabel(i), isSelected)) {
-        idx = i;
-        render.ClearImageBuffers();
-      }
+      if (ImGui::Selectable(IntegratorLabel(i), isSelected)) { idx = i; }
     }
     ImGui::EndCombo();
   }

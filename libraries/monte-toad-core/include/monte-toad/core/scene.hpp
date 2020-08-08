@@ -50,10 +50,10 @@ namespace mt::core {
     Scene const & scene
   , mt::PluginInfo const & plugin
   , glm::vec3 ori, glm::vec3 dir
-  , mt::core::Triangle const * ignoredTriangle
+  , size_t const ignoredTriangle
   );
 
-  std::tuple<mt::core::Triangle const *, glm::vec2> EmissionSourceTriangle(
+  std::tuple<mt::core::Triangle, glm::vec2> EmissionSourceTriangle(
     Scene const & scene
   , mt::PluginInfo const & plugin
   );

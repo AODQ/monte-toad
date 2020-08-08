@@ -97,7 +97,7 @@ mt::BsdfTypeHint BsdfType() { return mt::BsdfTypeHint::Transmittive; }
 
 bool IsEmitter(
   mt::core::Any const & /*self*/
-, mt::core::Triangle const & /*triangle*/
+, mt::core::Triangle const /*triangle*/
 ) {
   return false;
 }

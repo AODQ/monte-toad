@@ -31,7 +31,7 @@ mt::PixelInfo SampleLi(
   wo = emissionDirection;
   pdf = 1.0f;
   auto testSurface =
-    mt::core::Raycast(scene, plugin, surface.origin, wo, surface.triangle);
+    mt::core::Raycast(scene, plugin, surface.origin, wo, surface.triangle.idx);
   if (testSurface.Valid()) { return { glm::vec3(0.0f), false }; }
   // TODO TOAD apparently multiply by area
   return { emissionColor * emissionPower, true };

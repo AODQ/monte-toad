@@ -28,12 +28,12 @@ mt::PixelInfo Dispatch(
     );
 
   auto const surface =
-    mt::core::Raycast(scene, plugin, eye.origin, eye.direction, nullptr);
+    mt::core::Raycast(scene, plugin, eye.origin, eye.direction, -1ul);
 
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   glm::vec3 color;
-  auto t = reinterpret_cast<size_t>(surface.triangle);
+  auto t = reinterpret_cast<size_t>(surface.triangle.idx);
   color.r = (t % 255) / 255.0f;
   color.g = (t % 4096) / 4096.0f;
   color.b = (t % 6555) / 6555.0f;

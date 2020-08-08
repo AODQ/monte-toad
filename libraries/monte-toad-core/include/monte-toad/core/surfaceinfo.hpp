@@ -1,7 +1,8 @@
 #pragma once
 
+#include <monte-toad/core/triangle.hpp>
+
 namespace mt::core { struct Scene; }
-namespace mt::core { struct Triangle; }
 namespace mt::core { struct BvhIntersection; }
 
 #include <memory>
@@ -10,7 +11,7 @@ namespace mt::core {
   struct SurfaceInfo {
     SurfaceInfo() = default;
 
-    mt::core::Triangle const * triangle = nullptr;
+    mt::core::Triangle triangle;
     float distance = 0.0f;
     glm::vec2 barycentricUv = glm::vec2(0.0f);
 
@@ -27,7 +28,7 @@ namespace mt::core {
     // TODO i really shouldn't need a shared ptr
     std::shared_ptr<mt::core::SurfaceInfo> previousSurface = nullptr;
 
-    bool Valid() const { return triangle != nullptr; }
+    bool Valid() const { return triangle.Valid(); }
 
     // creates an invalid surface; not triangle was hit
     static SurfaceInfo Construct(glm::vec3 origin, glm::vec3 incomingAngle);
@@ -36,7 +37,7 @@ namespace mt::core {
     // incoming angle.
     static SurfaceInfo Construct(
       mt::core::Scene const & scene
-    , mt::core::Triangle const * triangle
+    , mt::core::Triangle const triangle
     , mt::core::BvhIntersection const & intersection
     , glm::vec3 origin
     , glm::vec3 incomingAngle

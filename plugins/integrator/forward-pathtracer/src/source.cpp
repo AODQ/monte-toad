@@ -170,7 +170,7 @@ PropagationStatus Propagate(
   // store a value for current propagation status, which could be overwritten
   auto propagationStatus = PropagationStatus::Continue;
 
-  if (surface.triangle == nullptr) {
+  if (!surface.triangle.Valid()) {
     spdlog::critical("could not propagate in a correct manner, null triangle");
     return PropagationStatus::End;
   }
@@ -184,10 +184,12 @@ PropagationStatus Propagate(
 
   // grab information of next surface
   mt::core::SurfaceInfo nextSurface =
-    mt::core::Raycast(scene, plugin, surface.origin, bsdf.wo, surface.triangle);
+    mt::core::Raycast(
+      scene, plugin, surface.origin, bsdf.wo, surface.triangle.idx
+    );
 
   // check if an emitter or skybox (which could be a blackbody) was hit
-  if (nextSurface.triangle == nullptr) {
+  if (!nextSurface.triangle.Valid()) {
     if (scene.emissionSource.skyboxEmitterPluginIdx == -1lu) {
       Join(propagationStatus, PropagationStatus::End);
     } else {
@@ -279,8 +281,7 @@ mt::PixelInfo Dispatch(
       });
     }
 
-    surface =
-      mt::core::Raycast(scene, plugin, eye.origin, eye.direction, nullptr);
+    surface = mt::core::Raycast(scene, plugin, eye.origin, eye.direction, -1ul);
   }
 
   // return skybox

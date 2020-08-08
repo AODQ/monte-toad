@@ -37,7 +37,7 @@ mt::PixelInfo Dispatch(
     );
 
   auto const surface =
-    mt::core::Raycast(scene, plugin, eye.origin, eye.direction, nullptr);
+    mt::core::Raycast(scene, plugin, eye.origin, eye.direction, -1ul);
 
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
