@@ -57,8 +57,6 @@ mt::core::Scene scene;
 
 bool reloadPlugin = false;
 
-mt::core::GlProgram imageTransitionProgram;
-
 struct GuiLogMessage {
   GuiLogMessage() = default;
   std::string preLevel, colorLevel, postLevel;
@@ -327,8 +325,6 @@ void DispatchRender(
   if (plugin.integrators.size() == 0) { return; }
   if (plugin.dispatchers.size() == 0) { return; }
   if (!mt::Valid(plugin, mt::PluginType::AccelerationStructure)) { return; }
-
-  glUseProgram(::imageTransitionProgram.handle);
 
   // iterate through all integrators and run either their low or high quality
   // dispatches
