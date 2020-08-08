@@ -45,7 +45,7 @@ mt::PixelInfo Dispatch(
 
   // normalize from range -1 ‥ 1 to 0 ‥ 1
   if (::normalizedSpace)
-    { surfaceNormal = surface.normal*0.5f + glm::vec3(1.0f); }
+    { surfaceNormal = surface.normal*0.5f + glm::vec3(0.5f); }
 
   return mt::PixelInfo{surfaceNormal, true};
 }
