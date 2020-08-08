@@ -38,3 +38,7 @@ set(OIDN_STATIC_RUNTIME OFF CACHE INTERNAL "")
 set(OIDN_APPS OFF CACHE INTERNAL "")
 set(OIDN_APPS_OPENIMAGEIO OFF CACHE INTERNAL "")
 add_subdirectory(open-image-denoise)
+
+## nanort
+add_library(nanort INTERFACE)
+target_include_directories(nanort INTERFACE nanort/include)

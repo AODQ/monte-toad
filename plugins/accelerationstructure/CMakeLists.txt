@@ -1,1 +1,2 @@
 add_subdirectory(madmann-bvh-accelerationstructure)
+add_subdirectory(nanort-accelerationstructure)
