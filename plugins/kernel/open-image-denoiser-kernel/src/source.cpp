@@ -8,6 +8,7 @@
 
 #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wshadow"
+  #pragma GCC diagnostic ignored "-Warray-bounds"
   #include <OpenImageDenoise/oidn.hpp>
 #pragma GCC diagnostic pop
 

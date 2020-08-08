@@ -3,9 +3,10 @@ target_sources(dispatcher-primary PRIVATE src/source.cpp)
 
 target_link_libraries(
   dispatcher-primary
+  PUBLIC
+    omp
   PRIVATE
     mt-plugin monte-toad-core imgui monte-toad-debug-util
-    omp
 )
 
 set_target_properties(

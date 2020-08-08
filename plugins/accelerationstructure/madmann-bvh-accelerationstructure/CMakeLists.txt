@@ -5,7 +5,7 @@ target_link_libraries(
   madmann-bvh-accelerationstructure
   PRIVATE
     mt-plugin monte-toad-core
-    imgui bvh
+    imgui bvh omp
 )
 
 set_target_properties(

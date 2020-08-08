@@ -8,7 +8,6 @@
 #include <mt-plugin/enums.hpp>
 
 #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wvolatile"
   #pragma GCC diagnostic ignored "-Wshadow"
     #include <glm/fwd.hpp>
 #pragma GCC diagnostic pop

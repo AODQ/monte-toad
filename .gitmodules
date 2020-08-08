@@ -13,3 +13,6 @@
 [submodule "third-party/open-image-denoise"]
 	path = third-party/open-image-denoise
 	url = https://github.com/openimagedenoise/oidn
+[submodule "third-party/nanort"]
+	path = third-party/nanort
+	url = https://github.com/aodq/nanort
