@@ -100,7 +100,7 @@ std::optional<mt::core::BvhIntersection> IntersectClosest(
   bool hit =
     self.accel.Traverse(ray, *self.triangleIntersector, &isect, traceOptions);
 
-  if (!hit) { return std::nullopt; }
+  if (!hit || isect.prim_id == -1u) { return std::nullopt; }
 
   mt::core::BvhIntersection intersection;
   intersection.triangleIdx = isect.prim_id;
