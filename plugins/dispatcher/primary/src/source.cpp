@@ -139,7 +139,7 @@ void DispatchBlockRegion(
     return;
   }
 
-  #pragma omp parallel for
+  /* #pragma omp parallel for */
   for (size_t x = minX; x < maxX; x += strideX)
   for (size_t y = minY; y < maxY; y += strideY)
   for (size_t it = 0; it < internalIterator; ++ it) {
@@ -248,7 +248,6 @@ void BlockIterate(
   mt::core::IntegratorData & self
 , glm::u16vec2 & minRange, glm::u16vec2 & maxRange
 ) {
-
   size_t const
     blockPixelCount = self.blockIteratorStride*self.blockIteratorStride;
 
@@ -288,97 +287,122 @@ void DispatchRender(
 , mt::PluginInfo const & plugin
 ) {
 
-  // iterate through all integrators and run either their low or high quality
-  // dispatches
-  for (
-    size_t integratorIdx = 0ul;
-    integratorIdx < plugin.integrators.size();
-    ++ integratorIdx
-  ) {
-    auto & self = render.integratorData[integratorIdx];
+  // collect synced integrators that can share raycast results
+  std::vector<std::vector<size_t>> syncedIntegrators;
 
+  syncedIntegrators.reserve(plugin.integrators.size());
+  for (size_t idx = 0ul; idx < plugin.integrators.size(); ++ idx) {
+    auto & self = render.integratorData[idx];
+
+    // check if integrator has anything to be rendered
+    if (self.renderingState == mt::RenderingState::Off) { continue; }
     if (self.renderingFinished) { continue; }
 
-    switch (self.renderingState) {
-      default: continue;
-      case mt::RenderingState::Off: continue;
-      case mt::RenderingState::AfterChange:
-        if (self.bufferCleared) {
-          self.bufferCleared = false;
-          continue;
-        }
-      [[fallthrough]];
-      case mt::RenderingState::OnChange:
-        ++ self.dispatchedCycles;
-      break;
-      case mt::RenderingState::OnAlways:
-        mt::core::Clear(self);
-      break;
+    // go through synced integrators to look for any lists to sync with
+    for (auto & syncInt : syncedIntegrators) {
+      auto & other = render.integratorData[syncInt[0]];
+
+      if (other.imageResolution != self.imageResolution) { continue; }
+
+      // TODO in future should check that same camera is being used.
+
+      // at this point they are similar enough to be rendered together
+      syncInt.emplace_back(idx);
+      goto POST_SYNC_LIST_APPEND;
     }
 
-    if (
-        self.imageResolution.x * self.imageResolution.y
-     != self.mappedImageTransitionBuffer.size()
-    ) {
-      spdlog::critical(
-        "Image resolution ({}, {}) mismatch with buffer size {}"
-      , self.imageResolution.x, self.imageResolution.y
-      , self.mappedImageTransitionBuffer.size()
-      );
-      self.renderingState = mt::RenderingState::Off;
-      continue;
-    }
+    // otherwise append it to the end as its own sync list
+    syncedIntegrators.emplace_back(std::vector<size_t>{idx});
 
-    // set image stride on first pass otherwise take care of iteration
-    self.imageStride = 1;
-    glm::u16vec2 minRange = glm::uvec2(0);
-    glm::u16vec2 maxRange = self.imageResolution;
-    const bool realtime = plugin.integrators[integratorIdx].RealTime();
-    bool const quickLowResRender = !realtime && self.dispatchedCycles == 1;
-    if (!realtime) {
-      switch (self.dispatchedCycles) {
-        case 1:
-          if (self.imageResolution.x > 1024) {
-            self.imageStride = 16;
-          } else {
-            self.imageStride = 8;
+    POST_SYNC_LIST_APPEND:;
+  }
+
+  // iterate through all integrators and run either their low or high quality
+  // dispatches
+  for (auto const & syncIt : syncedIntegrators) {
+    for (auto const integratorIdx : syncIt) {
+      auto & self = render.integratorData[integratorIdx];
+      spdlog::info("idx {}", integratorIdx);
+
+      switch (self.renderingState) {
+        default: continue;
+        case mt::RenderingState::Off: continue;
+        case mt::RenderingState::AfterChange:
+          if (self.bufferCleared) {
+            self.bufferCleared = false;
+            continue;
           }
+        [[fallthrough]];
+        case mt::RenderingState::OnChange:
+          ++ self.dispatchedCycles;
         break;
-        default:
-          ::BlockIterate(self, minRange, maxRange);
+        case mt::RenderingState::OnAlways:
+          mt::core::Clear(self);
         break;
       }
-    }
 
-    ::DispatchBlockRegion(
-      scene, render, plugin, integratorIdx
-    , minRange.x, minRange.y, maxRange.x, maxRange.y
-    , self.imageStride, self.imageStride
-    , (realtime || quickLowResRender) ? 1 : self.blockInternalIteratorMax
-    );
-
-    // blit transition buffer for 8 pixels, thus generating an 8x lower
-    // resolution image without gaps
-    if (quickLowResRender) {
-      #pragma omp parallel for
-      for (size_t x = minRange.x; x < maxRange.x; ++ x)
-      for (size_t y = minRange.y; y < maxRange.y; ++ y) {
-        auto const yy = y - (y % self.imageStride);
-        auto const xx = x - (x % self.imageStride);
-        self.mappedImageTransitionBuffer[y*self.imageResolution.x + x] =
-            self.mappedImageTransitionBuffer[yy*self.imageResolution.x + xx];
+      if (
+          self.imageResolution.x * self.imageResolution.y
+       != self.mappedImageTransitionBuffer.size()
+      ) {
+        spdlog::critical(
+          "Image resolution ({}, {}) mismatch with buffer size {}"
+        , self.imageResolution.x, self.imageResolution.y
+        , self.mappedImageTransitionBuffer.size()
+        );
+        self.renderingState = mt::RenderingState::Off;
+        continue;
       }
+
+      // set image stride on first pass otherwise take care of iteration
+      self.imageStride = 1;
+      glm::u16vec2 minRange = glm::uvec2(0);
+      glm::u16vec2 maxRange = self.imageResolution;
+      const bool realtime = plugin.integrators[integratorIdx].RealTime();
+      bool const quickLowResRender = !realtime && self.dispatchedCycles == 1;
+      if (!realtime) {
+        switch (self.dispatchedCycles) {
+          case 1:
+            if (self.imageResolution.x > 1024) {
+              self.imageStride = 16;
+            } else {
+              self.imageStride = 8;
+            }
+          break;
+          default:
+            ::BlockIterate(self, minRange, maxRange);
+          break;
+        }
+      }
+
+      ::DispatchBlockRegion(
+        scene, render, plugin, integratorIdx
+      , minRange.x, minRange.y, maxRange.x, maxRange.y
+      , self.imageStride, self.imageStride
+      , (realtime || quickLowResRender) ? 1 : self.blockInternalIteratorMax
+      );
+
+      // blit transition buffer for 8 pixels, thus generating an 8x lower
+      // resolution image without gaps
+      if (quickLowResRender) {
+        /* #pragma omp parallel for */
+        for (size_t x = minRange.x; x < maxRange.x; ++ x)
+        for (size_t y = minRange.y; y < maxRange.y; ++ y) {
+          auto const yy = y - (y % self.imageStride);
+          auto const xx = x - (x % self.imageStride);
+          self.mappedImageTransitionBuffer[y*self.imageResolution.x + x] =
+              self.mappedImageTransitionBuffer[yy*self.imageResolution.x + xx];
+        }
+      }
+
+      ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
+
+      // apply image copy
+      mt::core::DispatchImageCopy(
+        self
+      , minRange.x, maxRange.x, minRange.y, maxRange.y
+      );
     }
-
-    ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
-
-    // apply image copy
-    mt::core::DispatchImageCopy(
-      self
-    , minRange.x, maxRange.x, minRange.y, maxRange.y
-    );
-
-    continue;
   }
 }
 
