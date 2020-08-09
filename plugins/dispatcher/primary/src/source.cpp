@@ -4,6 +4,7 @@
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/core/scene.hpp>
 #include <monte-toad/debugutil/integratorpathunit.hpp>
 #include <mt-plugin/plugin.hpp>
 
@@ -303,6 +304,12 @@ void DispatchRender(
       auto & other = render.integratorData[syncInt[0]];
 
       if (other.imageResolution != self.imageResolution) { continue; }
+      if (
+          plugin.integrators[syncInt[0]].RealTime()
+       != plugin.integrators[idx].RealTime()
+      ) {
+        continue;
+      }
 
       // TODO in future should check that same camera is being used.
 
@@ -320,6 +327,81 @@ void DispatchRender(
   // iterate through all integrators and run either their low or high quality
   // dispatches
   for (auto const & syncIt : syncedIntegrators) {
+
+    // if sync is realtime then it can be accelerated by sharing surface info
+    if (plugin.integrators[syncIt[0]].RealTime()) {
+      auto const resolution = render.integratorData[syncIt[0]].imageResolution;
+      auto const resolutionAspectRatio =
+        resolution.y / static_cast<float>(resolution.x);
+
+      // -- apply update to integrator data metadata
+      for (auto const integratorIdx : syncIt) {
+        auto & self = render.integratorData[integratorIdx];
+
+        switch (self.renderingState) {
+          default: break;
+          case mt::RenderingState::Off: break;
+          case mt::RenderingState::AfterChange:
+            if (self.bufferCleared) {
+              self.bufferCleared = false;
+            } else {
+              ++ self.dispatchedCycles;
+            }
+          break;
+        }
+      }
+
+      // -- render synced integrators
+      // #pragma omp parallel for
+      for (size_t x = 0; x < resolution.x; ++ x)
+      for (size_t y = 0; y < resolution.y; ++ y) {
+
+        glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
+        uv.x = 1.0f - uv.x; // flip X axis for image
+        uv = (uv - glm::vec2(0.5f)) * 2.0f;
+        uv.y *= resolutionAspectRatio;
+
+        // TODO realtime probably should have hardcoded UV offsets to be
+        //      consistent
+        auto const eye =
+          plugin.camera.Dispatch(
+            plugin.random, render.camera
+          , render.integratorData[syncIt[0]].imageResolution
+          , uv
+          );
+
+        // apply raycast to surface for all synced integrators
+        auto const surface =
+          mt::core::Raycast(scene, plugin, eye.origin, eye.direction, -1ul);
+
+        for (auto const integratorIdx : syncIt) {
+          auto & self = render.integratorData[integratorIdx];
+
+          // TODO move this so that this won't even be part of integrator sync
+          if (self.dispatchedCycles > 1ul) { continue; }
+
+          auto & pixel = self.mappedImageTransitionBuffer[y*resolution.x + x];
+
+          auto pixelResults =
+            plugin
+              .integrators[integratorIdx]
+              .DispatchRealtime(uv, surface, scene, plugin, self);
+
+          pixel = pixelResults.color;
+        }
+      }
+
+      // -- apply image copy
+      for (auto const integratorIdx : syncIt) {
+        auto & self = render.integratorData[integratorIdx];
+        mt::core::DispatchImageCopy(self, 0ul, 0ul, resolution.x, resolution.y);
+        self.dispatchedCycles = 2ul;
+      }
+
+      continue;
+    }
+
+    // -- compute offline renderer
     for (auto const integratorIdx : syncIt) {
       auto & self = render.integratorData[integratorIdx];
       spdlog::info("idx {}", integratorIdx);

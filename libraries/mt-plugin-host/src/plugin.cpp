@@ -75,7 +75,10 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
   switch (ctx.type) {
     case mt::PluginType::Integrator: {
       auto & unit = plugin.integrators[ctx.idx];
-      ctx.LoadFunction(unit.Dispatch, "Dispatch");
+      ctx.LoadFunction(unit.Dispatch, "Dispatch", Plugin::Optional::Yes);
+      ctx.LoadFunction(
+        unit.DispatchRealtime, "DispatchRealtime", Plugin::Optional::Yes
+      );
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
       ctx.LoadFunction(unit.RealTime, "RealTime");
       ctx.LoadFunction(unit.PluginType, "PluginType");
@@ -243,7 +246,10 @@ bool mt::Valid(
     case mt::PluginType::Integrator:
       return
           idx < plugin.integrators.size()
-       && plugin.integrators[idx].Dispatch != nullptr
+       && (
+            plugin.integrators[idx].Dispatch != nullptr
+         || plugin.integrators[idx].DispatchRealtime != nullptr
+          )
        && plugin.integrators[idx].PluginType != nullptr
        && plugin.integrators[idx].PluginType() == pluginType
        && plugin.integrators[idx].PluginLabel != nullptr
@@ -349,6 +355,7 @@ void mt::Clean(
   switch (pluginType) {
     case mt::PluginType::Integrator:
       plugin.integrators[idx].Dispatch = nullptr;
+      plugin.integrators[idx].DispatchRealtime = nullptr;
       plugin.integrators[idx].UiUpdate = nullptr;
       plugin.integrators[idx].RealTime = nullptr;
       plugin.integrators[idx].PluginType = nullptr;

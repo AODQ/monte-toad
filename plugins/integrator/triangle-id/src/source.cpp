@@ -14,22 +14,13 @@ extern "C" {
 char const * PluginLabel() { return "triangle ID integrator"; }
 mt::PluginType PluginType() { return mt::PluginType::Integrator; }
 
-mt::PixelInfo Dispatch(
-  glm::vec2 const & uv
-, mt::core::Scene const & scene
-, mt::core::CameraInfo const & camera
-, mt::PluginInfo const & plugin
-, mt::core::IntegratorData const & integratorData
-, void (*)(mt::debugutil::IntegratorPathUnit)
+mt::PixelInfo DispatchRealtime(
+  glm::vec2 const & /*uv*/
+, mt::core::SurfaceInfo const & surface
+, mt::core::Scene const & /*scene*/
+, mt::PluginInfo const & /*plugin*/
+, mt::core::IntegratorData const & /*integratorData*/
 ) {
-  auto const eye =
-    plugin.camera.Dispatch(
-      plugin.random, camera, integratorData.imageResolution, uv
-    );
-
-  auto const surface =
-    mt::core::Raycast(scene, plugin, eye.origin, eye.direction, -1ul);
-
   if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
 
   glm::vec3 color;

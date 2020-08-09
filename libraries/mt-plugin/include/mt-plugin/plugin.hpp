@@ -49,6 +49,14 @@ namespace mt {
     , void (*debugPathRecorder)(mt::debugutil::IntegratorPathUnit)
     ) = nullptr;
 
+    PixelInfo (*DispatchRealtime)(
+      glm::vec2 const & uv
+    , mt::core::SurfaceInfo const & surface
+    , mt::core::Scene const & scene
+    , mt::PluginInfo const & plugin
+    , mt::core::IntegratorData const & integratorData
+    ) = nullptr;
+
     void (*UiUpdate)(
       mt::core::Scene & scene
     , mt::core::RenderInfo & render
