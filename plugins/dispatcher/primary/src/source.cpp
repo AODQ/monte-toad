@@ -26,7 +26,6 @@ void RecordPath(mt::debugutil::IntegratorPathUnit unit) {
 
 template <typename Fn>
 void BresenhamLine(glm::ivec2 f0, glm::ivec2 f1, Fn && fn) {
-
   bool steep = false;
   if (glm::abs(f0.x-f1.x) < glm::abs(f0.y-f1.y)) {
     std::swap(f0.x, f0.y);
@@ -106,12 +105,282 @@ void DrawPath(mt::PluginInfo const & plugin, mt::core::RenderInfo & render) {
   , 0, depthIntegratorData.imageResolution.y
   );
 }
+
+void DispatchBlockRegion(
+  mt::core::Scene const & scene
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+
+, size_t integratorIdx
+, size_t const minX, size_t const minY
+, size_t const maxX, size_t const maxY
+, size_t strideX, size_t strideY
+, size_t internalIterator
+) {
+  auto & integratorData = render.integratorData[integratorIdx];
+
+  auto const & resolution = integratorData.imageResolution;
+  auto const resolutionAspectRatio =
+    resolution.y / static_cast<float>(resolution.x);
+
+  if (minX > resolution.x || maxX > resolution.x) {
+    spdlog::critical(
+      "minX ({}) and maxX({}) not in resolution bounds ({})",
+      minX, maxX, resolution.x
+    );
+    return;
+  }
+
+  if (minY > resolution.y || maxY > resolution.y) {
+    spdlog::critical(
+      "minY ({}) and maxY({}) not in resolution bounds ({})",
+      minY, maxY, resolution.y
+    );
+    return;
+  }
+
+  #pragma omp parallel for
+  for (size_t x = minX; x < maxX; x += strideX)
+  for (size_t y = minY; y < maxY; y += strideY)
+  for (size_t it = 0; it < internalIterator; ++ it) {
+    auto & pixelCount = integratorData.pixelCountBuffer[y*resolution.x + x];
+    auto & pixel =
+      integratorData.mappedImageTransitionBuffer[y*resolution.x + x];
+
+    if (pixelCount >= integratorData.samplesPerPixel) { continue; }
+
+    glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
+    uv.x = 1.0f - uv.x; // flip X axis for image
+    uv = (uv - glm::vec2(0.5f)) * 2.0f;
+    uv.y *= resolutionAspectRatio;
+
+    auto pixelResults =
+      plugin
+        .integrators[integratorIdx]
+        .Dispatch(uv, scene, render.camera, plugin, integratorData, nullptr);
+
+    if (pixelResults.valid) {
+      pixel =
+        glm::vec4(
+          glm::mix(
+            pixelResults.color,
+            glm::vec3(pixel),
+            pixelCount / static_cast<float>(pixelCount + 1)
+          ),
+          1.0f
+        );
+      ++ pixelCount;
+    }
+  }
+}
+
+void BlockCalculateRange(
+  mt::core::IntegratorData & self
+, glm::u16vec2 & minRange, glm::u16vec2 & maxRange
+) {
+  // amount of blocks that take up an image
+  auto blockResolution =
+    glm::u16vec2(
+      glm::ceil(
+        glm::vec2(self.imageResolution)
+      / glm::vec2(self.blockIteratorStride)
+      )
+    );
+
+  // get current block position in image then multiply it by stride, which
+  // converts it to a specific pixel
+  minRange =
+    glm::u16vec2(
+      self.blockIterator % blockResolution.x
+    , self.blockIterator / blockResolution.x
+    )
+  * glm::u16vec2(self.blockIteratorStride);
+
+  // clamp it using min (ei weird resolution) then add stride to max range
+  minRange = glm::min(minRange, self.imageResolution);
+  maxRange =
+    glm::min(
+      self.imageResolution
+    , minRange + glm::u16vec2(self.blockIteratorStride)
+    );
+}
+
+void BlockCollectFinishedPixels(
+  mt::core::IntegratorData & self
+, mt::PluginInfoIntegrator const & plugin
+) {
+  if (plugin.RealTime()) {
+    self.renderingFinished = true;
+    return;
+  }
+
+  glm::u16vec2 minRange, maxRange;
+  ::BlockCalculateRange(self, minRange, maxRange);
+
+  // find the next multiple of N (N-1 => N, N => N, N+1 => N*2) for maxRange
+  // this is so that an entire block can be taken into account if the image
+  // resolution isn't divisible by the stride; this could be optimized into a
+  // single mathematical expression, instead of the for-loop, in the future if
+  // wanted
+  auto const & stride = self.blockIteratorStride;
+  maxRange.x = maxRange.x + ((stride-maxRange.x) % stride);
+  maxRange.y = maxRange.y + ((stride-maxRange.y) % stride);
+
+  size_t finishedPixels = 0;
+  for (size_t x = minRange.x; x < maxRange.x; ++ x)
+  for (size_t y = minRange.y; y < maxRange.y; ++ y) {
+    if (y*self.imageResolution.x + x >= self.pixelCountBuffer.size()) {
+      ++ finishedPixels;
+      continue;
+    }
+
+    finishedPixels +=
+      static_cast<size_t>(
+        self.pixelCountBuffer[y*self.imageResolution.x + x]
+      >= self.samplesPerPixel
+      );
+  }
+
+  self.blockPixelsFinished[self.blockIterator] = finishedPixels;
+}
+
+void BlockIterate(
+  mt::core::IntegratorData & self
+, glm::u16vec2 & minRange, glm::u16vec2 & maxRange
+) {
+
+  size_t const
+    blockPixelCount = self.blockIteratorStride*self.blockIteratorStride;
+
+  ::BlockCalculateRange(self, minRange, maxRange);
+
+  { // perform iteration
+    self.blockIterator =
+      (self.blockIterator + 1) % self.blockPixelsFinished.size();
+
+    // -- skip blocks that are full
+    size_t blockFull = 0ul;
+    while (
+      self.blockPixelsFinished[self.blockIterator] >= blockPixelCount
+    ) {
+      // if we have come full circle, then rendering has finished
+      if (++ blockFull == self.blockPixelsFinished.size()) {
+        self.renderingFinished = true;
+        return;
+      }
+
+      self.blockIterator =
+        (self.blockIterator+1) % self.blockPixelsFinished.size();
+    }
+  }
+}
+
 }
 
 extern "C" {
 
 char const * PluginLabel() { return "primary dispatcher"; }
 mt::PluginType PluginType() { return mt::PluginType::Dispatcher; }
+
+void DispatchRender(
+  mt::core::RenderInfo & render
+, mt::core::Scene const & scene
+, mt::PluginInfo const & plugin
+) {
+
+  // iterate through all integrators and run either their low or high quality
+  // dispatches
+  for (
+    size_t integratorIdx = 0ul;
+    integratorIdx < plugin.integrators.size();
+    ++ integratorIdx
+  ) {
+    auto & self = render.integratorData[integratorIdx];
+
+    if (self.renderingFinished) { continue; }
+
+    switch (self.renderingState) {
+      default: continue;
+      case mt::RenderingState::Off: continue;
+      case mt::RenderingState::AfterChange:
+        if (self.bufferCleared) {
+          self.bufferCleared = false;
+          continue;
+        }
+      [[fallthrough]];
+      case mt::RenderingState::OnChange:
+        ++ self.dispatchedCycles;
+      break;
+      case mt::RenderingState::OnAlways:
+        mt::core::Clear(self);
+      break;
+    }
+
+    if (
+        self.imageResolution.x * self.imageResolution.y
+     != self.mappedImageTransitionBuffer.size()
+    ) {
+      spdlog::critical(
+        "Image resolution ({}, {}) mismatch with buffer size {}"
+      , self.imageResolution.x, self.imageResolution.y
+      , self.mappedImageTransitionBuffer.size()
+      );
+      self.renderingState = mt::RenderingState::Off;
+      continue;
+    }
+
+    // set image stride on first pass otherwise take care of iteration
+    self.imageStride = 1;
+    glm::u16vec2 minRange = glm::uvec2(0);
+    glm::u16vec2 maxRange = self.imageResolution;
+    const bool realtime = plugin.integrators[integratorIdx].RealTime();
+    bool const quickLowResRender = !realtime && self.dispatchedCycles == 1;
+    if (!realtime) {
+      switch (self.dispatchedCycles) {
+        case 1:
+          if (self.imageResolution.x > 1024) {
+            self.imageStride = 16;
+          } else {
+            self.imageStride = 8;
+          }
+        break;
+        default:
+          ::BlockIterate(self, minRange, maxRange);
+        break;
+      }
+    }
+
+    ::DispatchBlockRegion(
+      scene, render, plugin, integratorIdx
+    , minRange.x, minRange.y, maxRange.x, maxRange.y
+    , self.imageStride, self.imageStride
+    , (realtime || quickLowResRender) ? 1 : self.blockInternalIteratorMax
+    );
+
+    // blit transition buffer for 8 pixels, thus generating an 8x lower
+    // resolution image without gaps
+    if (quickLowResRender) {
+      #pragma omp parallel for
+      for (size_t x = minRange.x; x < maxRange.x; ++ x)
+      for (size_t y = minRange.y; y < maxRange.y; ++ y) {
+        auto const yy = y - (y % self.imageStride);
+        auto const xx = x - (x % self.imageStride);
+        self.mappedImageTransitionBuffer[y*self.imageResolution.x + x] =
+            self.mappedImageTransitionBuffer[yy*self.imageResolution.x + xx];
+      }
+    }
+
+    ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
+
+    // apply image copy
+    mt::core::DispatchImageCopy(
+      self
+    , minRange.x, maxRange.x, minRange.y, maxRange.y
+    );
+
+    continue;
+  }
+}
 
 void UiUpdate(
   mt::core::Scene & /*scene*/
@@ -194,74 +463,6 @@ void UiUpdate(
   }
 
   ImGui::End();
-}
-
-void DispatchBlockRegion(
-  mt::core::Scene const & scene
-, mt::core::RenderInfo & render
-, mt::PluginInfo const & plugin
-
-, size_t integratorIdx
-, size_t const minX, size_t const minY
-, size_t const maxX, size_t const maxY
-, size_t strideX, size_t strideY
-, size_t internalIterator
-) {
-  auto & integratorData = render.integratorData[integratorIdx];
-
-  auto const & resolution = integratorData.imageResolution;
-  auto const resolutionAspectRatio =
-    resolution.y / static_cast<float>(resolution.x);
-
-  if (minX > resolution.x || maxX > resolution.x) {
-    spdlog::critical(
-      "minX ({}) and maxX({}) not in resolution bounds ({})",
-      minX, maxX, resolution.x
-    );
-    return;
-  }
-
-  if (minY > resolution.y || maxY > resolution.y) {
-    spdlog::critical(
-      "minY ({}) and maxY({}) not in resolution bounds ({})",
-      minY, maxY, resolution.y
-    );
-    return;
-  }
-
-  #pragma omp parallel for
-  for (size_t x = minX; x < maxX; x += strideX)
-  for (size_t y = minY; y < maxY; y += strideY)
-  for (size_t it = 0; it < internalIterator; ++ it) {
-    auto & pixelCount = integratorData.pixelCountBuffer[y*resolution.x + x];
-    auto & pixel =
-      integratorData.mappedImageTransitionBuffer[y*resolution.x + x];
-
-    if (pixelCount >= integratorData.samplesPerPixel) { continue; }
-
-    glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
-    uv.x = 1.0f - uv.x; // flip X axis for image
-    uv = (uv - glm::vec2(0.5f)) * 2.0f;
-    uv.y *= resolutionAspectRatio;
-
-    auto pixelResults =
-      plugin
-        .integrators[integratorIdx]
-        .Dispatch(uv, scene, render.camera, plugin, integratorData, nullptr);
-
-    if (pixelResults.valid) {
-      pixel =
-        glm::vec4(
-          glm::mix(
-            pixelResults.color,
-            glm::vec3(pixel),
-            pixelCount / static_cast<float>(pixelCount + 1)
-          ),
-          1.0f
-        );
-      ++ pixelCount;
-    }
-  }
 }
 
 } // extern C

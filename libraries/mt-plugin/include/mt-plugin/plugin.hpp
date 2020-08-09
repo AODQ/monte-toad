@@ -307,16 +307,10 @@ namespace mt {
   };
 
   struct PluginInfoDispatcher {
-    void (*DispatchBlockRegion)(
-      mt::core::Scene const & scene
-    , mt::core::RenderInfo & render
+    void (*DispatchRender)(
+      mt::core::RenderInfo & render
+    , mt::core::Scene const & scene
     , mt::PluginInfo const & plugin
-
-    , size_t integratorIdx
-    , size_t const minX, size_t const minY
-    , size_t const maxX, size_t const maxY
-    , size_t strideX, size_t strideY
-    , size_t internalIterator
     ) = nullptr;
 
     void (*UiUpdate)(

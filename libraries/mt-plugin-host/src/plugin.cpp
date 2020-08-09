@@ -166,7 +166,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
     } break;
     case mt::PluginType::Dispatcher: {
       auto & unit = plugin.dispatchers[ctx.idx];
-      ctx.LoadFunction(unit.DispatchBlockRegion, "DispatchBlockRegion");
+      ctx.LoadFunction(unit.DispatchRender, "DispatchRender");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate");
       ctx.LoadFunction(unit.PluginType, "PluginType");
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
@@ -330,7 +330,7 @@ bool mt::Valid(
     case mt::PluginType::Dispatcher:
       return
           idx < plugin.dispatchers.size()
-       && plugin.dispatchers[idx].DispatchBlockRegion != nullptr
+       && plugin.dispatchers[idx].DispatchRender != nullptr
        && plugin.dispatchers[idx].PluginType != nullptr
        && plugin.dispatchers[idx].PluginType() == pluginType
        && plugin.dispatchers[idx].PluginLabel != nullptr
@@ -426,7 +426,7 @@ void mt::Clean(
       plugin.emitters[idx].IsSkybox = nullptr;
     break;
     case mt::PluginType::Dispatcher:
-      plugin.dispatchers[idx].DispatchBlockRegion = nullptr;
+      plugin.dispatchers[idx].DispatchRender = nullptr;
       plugin.dispatchers[idx].UiUpdate = nullptr;
       plugin.dispatchers[idx].PluginType = nullptr;
       plugin.dispatchers[idx].PluginLabel = nullptr;

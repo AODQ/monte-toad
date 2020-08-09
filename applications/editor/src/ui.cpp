@@ -326,15 +326,9 @@ void DispatchRender(
   if (plugin.dispatchers.size() == 0) { return; }
   if (!mt::Valid(plugin, mt::PluginType::AccelerationStructure)) { return; }
 
-  // iterate through all integrators and run either their low or high quality
-  // dispatches
-  for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
-    auto & integratorData = render.integratorData[idx];
-
-    if (integratorData.renderingFinished) { continue; }
-
-    mt::core::DispatchRender(integratorData, ::scene, render, plugin, idx);
-  }
+  plugin
+    .dispatchers[render.primaryDispatcher]
+    .DispatchRender(render, ::scene, plugin);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

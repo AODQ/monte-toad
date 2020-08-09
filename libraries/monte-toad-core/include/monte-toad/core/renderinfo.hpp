@@ -16,14 +16,6 @@ namespace mt::core {
 
   void Clear(mt::core::IntegratorData & self);
 
-  bool DispatchRender(
-    mt::core::IntegratorData & self
-  , mt::core::Scene const & scene
-  , mt::core::RenderInfo & render
-  , mt::PluginInfo const & plugin
-  , size_t integratorIdx
-  );
-
   size_t FinishedPixels(mt::core::IntegratorData & self);
   size_t FinishedPixelsGoal(mt::core::IntegratorData & self);
 
