@@ -1,12 +1,12 @@
 add_library(dispatcher-primary SHARED)
 target_sources(dispatcher-primary PRIVATE src/source.cpp)
 
+find_package(OpenMP)
+
 target_link_libraries(
   dispatcher-primary
-  PUBLIC
-    omp
   PRIVATE
-    mt-plugin monte-toad-core imgui monte-toad-debug-util
+    mt-plugin monte-toad-core imgui monte-toad-debug-util OpenMP::OpenMP_CXX
 )
 
 set_target_properties(
