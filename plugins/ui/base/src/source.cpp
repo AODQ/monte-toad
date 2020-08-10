@@ -297,60 +297,63 @@ void UiImageOutput(
       ImGui::EndCombo();
     }
 
-    if (ImGui::InputInt("samples per pixel", &data.samplesPerPixel)) {
-      data.samplesPerPixel = glm::max(data.samplesPerPixel, 1ul);
+    // only display offline parameters if the integrator is not realtime
+    if (!integrator.RealTime()) {
+      if (ImGui::InputInt("samples per pixel", &data.samplesPerPixel)) {
+        data.samplesPerPixel = glm::max(data.samplesPerPixel, 1ul);
 
-      // don't clear data, but in case rendering is already complete allow it
-      // to process again
-      data.renderingFinished = false;
-      for (auto & blockIt : data.blockPixelsFinished)
-        { blockIt = 0; }
-      data.unfinishedPixelsCount = 0u;
-    }
-
-    if (ImGui::InputInt("paths per sample", &data.pathsPerSample)) {
-      data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
-      mt::core::Clear(data);
-    }
-
-    if (ImGui::InputInt("iterations per hunk", &data.blockInternalIteratorMax)){
-      data.blockInternalIteratorMax =
-        glm::clamp(data.blockInternalIteratorMax, 1ul, 64ul);
-    }
-
-    { // -- iterator block size
-      size_t iteratorIdx = 0ul;
-      // get current idx
-      for (size_t idx = 0; idx < ::blockIteratorStrides.size(); ++ idx)
-      {
-        if (::blockIteratorStrides[idx] == data.blockIteratorStride) {
-          iteratorIdx = idx;
-          break;
-        }
+        // don't clear data, but in case rendering is already complete allow it
+        // to process again
+        data.renderingFinished = false;
+        for (auto & blockIt : data.blockPixelsFinished)
+          { blockIt = 0; }
+        data.unfinishedPixelsCount = 0u;
       }
 
-      if (
-          ImGui::BeginCombo(
-            "block size"
-            , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
-            )
-         ) {
-        for (
-            size_t blockIt = 0;
-            blockIt < ::blockIteratorStrides.size();
-            ++ blockIt
-            ) {
-          bool isSelected = iteratorIdx == blockIt;
-          if (
-              ImGui::Selectable(
-                std::to_string(::blockIteratorStrides[blockIt]).c_str()
-                , isSelected)
-             ) {
-            data.blockIteratorStride = ::blockIteratorStrides[blockIt];
-            mt::core::Clear(data);
+      if (ImGui::InputInt("paths per sample", &data.pathsPerSample)) {
+        data.pathsPerSample = glm::clamp(data.pathsPerSample, 1ul, 16ul);
+        mt::core::Clear(data);
+      }
+
+      if (ImGui::InputInt("iterations per hunk", &data.blockInternalIteratorMax)){
+        data.blockInternalIteratorMax =
+          glm::clamp(data.blockInternalIteratorMax, 1ul, 64ul);
+      }
+
+      { // -- iterator block size
+        size_t iteratorIdx = 0ul;
+        // get current idx
+        for (size_t idx = 0; idx < ::blockIteratorStrides.size(); ++ idx)
+        {
+          if (::blockIteratorStrides[idx] == data.blockIteratorStride) {
+            iteratorIdx = idx;
+            break;
           }
         }
-        ImGui::EndCombo();
+
+        if (
+            ImGui::BeginCombo(
+              "block size"
+              , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
+              )
+           ) {
+          for (
+              size_t blockIt = 0;
+              blockIt < ::blockIteratorStrides.size();
+              ++ blockIt
+              ) {
+            bool isSelected = iteratorIdx == blockIt;
+            if (
+                ImGui::Selectable(
+                  std::to_string(::blockIteratorStrides[blockIt]).c_str()
+                  , isSelected)
+               ) {
+              data.blockIteratorStride = ::blockIteratorStrides[blockIt];
+              mt::core::Clear(data);
+            }
+          }
+          ImGui::EndCombo();
+        }
       }
     }
 
