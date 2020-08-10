@@ -275,6 +275,9 @@ void BlockIterate(
   }
 }
 
+// used to collect synced integrators that can share raycast results
+std::vector<std::vector<size_t>> syncedIntegrators;
+
 }
 
 extern "C" {
@@ -288,10 +291,9 @@ void DispatchRender(
 , mt::PluginInfo const & plugin
 ) {
 
-  // collect synced integrators that can share raycast results
-  std::vector<std::vector<size_t>> syncedIntegrators;
-
-  syncedIntegrators.reserve(plugin.integrators.size());
+  // -- collect synced integrators that can share raycast results
+  ::syncedIntegrators.clear();
+  ::syncedIntegrators.reserve(plugin.integrators.size());
   for (size_t idx = 0ul; idx < plugin.integrators.size(); ++ idx) {
     auto & self = render.integratorData[idx];
 
@@ -300,7 +302,7 @@ void DispatchRender(
     if (self.renderingFinished) { continue; }
 
     // go through synced integrators to look for any lists to sync with
-    for (auto & syncInt : syncedIntegrators) {
+    for (auto & syncInt : ::syncedIntegrators) {
       auto & other = render.integratorData[syncInt[0]];
 
       if (other.imageResolution != self.imageResolution) { continue; }
@@ -319,14 +321,14 @@ void DispatchRender(
     }
 
     // otherwise append it to the end as its own sync list
-    syncedIntegrators.emplace_back(std::vector<size_t>{idx});
+    ::syncedIntegrators.emplace_back(std::vector<size_t>{idx});
 
     POST_SYNC_LIST_APPEND:;
   }
 
   // iterate through all integrators and run either their low or high quality
   // dispatches
-  for (auto const & syncIt : syncedIntegrators) {
+  for (auto const & syncIt : ::syncedIntegrators) {
 
     // if sync is realtime then it can be accelerated by sharing surface info
     if (plugin.integrators[syncIt[0]].RealTime()) {
@@ -404,7 +406,6 @@ void DispatchRender(
     // -- compute offline renderer
     for (auto const integratorIdx : syncIt) {
       auto & self = render.integratorData[integratorIdx];
-      spdlog::info("idx {}", integratorIdx);
 
       switch (self.renderingState) {
         default: continue;
@@ -501,6 +502,19 @@ void UiUpdate(
   , depthIntegratorIdx =
       render.integratorIndices[Idx(mt::IntegratorTypeHint::Depth)]
   ;
+
+
+  { // -- synced integrator displa
+    ImGui::Begin("synced integrator display");
+    for (size_t idx = 0ul; idx < ::syncedIntegrators.size(); ++ idx) {
+      ImGui::Separator();
+      ImGui::Text("---- sync group %lu ---------------", idx);
+      for (auto const integratorIdx : ::syncedIntegrators[idx]) {
+        ImGui::Text("\t%s", plugin.integrators[integratorIdx].PluginLabel());
+      }
+    }
+    ImGui::End();
+  }
 
   if (primaryIntegratorIdx != -1lu && depthIntegratorIdx != -1lu) {
     if (ImGui::Button("Record path")) {
