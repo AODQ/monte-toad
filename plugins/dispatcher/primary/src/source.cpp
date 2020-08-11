@@ -475,6 +475,30 @@ void DispatchRender(
 
       ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
 
+      // apply kernels
+      for (auto const & kernelDispatch : self.kernelDispatchers) {
+        switch (kernelDispatch.timing) {
+          default: break;
+          case mt::KernelDispatchTiming::Start:
+            // TODO this has to be done before doing any rendering
+          break;
+          case mt::KernelDispatchTiming::Preview:
+          break;
+          case mt::KernelDispatchTiming::All:
+            plugin
+              .kernels[kernelDispatch.dispatchPluginIdx]
+              .ApplyKernel(render, plugin, self);
+          break;
+          case mt::KernelDispatchTiming::Last:
+            if (self.renderingFinished) {
+              plugin
+                .kernels[kernelDispatch.dispatchPluginIdx]
+                .ApplyKernel(render, plugin, self);
+            }
+          break;
+        }
+      }
+
       // apply image copy
       mt::core::DispatchImageCopy(
         self

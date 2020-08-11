@@ -25,6 +25,15 @@ namespace mt {
   , Size
   };
 
+  enum struct KernelDispatchTiming : uint8_t {
+    Start
+  , Preview
+  , All
+  , Last
+  , Off
+  , Size
+  };
+
   enum struct IntegratorTypeHint : uint8_t {
     Primary
   , Albedo
@@ -55,4 +64,5 @@ namespace mt {
   void ApplyAspectRatioY(mt::AspectRatio ratio, uint16_t const x, uint16_t & y);
 
   char const * ToString(mt::IntegratorTypeHint hint);
+  char const * ToString(mt::KernelDispatchTiming timing);
 }

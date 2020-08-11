@@ -2,14 +2,19 @@
 
 #include <monte-toad/core/enum.hpp>
 #include <monte-toad/core/glutil.hpp>
+#include <monte-toad/core/kerneldispatchinfo.hpp>
 
 #include <vector>
+
+namespace mt::core { struct KernelDispatchInfo; }
 
 namespace mt::core {
   struct IntegratorData {
     std::vector<glm::vec3> mappedImageTransitionBuffer;
     std::vector<uint16_t> pixelCountBuffer;
     mt::core::GlTexture renderedTexture;
+
+    std::vector<mt::core::KernelDispatchInfo> kernelDispatchers;
 
     glm::u16vec2 imageResolution = glm::u16vec2(640, 480);
     mt::AspectRatio imageAspectRatio = mt::AspectRatio::e4_3;

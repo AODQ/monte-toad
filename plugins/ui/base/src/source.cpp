@@ -2,6 +2,7 @@
 
 #include <monte-toad/core/enum.hpp>
 #include <monte-toad/core/integratordata.hpp>
+#include <monte-toad/core/kerneldispatchinfo.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
 #include <monte-toad/core/scene.hpp>
@@ -261,12 +262,111 @@ void UiTextureEditor(mt::core::Scene & scene) {
   ImGui::End();
 }
 
+void UiKernelDispatchEditor(
+  mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
+  static size_t integratorIdx = -1ul;
+
+  if (render.lastIntegratorImageClicked != -1ul) {
+    integratorIdx = render.lastIntegratorImageClicked;
+  }
+
+  // clear integrator if size has changed
+  if (integratorIdx >= plugin.integrators.size()) {
+    integratorIdx = -1ul;
+  }
+
+  ImGui::Begin("kernel dispatch editor");
+
+  if (integratorIdx == -1ul) {
+    ImGui::End();
+    return;
+  }
+
+  auto & data = render.integratorData[integratorIdx];
+  auto & integrator = plugin.integrators[integratorIdx];
+
+  ImGui::Text("%s", integrator.PluginLabel());
+
+  for (size_t idx = 0ul; idx < data.kernelDispatchers.size(); ++ idx) {
+    auto & kernelDispatch = data.kernelDispatchers[idx];
+    ImGui::PushID(idx);
+
+    ImGui::NewLine();
+    ImGui::Separator();
+    ImGui::Separator();
+    ImGui::NewLine();
+
+    ImGui::Text(
+      "%s", plugin.kernels[kernelDispatch.dispatchPluginIdx].PluginLabel()
+    );
+
+    if (ImGui::BeginCombo("Timing", mt::ToString(kernelDispatch.timing))) {
+      for (size_t i = 0ul; i < Idx(mt::KernelDispatchTiming::Size); ++ i) {
+        if (
+          ImGui::Selectable(
+            mt::ToString(static_cast<mt::KernelDispatchTiming>(i))
+          , i == Idx(kernelDispatch.timing)
+          )
+        ) {
+          kernelDispatch.timing = static_cast<mt::KernelDispatchTiming>(i);
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    if (ImGui::Button("delete")) {
+      data.kernelDispatchers.erase(data.kernelDispatchers.begin() + idx);
+      -- idx;
+    }
+
+    // -- repositioning of kernels
+
+    ImGui::SameLine();
+    if (idx > 0ul && ImGui::Button("-")) {
+      std::swap(data.kernelDispatchers[idx], data.kernelDispatchers[idx-1]);
+    }
+
+    ImGui::SameLine();
+    if (idx < data.kernelDispatchers.size()-1 && ImGui::Button("+")) {
+      std::swap(data.kernelDispatchers[idx], data.kernelDispatchers[idx+1]);
+    }
+
+    ImGui::PopID();
+  }
+
+  ImGui::NewLine();
+  ImGui::Separator();
+  ImGui::Separator();
+  ImGui::NewLine();
+
+  if (ImGui::BeginCombo("## kernel select", "add kernel")) {
+    for (size_t i = 0ul; i < plugin.kernels.size(); ++ i) {
+      if (ImGui::Selectable(plugin.kernels[i].PluginLabel(), false)) {
+        mt::core::KernelDispatchInfo kernel;
+        kernel.timing = mt::KernelDispatchTiming::All;
+        kernel.dispatchPluginIdx = i;
+        // todo allocate kernel
+        /* kernel.userdata */
+
+        data.kernelDispatchers.emplace_back(std::move(kernel));
+      }
+    }
+
+    ImGui::EndCombo();
+  }
+
+  ImGui::End();
+}
+
 void UiImageOutput(
     mt::core::Scene & /*scene*/
     , mt::core::RenderInfo & render
     , mt::PluginInfo const & plugin
     ) {
 
+  // -- display standard integrator options
   for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
     auto & data       = render.integratorData[i];
     auto & integrator = plugin.integrators[i];
@@ -622,6 +722,7 @@ void Dispatch(
   ::UiEmitters(scene, render, plugin);
   ::UiDispatchers(render, plugin);
   ::UiTextureEditor(scene);
+  ::UiKernelDispatchEditor(render, plugin);
 }
 
 } // -- extern C

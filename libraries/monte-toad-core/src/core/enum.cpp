@@ -63,3 +63,14 @@ char const * mt::ToString(mt::IntegratorTypeHint hint) {
     case mt::IntegratorTypeHint::Depth:   return "Depth";
   }
 }
+
+char const * mt::ToString(mt::KernelDispatchTiming timing) {
+  switch (timing) {
+    default: return "";
+    case mt::KernelDispatchTiming::Start:   return "Start";
+    case mt::KernelDispatchTiming::Preview: return "Preview";
+    case mt::KernelDispatchTiming::Off:     return "Off";
+    case mt::KernelDispatchTiming::All:     return "All";
+    case mt::KernelDispatchTiming::Last:    return "Last";
+  }
+}
