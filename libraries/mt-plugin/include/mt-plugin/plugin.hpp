@@ -336,9 +336,9 @@ namespace mt {
     std::vector<PluginInfoEmitter> emitters;
     std::vector<PluginInfoDispatcher> dispatchers;
     std::vector<PluginInfoBsdf> bsdfs;
+    std::vector<PluginInfoKernel> kernels;
     PluginInfoAccelerationStructure accelerationStructure;
     PluginInfoMaterial material;
-    PluginInfoKernel kernel; // optional
     PluginInfoCamera camera; // optional
     PluginInfoRandom random;
     PluginInfoUserInterface userInterface; //optional

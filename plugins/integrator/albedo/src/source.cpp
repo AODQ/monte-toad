@@ -17,11 +17,11 @@ char const * PluginLabel() { return "albedo integrator"; }
 mt::PluginType PluginType() { return mt::PluginType::Integrator; }
 
 mt::PixelInfo DispatchRealtime(
-  glm::vec2 const & uv
+  glm::vec2 const & /*uv*/
 , mt::core::SurfaceInfo const & surface
 , mt::core::Scene const & scene
 , mt::PluginInfo const & plugin
-, mt::core::IntegratorData const & integratorData
+, mt::core::IntegratorData const & /*integratorData*/
 ) {
   if (!surface.Valid()) {
     if (scene.emissionSource.skyboxEmitterPluginIdx == -1lu) {

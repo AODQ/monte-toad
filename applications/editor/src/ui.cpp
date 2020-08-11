@@ -395,9 +395,6 @@ void UiEntry(
   if (plugin.accelerationStructure.UiUpdate)
     { plugin.accelerationStructure.UiUpdate(scene, render, plugin); }
 
-  if (plugin.kernel.UiUpdate)
-    { plugin.kernel.UiUpdate(scene, render, plugin); }
-
   if (plugin.camera.UiUpdate)
     { plugin.camera.UiUpdate(scene, render, plugin); }
 

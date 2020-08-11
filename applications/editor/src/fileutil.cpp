@@ -204,6 +204,10 @@ bool fileutil::LoadPlugin(
     plugin.emitters.emplace_back();
     idx = plugin.emitters.size()-1;
   }
+  if (type == mt::PluginType::Kernel) {
+    plugin.kernels.emplace_back();
+    idx = plugin.kernels.size() - 1;
+  }
   if (type == mt::PluginType::Dispatcher) {
     plugin.dispatchers.emplace_back();
     idx = plugin.dispatchers.size()-1;
@@ -227,6 +231,9 @@ bool fileutil::LoadPlugin(
     }
     if (type == mt::PluginType::Emitter) {
       plugin.emitters.pop_back();
+    }
+    if (type == mt::PluginType::Kernel) {
+      plugin.kernels.pop_back();
     }
     if (type == mt::PluginType::Dispatcher) {
       plugin.dispatchers.pop_back();

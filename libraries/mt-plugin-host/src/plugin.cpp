@@ -94,7 +94,7 @@ void LoadPluginFunctions(mt::PluginInfo & plugin , Plugin & ctx) {
       ctx.LoadFunction(unit.PluginLabel, "PluginLabel");
     } break;
     case mt::PluginType::Kernel: {
-      auto & unit = plugin.kernel;
+      auto & unit = plugin.kernels[ctx.idx];
       ctx.LoadFunction(unit.ApplyKernel, "ApplyKernel");
       ctx.LoadFunction(unit.UiUpdate, "UiUpdate", Plugin::Optional::Yes);
       ctx.LoadFunction(unit.PluginType, "PluginType");
@@ -266,9 +266,9 @@ bool mt::Valid(
       ;
     case mt::PluginType::Kernel:
       return
-          plugin.kernel.ApplyKernel != nullptr
-       && plugin.kernel.PluginType() == pluginType
-       && plugin.kernel.PluginLabel != nullptr
+          plugin.kernels[idx].ApplyKernel != nullptr
+       && plugin.kernels[idx].PluginType() == pluginType
+       && plugin.kernels[idx].PluginLabel != nullptr
       ;
     case mt::PluginType::Bsdf:
       return
@@ -370,10 +370,10 @@ void mt::Clean(
       plugin.accelerationStructure.PluginLabel = nullptr;
     break;
     case mt::PluginType::Kernel:
-      plugin.kernel.ApplyKernel = nullptr;
-      plugin.kernel.UiUpdate = nullptr;
-      plugin.kernel.PluginType = nullptr;
-      plugin.kernel.PluginLabel = nullptr;
+      plugin.kernels[idx].ApplyKernel = nullptr;
+      plugin.kernels[idx].UiUpdate = nullptr;
+      plugin.kernels[idx].PluginType = nullptr;
+      plugin.kernels[idx].PluginLabel = nullptr;
     break;
     case mt::PluginType::Bsdf:
       plugin.bsdfs[idx].BsdfFs              = nullptr;
