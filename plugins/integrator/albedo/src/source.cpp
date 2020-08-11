@@ -23,8 +23,18 @@ mt::PixelInfo DispatchRealtime(
 , mt::PluginInfo const & plugin
 , mt::core::IntegratorData const & integratorData
 ) {
-  // TODO return the skybox
-  if (!surface.Valid()) { return mt::PixelInfo{glm::vec3(0.0f), false}; }
+  if (!surface.Valid()) {
+    if (scene.emissionSource.skyboxEmitterPluginIdx == -1lu) {
+      return mt::PixelInfo{glm::vec3(0.0f), true};
+    }
+
+    auto & emitter =
+      plugin.emitters[scene.emissionSource.skyboxEmitterPluginIdx];
+    float pdf;
+    auto results =
+      emitter.SampleWo(scene, plugin, surface, surface.incomingAngle, pdf);
+    return mt::PixelInfo{results.color, true};
+  }
 
   auto color = plugin.material.AlbedoApproximation(surface, scene, plugin);
   return mt::PixelInfo{color, true};
