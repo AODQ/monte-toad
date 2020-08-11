@@ -4,6 +4,7 @@
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
+#include <monte-toad/core/span.hpp>
 #include <mt-plugin/plugin.hpp>
 
 #pragma GCC diagnostic push
@@ -21,6 +22,8 @@ void ApplyKernel(
   mt::core::RenderInfo & render
 , mt::PluginInfo const & /*plugin*/
 , mt::core::IntegratorData & integratorData
+, span<glm::vec3> inputImageBuffer
+, span<glm::vec3> outputImageBuffer
 ) {
 
   oidn::DeviceRef device = oidn::newDevice();
@@ -57,14 +60,14 @@ void ApplyKernel(
 
   filter
     .setImage(
-      "color", integratorData.mappedImageTransitionBuffer.data()
+      "color", inputImageBuffer.data()
     , oidn::Format::Float3
     , integratorData.imageResolution.x, integratorData.imageResolution.y
     );
 
   filter
     .setImage(
-      "output", integratorData.mappedImageTransitionBuffer.data()
+      "output", outputImageBuffer.data()
     , oidn::Format::Float3
     , integratorData.imageResolution.x, integratorData.imageResolution.y
     );

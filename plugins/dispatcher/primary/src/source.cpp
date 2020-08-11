@@ -480,20 +480,39 @@ void DispatchRender(
         switch (kernelDispatch.timing) {
           default: break;
           case mt::KernelDispatchTiming::Start:
-            // TODO this has to be done before doing any rendering
+            // TODO this has to be done before doing any dispatches
           break;
           case mt::KernelDispatchTiming::Preview:
+            // TODO allow preview to handle different integrators without
+            //      performance hit
+            if (self.blockIterator == self.blockPixelsFinished.size()-1) {
+              plugin
+                .kernels[kernelDispatch.dispatchPluginIdx]
+                .ApplyKernel(
+                  render, plugin, self
+                , make_span(self.mappedImageTransitionBuffer)
+                , make_span(self.previewMappedImageTransitionBuffer)
+                );
+            }
           break;
           case mt::KernelDispatchTiming::All:
             plugin
               .kernels[kernelDispatch.dispatchPluginIdx]
-              .ApplyKernel(render, plugin, self);
+              .ApplyKernel(
+                  render, plugin, self
+                , make_span(self.mappedImageTransitionBuffer)
+                , make_span(self.mappedImageTransitionBuffer)
+              );
           break;
           case mt::KernelDispatchTiming::Last:
             if (self.renderingFinished) {
               plugin
                 .kernels[kernelDispatch.dispatchPluginIdx]
-                .ApplyKernel(render, plugin, self);
+                .ApplyKernel(
+                    render, plugin, self
+                  , make_span(self.mappedImageTransitionBuffer)
+                  , make_span(self.mappedImageTransitionBuffer)
+                );
             }
           break;
         }

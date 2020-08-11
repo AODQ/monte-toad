@@ -118,9 +118,12 @@ void LoadScene(mt::core::RenderInfo & render, mt::PluginInfo & plugin) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void AllocateResources(mt::core::RenderInfo & render) {
-  for (auto & integrator : render.integratorData)
-    { mt::core::AllocateResources(integrator); }
+void AllocateResources(
+  mt::core::RenderInfo & render
+, mt::PluginInfo & plugin
+) {
+  for (size_t i = 0ul; i < render.integratorData.size(); ++ i)
+    { mt::core::AllocateResources(render.integratorData[i], i, plugin); }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +149,11 @@ void UiPluginLoadFile(
     switch (pluginType) {
       default: break;
       case mt::PluginType::Integrator:
-        mt::core::AllocateResources(render.integratorData.back());
+        mt::core::AllocateResources(
+          render.integratorData.back()
+        , render.integratorData.size()-1
+        , plugin
+        );
       break;
       case mt::PluginType::Random:
         plugin.random.Initialize();
@@ -452,7 +459,7 @@ bool ui::Initialize(
   }
 
   // load up opengl resources
-  ::AllocateResources(render);
+  ::AllocateResources(render, plugin);
 
   return true;
 }

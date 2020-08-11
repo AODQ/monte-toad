@@ -100,6 +100,8 @@ namespace mt {
       mt::core::RenderInfo & render
     , mt::PluginInfo const & plugin
     , mt::core::IntegratorData & integratorData
+    , span<glm::vec3> inputImageBuffer
+    , span<glm::vec3> outputImageBuffer
     ) = nullptr;
 
     void (*UiUpdate)(

@@ -337,6 +337,7 @@ void UiKernelDispatchEditor(
   }
 
   ImGui::NewLine();
+  ImGui::NewLine();
   ImGui::Separator();
   ImGui::Separator();
   ImGui::NewLine();
@@ -345,7 +346,7 @@ void UiKernelDispatchEditor(
     for (size_t i = 0ul; i < plugin.kernels.size(); ++ i) {
       if (ImGui::Selectable(plugin.kernels[i].PluginLabel(), false)) {
         mt::core::KernelDispatchInfo kernel;
-        kernel.timing = mt::KernelDispatchTiming::All;
+        kernel.timing = mt::KernelDispatchTiming::Off;
         kernel.dispatchPluginIdx = i;
         // todo allocate kernel
         /* kernel.userdata */
@@ -558,24 +559,40 @@ void UiImageOutput(
     auto & data = render.integratorData[i];
     auto & integrator = plugin.integrators[i];
 
-    std::string label =
-      std::string{integrator.PluginLabel()} + std::string{" (image)"};
-
-    ImGui::Begin(label.c_str());
-
     // get image resolution, which might be overriden by user
     auto imageResolution = data.imageResolution;
     if (data.overrideImGuiImageResolution) {
       imageResolution.x = data.imguiImageResolution;
       mt::ApplyAspectRatioY(
-          data.imageAspectRatio, imageResolution.x, imageResolution.y
-          );
+        data.imageAspectRatio, imageResolution.x, imageResolution.y
+      );
     }
 
+    if (!integrator.RealTime()) {
+      std::string const label =
+        std::string{integrator.PluginLabel()} + std::string{" (image preview)"};
+
+      auto handle = data.previewRenderedTexture.handle;
+
+      ImGui::Begin(label.c_str());
+      ImGui::Image(
+        reinterpret_cast<void*>(handle)
+      , ImVec2(imageResolution.x, imageResolution.y)
+      );
+      ImGui::End();
+    }
+
+    std::string label =
+      std::string{integrator.PluginLabel()} + std::string{" (image)"};
+
+    ImGui::Begin(label.c_str());
+
+    auto handle = data.renderedTexture.handle;
+
     ImGui::Image(
-        reinterpret_cast<void*>(data.renderedTexture.handle)
-        , ImVec2(imageResolution.x, imageResolution.y)
-        );
+      reinterpret_cast<void*>(handle)
+    , ImVec2(imageResolution.x, imageResolution.y)
+    );
 
     // clear out the image pixel clicked from previous frame
     data.imagePixelClicked = false;
@@ -587,14 +604,14 @@ void UiImageOutput(
         imItemMin  = ImGui::GetItemRectMin()
         , imItemMax  = ImGui::GetItemRectMax()
         , imMousePos = ImGui::GetMousePos()
-        ;
+      ;
 
       auto const
           itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
         , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
         , mousePos =
         glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
-        ;
+      ;
 
       auto const resolutionRatio =
         glm::vec2(imageResolution) / glm::vec2(data.imageResolution);

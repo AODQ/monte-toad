@@ -26,7 +26,11 @@ namespace mt::core {
   , size_t minX, size_t maxX, size_t minY, size_t maxY
   );
 
-  void AllocateResources(mt::core::IntegratorData & self);
+  void AllocateResources(
+    mt::core::IntegratorData & self
+  , size_t pluginIdx
+  , mt::PluginInfo const & plugin
+  );
 
   struct RenderInfo {
     std::string modelFile;

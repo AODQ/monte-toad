@@ -14,6 +14,12 @@ namespace mt::core {
     std::vector<uint16_t> pixelCountBuffer;
     mt::core::GlTexture renderedTexture;
 
+    std::vector<glm::vec3> previewMappedImageTransitionBuffer;
+    mt::core::GlTexture previewRenderedTexture;
+
+    size_t pluginIdx;
+    bool realtime;
+
     std::vector<mt::core::KernelDispatchInfo> kernelDispatchers;
 
     glm::u16vec2 imageResolution = glm::u16vec2(640, 480);

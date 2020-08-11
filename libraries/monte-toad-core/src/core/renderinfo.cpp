@@ -23,6 +23,12 @@ void mt::core::Clear(mt::core::IntegratorData & self) {
   , glm::vec4(0.0f)
   );
 
+  std::fill(
+    self.previewMappedImageTransitionBuffer.begin()
+  , self.previewMappedImageTransitionBuffer.end()
+  , glm::vec4(0.0f)
+  );
+
   self.dispatchedCycles = 0;
   self.bufferCleared = true;
   self.blockIterator = 0ul;
@@ -82,9 +88,30 @@ void mt::core::DispatchImageCopy(
   , 0, GL_RGB, GL_FLOAT
   , self.mappedImageTransitionBuffer.data()
   );
+
+  if (!self.realtime && self.blockIterator == self.blockPixelsFinished.size()-1)
+  {
+    glBindTexture(GL_TEXTURE_2D, self.previewRenderedTexture.handle);
+    glTexImage2D(
+      GL_TEXTURE_2D
+    , 0
+    , GL_RGB32F
+    , self.imageResolution.x, self.imageResolution.y
+    , 0, GL_RGB, GL_FLOAT
+    , self.previewMappedImageTransitionBuffer.data()
+    );
+  }
 }
 
-void mt::core::AllocateResources(mt::core::IntegratorData & self) {
+void mt::core::AllocateResources(
+  mt::core::IntegratorData & self
+, size_t pluginIdx
+, mt::PluginInfo const & plugin
+) {
+
+  self.pluginIdx = pluginIdx;
+  self.realtime = plugin.integrators[pluginIdx].RealTime();
+
   spdlog::debug("Allocating gl resources to {}", self.imageResolution);
   size_t const
     imagePixelLength = self.imageResolution.x * self.imageResolution.y
@@ -92,6 +119,10 @@ void mt::core::AllocateResources(mt::core::IntegratorData & self) {
 
   // -- construct transition buffer
   self.mappedImageTransitionBuffer.resize(imagePixelLength);
+
+  if (!self.realtime) {
+    self.previewMappedImageTransitionBuffer.resize(imagePixelLength);
+  }
 
   self.pixelCountBuffer.resize(imagePixelLength);
 
@@ -114,6 +145,26 @@ void mt::core::AllocateResources(mt::core::IntegratorData & self) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  }
+
+  if (!self.realtime) {
+    self.previewRenderedTexture.Construct(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, self.previewRenderedTexture.handle);
+    glTexImage2D(
+      GL_TEXTURE_2D
+    , 0
+    , GL_RGB32F
+    , self.imageResolution.x, self.imageResolution.y
+    , 0, GL_RGB, GL_FLOAT
+    , nullptr
+    );
+
+    { // -- set parameters
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    }
   }
 
   // set unfinishedPixels
