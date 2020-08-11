@@ -362,10 +362,10 @@ void UiKernelDispatchEditor(
 }
 
 void UiImageOutput(
-    mt::core::Scene & /*scene*/
-    , mt::core::RenderInfo & render
-    , mt::PluginInfo const & plugin
-    ) {
+  mt::core::Scene & /*scene*/
+, mt::core::RenderInfo & render
+, mt::PluginInfo const & plugin
+) {
 
   // -- display standard integrator options
   for (size_t i = 0; i < plugin.integrators.size(); ++ i) {
@@ -382,9 +382,9 @@ void UiImageOutput(
     }};
 
     if (
-        size_t value = static_cast<size_t>(data.renderingState);
-        ImGui::BeginCombo("State", stateStrings[value])
-       ) {
+      size_t value = static_cast<size_t>(data.renderingState);
+      ImGui::BeginCombo("State", stateStrings[value])
+    ) {
       for (size_t stateIt = 0; stateIt < stateStrings.size(); ++ stateIt) {
         bool isSelected = value == stateIt;
         if (ImGui::Selectable(stateStrings[stateIt], isSelected)) {
@@ -392,7 +392,7 @@ void UiImageOutput(
 
           // don't clear out data if set to off
           if (data.renderingState != mt::RenderingState::Off)
-          { mt::core::Clear(data); }
+            { mt::core::Clear(data); }
         }
       }
       ImGui::EndCombo();
@@ -416,7 +416,7 @@ void UiImageOutput(
         mt::core::Clear(data);
       }
 
-      if (ImGui::InputInt("iterations per hunk", &data.blockInternalIteratorMax)){
+      if (ImGui::InputInt("iters per hunk", &data.blockInternalIteratorMax)){
         data.blockInternalIteratorMax =
           glm::clamp(data.blockInternalIteratorMax, 1ul, 64ul);
       }
@@ -433,22 +433,23 @@ void UiImageOutput(
         }
 
         if (
-            ImGui::BeginCombo(
-              "block size"
-              , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
-              )
-           ) {
+          ImGui::BeginCombo(
+            "block size"
+          , std::to_string(::blockIteratorStrides[iteratorIdx]).c_str()
+          )
+        ) {
           for (
-              size_t blockIt = 0;
-              blockIt < ::blockIteratorStrides.size();
-              ++ blockIt
-              ) {
+            size_t blockIt = 0;
+            blockIt < ::blockIteratorStrides.size();
+            ++ blockIt
+          ) {
             bool isSelected = iteratorIdx == blockIt;
             if (
-                ImGui::Selectable(
-                  std::to_string(::blockIteratorStrides[blockIt]).c_str()
-                  , isSelected)
-               ) {
+              ImGui::Selectable(
+                std::to_string(::blockIteratorStrides[blockIt]).c_str()
+              , isSelected
+              )
+            ) {
               data.blockIteratorStride = ::blockIteratorStrides[blockIt];
               mt::core::Clear(data);
             }
@@ -471,9 +472,9 @@ void UiImageOutput(
               data.imageAspectRatio = static_cast<mt::AspectRatio>(arIt);
 
               ApplyImageResolutionConstraint(
-                  data.imageResolution
-                  , data.imageAspectRatio
-                  );
+                data.imageResolution
+              , data.imageAspectRatio
+              );
             }
           }
           ImGui::EndCombo();
@@ -483,18 +484,18 @@ void UiImageOutput(
       // image resolution
       if (ImGui::InputInt("image resolution", &data.imageResolution.x, 8)) {
         ApplyImageResolutionConstraint(
-            data.imageResolution
-            , data.imageAspectRatio
-            );
+          data.imageResolution
+        , data.imageAspectRatio
+        );
       }
 
       // -- imgui image resolution
       if (
-          ImGui::Checkbox(
-            "override imgui resolution"
-            , &data.overrideImGuiImageResolution
-            )
-         ) {
+        ImGui::Checkbox(
+          "override imgui resolution"
+          , &data.overrideImGuiImageResolution
+        )
+      ) {
         data.imguiImageResolution = data.imageResolution.x;
       }
 
@@ -504,7 +505,7 @@ void UiImageOutput(
 
       // must reallocate resources if resolution has changed
       if (previousResolution != data.imageResolution)
-      { mt::core::AllocateResources(data); }
+        { mt::core::AllocateResources(data, i, plugin); }
     }
 
     if (data.renderingFinished) {
@@ -512,45 +513,45 @@ void UiImageOutput(
     }
 
     ImGui::Text(
-        "image resolution <%u, %u>"
-        , data.imageResolution.x, data.imageResolution.y
-        );
+      "image resolution <%u, %u>"
+    , data.imageResolution.x, data.imageResolution.y
+    );
 
     if (data.overrideImGuiImageResolution) {
       uint16_t y;
       mt::ApplyAspectRatioY(
-          data.imageAspectRatio, data.imguiImageResolution, y
-          );
+        data.imageAspectRatio, data.imguiImageResolution, y
+      );
 
       ImGui::Text(
-          "imgui resolution <%u, %u>"
-          , data.imguiImageResolution
-          , static_cast<uint32_t>(y)
-          );
+        "imgui resolution <%u, %u>"
+        , data.imguiImageResolution
+        , static_cast<uint32_t>(y)
+      );
     }
 
     if (!integrator.RealTime()) {
       ImGui::Text("%lu dispatched cycles", data.dispatchedCycles);
 
       ImGui::Text(
-          "%lu / %lu finished pixels"
-          , mt::core::FinishedPixels(data), mt::core::FinishedPixelsGoal(data)
-          );
+        "%lu / %lu finished pixels"
+      , mt::core::FinishedPixels(data), mt::core::FinishedPixelsGoal(data)
+      );
 
       size_t finishedBlocks = 0;
       for (auto & blockIt : data.blockPixelsFinished) {
         finishedBlocks +=
           static_cast<size_t>(
-              blockIt >= data.blockIteratorStride*data.blockIteratorStride
-              );
+            blockIt >= data.blockIteratorStride*data.blockIteratorStride
+          );
       }
       ImGui::Text(
           "%lu / %lu finished blocks"
-          , finishedBlocks
-          , data.blockPixelsFinished.size()
-          );
+      , finishedBlocks
+      , data.blockPixelsFinished.size()
+      );
       ImGui::Text("%lu block iterator", data.blockIterator);
-    }
+     }
 
     ImGui::End();
   }

@@ -77,7 +77,7 @@ size_t mt::core::BlockIteratorMax(mt::core::IntegratorData & self) {
 
 void mt::core::DispatchImageCopy(
   mt::core::IntegratorData & self
-  , size_t, size_t, size_t, size_t
+, size_t, size_t, size_t, size_t
 ) {
   glBindTexture(GL_TEXTURE_2D, self.renderedTexture.handle);
   glTexImage2D(
