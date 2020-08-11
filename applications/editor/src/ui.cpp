@@ -389,13 +389,6 @@ void UiEntry(
       .UiUpdate(scene, render, plugin);
   }
 
-  for (size_t idx = 0; idx < plugin.integrators.size(); ++ idx) {
-    auto & integrator = plugin.integrators[idx];
-    if (integrator.UiUpdate) {
-      integrator.UiUpdate(scene, render, plugin, render.integratorData[idx]);
-    }
-  }
-
   if (plugin.material.UiUpdate)
     { plugin.material.UiUpdate(scene, render, plugin); }
 
