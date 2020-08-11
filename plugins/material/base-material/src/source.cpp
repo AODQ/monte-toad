@@ -121,6 +121,7 @@ void UiMaterialComponent(
 
     if (ImGui::Button("delete")) {
       components.erase(components.begin() + bsdfIdx);
+      render.ClearImageBuffers();
       -- bsdfIdx;
     }
 
@@ -538,6 +539,7 @@ void UiUpdate(
   if (material.emitter.pluginIdx != -1lu) {
     if (ImGui::Button("delete")) {
       material.emitter.pluginIdx = -1lu;
+      render.ClearImageBuffers();
       // TODO can't delete bc don't know type
     }
   }
