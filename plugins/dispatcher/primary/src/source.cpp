@@ -346,8 +346,6 @@ void DispatchRender(
           case mt::RenderingState::AfterChange:
             if (self.bufferCleared) {
               self.bufferCleared = false;
-            } else {
-              ++ self.dispatchedCycles;
             }
           break;
         }
@@ -379,9 +377,6 @@ void DispatchRender(
         for (auto const integratorIdx : syncIt) {
           auto & self = render.integratorData[integratorIdx];
 
-          // TODO move this so that this won't even be part of integrator sync
-          if (self.dispatchedCycles > 1ul) { continue; }
-
           auto & pixel = self.mappedImageTransitionBuffer[y*resolution.x + x];
 
           auto pixelResults =
@@ -393,11 +388,11 @@ void DispatchRender(
         }
       }
 
-      // -- apply image copy
+      // -- apply image copy & set rendering finished
       for (auto const integratorIdx : syncIt) {
         auto & self = render.integratorData[integratorIdx];
         mt::core::DispatchImageCopy(self, 0ul, 0ul, resolution.x, resolution.y);
-        self.dispatchedCycles = 2ul;
+        self.renderingFinished = true;
       }
 
       continue;
