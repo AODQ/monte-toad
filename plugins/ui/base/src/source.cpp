@@ -15,7 +15,6 @@
 
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.hpp>
-#include <spdlog/spdlog.h>
 
 #include <chrono>
 

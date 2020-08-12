@@ -2,7 +2,10 @@
 
 #include <mt-plugin/plugin.hpp>
 
-#include <spdlog/spdlog.h>
+#pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #include <spdlog/spdlog.h>
+#pragma GCC diagnostic pop
 
 #include <memory>
 #include <vector>

@@ -1,8 +1,7 @@
 #include <monte-toad/util/textureloader.hpp>
 
+#include <monte-toad/core/log.hpp>
 #include <monte-toad/core/texture.hpp>
-
-#include <spdlog/spdlog.h>
 
 #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wdouble-promotion"

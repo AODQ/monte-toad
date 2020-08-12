@@ -11,7 +11,6 @@
 
 #include <cxxopts.hpp>
 #include <omp.h>
-#include <spdlog/spdlog.h>
 
 #include <string>
 #include <vector>

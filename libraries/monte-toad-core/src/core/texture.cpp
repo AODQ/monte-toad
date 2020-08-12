@@ -1,6 +1,6 @@
 #include <monte-toad/core/texture.hpp>
 
-#include <spdlog/spdlog.h>
+#include <monte-toad/core/log.hpp>
 
 /*
 

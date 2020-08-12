@@ -2,7 +2,7 @@
 
 #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wshadow"
-    #include <glm/fwd.hpp>
+  #include <glm/fwd.hpp>
 #pragma GCC diagnostic pop
 
 namespace glm {

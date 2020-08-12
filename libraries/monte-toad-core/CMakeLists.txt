@@ -17,14 +17,6 @@ target_sources(
     src/core/triangle.cpp
 )
 
-# TODO add spdlog as proper dependency
-target_compile_definitions(
-  monte-toad-core
-  PUBLIC
-    SPDLOG_NO_EXCEPTIONS=1
-    SPDLOG_FMT_EXTERNAL=1
-)
-
 set_target_properties(
   monte-toad-core
     PROPERTIES
@@ -37,7 +29,7 @@ set_target_properties(
 target_link_libraries(
   monte-toad-core
   PUBLIC
-    glm spdlog fmt monte-toad-util
+    glm spdlog::spdlog monte-toad-util
   PRIVATE
     glad mt-plugin imgui bvh omp
 )

@@ -1,6 +1,6 @@
 #include <monte-toad/core/enum.hpp>
 
-#include <spdlog/spdlog.h>
+#include <monte-toad/core/log.hpp>
 
 #include <array>
 #include <ctype.h> // for ::tolower

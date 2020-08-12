@@ -11,7 +11,7 @@
 
 #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#include <nanort/nanort.hpp>
+  #include <nanort/nanort.hpp>
 #pragma GCC diagnostic pop
 
 #include <imgui/imgui.hpp>

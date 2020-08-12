@@ -39,6 +39,13 @@ set(OIDN_APPS OFF CACHE INTERNAL "")
 set(OIDN_APPS_OPENIMAGEIO OFF CACHE INTERNAL "")
 add_subdirectory(open-image-denoise)
 
+## spdlog
+set(SPDLOG_BUILD_SHARED ON CACHE INTERNAL "")
+set(SPDLOG_ENABLE_PCH ON CACHE INTERNAL "")
+set(SPDLOG_NO_EXCEPTIONS ON CACHE INTERNAL "")
+set(SPDLOG_INSTALL ON CACHE INTERNAL "")
+add_subdirectory(spdlog)
+
 ## nanort
 add_library(nanort INTERFACE)
 target_include_directories(nanort INTERFACE nanort/include)

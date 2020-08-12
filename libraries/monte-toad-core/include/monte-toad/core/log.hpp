@@ -1,6 +1,9 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
+#pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #include <spdlog/spdlog.h>
+#pragma GCC diagnostic pop
 
 namespace {
   auto StandardFormat(std::string & p, fmt::format_parse_context & ctx) {
