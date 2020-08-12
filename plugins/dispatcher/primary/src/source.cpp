@@ -432,46 +432,19 @@ void DispatchRender(
         continue;
       }
 
-      // set image stride on first pass otherwise take care of iteration
-      self.imageStride = 1;
       glm::u16vec2 minRange = glm::uvec2(0);
       glm::u16vec2 maxRange = self.imageResolution;
       const bool realtime = plugin.integrators[integratorIdx].RealTime();
-      bool const quickLowResRender = !realtime && self.dispatchedCycles == 1;
       if (!realtime) {
-        switch (self.dispatchedCycles) {
-          case 1:
-            if (self.imageResolution.x > 1024) {
-              self.imageStride = 16;
-            } else {
-              self.imageStride = 8;
-            }
-          break;
-          default:
-            ::BlockIterate(self, minRange, maxRange);
-          break;
-        }
+        ::BlockIterate(self, minRange, maxRange);
       }
 
       ::DispatchBlockRegion(
         scene, render, plugin, integratorIdx
       , minRange.x, minRange.y, maxRange.x, maxRange.y
-      , self.imageStride, self.imageStride
-      , (realtime || quickLowResRender) ? 1 : self.blockInternalIteratorMax
+      , 1, 1
+      , realtime ? 1 : self.blockInternalIteratorMax
       );
-
-      // blit transition buffer for 8 pixels, thus generating an 8x lower
-      // resolution image without gaps
-      if (quickLowResRender) {
-        /* #pragma omp parallel for */
-        for (size_t x = minRange.x; x < maxRange.x; ++ x)
-        for (size_t y = minRange.y; y < maxRange.y; ++ y) {
-          auto const yy = y - (y % self.imageStride);
-          auto const xx = x - (x % self.imageStride);
-          self.mappedImageTransitionBuffer[y*self.imageResolution.x + x] =
-              self.mappedImageTransitionBuffer[yy*self.imageResolution.x + xx];
-        }
-      }
 
       ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
 
@@ -485,7 +458,7 @@ void DispatchRender(
           case mt::KernelDispatchTiming::Preview:
             // TODO allow preview to handle different integrators without
             //      performance hit
-            if (self.blockIterator == self.blockPixelsFinished.size()-1) {
+            if (self.blockIterator == 1ul) {
               plugin
                 .kernels[kernelDispatch.dispatchPluginIdx]
                 .ApplyKernel(
@@ -501,7 +474,7 @@ void DispatchRender(
               .ApplyKernel(
                   render, plugin, self
                 , make_span(self.mappedImageTransitionBuffer)
-                , make_span(self.mappedImageTransitionBuffer)
+                , make_span(self.previewMappedImageTransitionBuffer)
               );
           break;
           case mt::KernelDispatchTiming::Last:
@@ -511,7 +484,7 @@ void DispatchRender(
                 .ApplyKernel(
                     render, plugin, self
                   , make_span(self.mappedImageTransitionBuffer)
-                  , make_span(self.mappedImageTransitionBuffer)
+                  , make_span(self.previewMappedImageTransitionBuffer)
                 );
             }
           break;

@@ -89,7 +89,7 @@ void mt::core::DispatchImageCopy(
   , self.mappedImageTransitionBuffer.data()
   );
 
-  if (!self.realtime && self.blockIterator == self.blockPixelsFinished.size()-1)
+  if (!self.realtime && self.blockIterator == 1ul)
   {
     glBindTexture(GL_TEXTURE_2D, self.previewRenderedTexture.handle);
     glTexImage2D(

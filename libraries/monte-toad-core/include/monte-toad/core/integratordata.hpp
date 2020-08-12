@@ -44,7 +44,6 @@ namespace mt::core {
     std::vector<size_t> blockPixelsFinished;
     bool bufferCleared = false;
     size_t dispatchedCycles = 0u;
-    size_t imageStride = 1ul;
     size_t blockIterator = 0ul;
     size_t blockInternalIteratorMax = 1ul;
     size_t blockIteratorStride = 128ul;
