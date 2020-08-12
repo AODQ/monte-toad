@@ -1,0 +1,145 @@
+## features
+
+- move environment map file to be loaded by emitter plugin
+- allow initial and post initial integrator rules (which will allow quick full image passes followed by focused rendering)
+- image zooming / panning controls
+- have line / square that displays current dispatch block (both global and local)
+- have layers which would allow setups to switch quickly between realtime, interactive and offline modes
+- save all integrators to a single PNG, properly spaced out and possibly with subtitles
+- camera controls sperate from plugin info ui window
+- add ggx brdf
+- add ggx btdf
+- subsurface scattering bssrdf
+- implement bumpmapping
+- display rendering time of a frame (total)
+- when plugin fails to load, give specific information such as which function was not present etc
+- investigate adding embree as an acceleration structure plugin
+- investigate adding radeon rays as an acceleration structure plugin
+- have plugin for intersectors (for triangles, spheres, instances, etc etc)
+- saved material/bsdf preview
+- give option to not update images for longer AFK renders
+- give % completion of a rendered image
+- add flashing text when rendering & trying to move, also add some flashing indication when rendering
+- RTX support without relying on radeon rays or other libraries (would probably be implemented well after other libraries are implemented tho)
+- move most third party dependencies to be compiled from source in third-party/
+- precompiled header for STL
+- fix layered material support system
+- save image from a specific integrator
+- add subdivision surface support
+- add instancing support
+- allow saving/loading of scene w json
+- iterator spans out in a spiral, first iteration forces an iteration of 1 thus allowing for a very quick preview mode
+- store override imgui resolution
+- bumpmap/normal implementation
+- imgui 4k support / dpi scaling / font scaling
+- imgui custom text / font support
+- don't halt thread while waiting for tasks to finish (probably have to replace openmp)
+- fix pathtraced debug lines
+- move spdlog out from monte toad core
+- use glTExSubImage2D with pixen unpack buffers for faster image upload
+- use mouse wheel to control camera speed
+- texture viewer for editor/ui
+- have json not crash on error
+- framebuffer fragment inspection
+- environmental map lighting loads / stores enviornment image separately
+- selective box integration
+- desynced camera movement between integrators
+- allow multiple integrators of the same type
+- figure a way to allow mesh emitters to be a plugin (emitter plugin)
+- load scene in seperate thread, give loader information about current scene loading statistics
+- cross platform file navigator (imgui implementation)
+- framebuffer path history inspection
+- display batched rays in buffer, allowing to debug/visually see how a BRDF/BTDF effects rays in the scene.
+- embed scene format as JSON (this will probably always be a WIP as even more and more features are added, but no overall design has been laid out so that all plugins may interact with json files)
+- set imgui default layout
+- add wavelength / spectral rendering support
+- blue noise random generator
+- windows support
+- animation skinning / bone support
+- spatiotemporal variance guided filter (SVGF) kernel
+- tonemapping/hdr kernels
+- bidirectional path tracing integrator
+- scene animations (key model matrices quaternions etc)
+- animate out video using FFMPEG & moving camera
+- plugins can allocate memory on host
+
+## bugs / code cleanup
+
+- plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
+- plugin reload crashes, something to do with openImageDenoiser.
+- fix importance sampling (was disabled temporarily)
+- allow acceleration structure to load the mesh from a more generic structure (ei to allow face support)
+- lag spike when material is null/no bsdfs, should be resolved
+- don't reload scene when loading up environment texture
+- move mt::Valid for plugin valid to mt::PluginValid
+- move span to mt::core::span
+- at resolutions lower than 256 have higher strides
+- have surface store refractedNormal, which is the normal but pointed in the direction necessary for refraction
+- have albedo / normal integrators work with reflection/refraction
+    > reflection/refraction should be a fresnel blend, but if diffuse is present then I assume none of these should be used. Probably have to experiment. This should improve open image denoiser and other filtering kernels potentially
+- store cosThetaI in surface (no longer need to compute it)
+- move bsdfsampleinfo to its own file
+- rename mtplugin to mt::plugin along with moving all the mt::Plugin* stuff to mt::plugin::*
+- better previews for 4k and 8k resolution (maybe cheap upsampling or something not sure)
+- rename plugins to type-name
+- fix namespace / function separation
+- fix texture errors on startup
+- up axis should also change the environment map sampling
+- remove unused [[maybe_unused]]
+- fix texture pointers crashing on texture resize (the textures array not texture dimensions)
+
+## in progress / upcoming
+
+- better kernel control (can control when/how and what order kernels are dispatched)
+
+## done
+
+- basic hot reloading system
+- switch all calloc/malloc/free to new/delete
+- allow materials to be composed from brdf plugins
+- openimagedenoiser support
+- delete should reset itnegrator
+- first-pass integrators; optimization where integrators that only need one pass and share same camera information and resolution as other integrators can share the same dispatch thus eliminating the need for redundant BVH-ray intersections
+- add BRDF plugins
+- fix acceleration structure (it produces degenerate triangles)
+- add russian roulette
+- texture/vec3/float optional / ui sttable
+- verify & fix rendered image being flipped on X axis
+- YU plugin chain, probably useful for kernel too
+- dispatcher plugin runs actual dispatches
+- move material selection code etc to base ui, brdf should have dispatch for its specific properties
+- rename mtl/material plugin to brdf
+- optimize build times
+- real-time depth integrator
+- remove unused variables from functions
+- allow multiple emitters (ei skyboxes)
+- blocks can have stride per element
+- texture support for scenes
+- atmosphere emitter
+- replace plugin library
+- forward NEE integrator
+- real-time rasterized-based-shading integrator
+- environment map lighting
+- plugin material system
+- R key toggles rendering
+- reload plugin button
+- control stride lengths
+- samples are skipped when a block is finished
+- image is finished when all samples / blocks are done
+- progressive upsampling-resolution rendering
+- remove copies of plugin on cmake install
+- use gold linker
+- real-time normal integrator
+- multiple viewers
+- white-noise random generator
+- pinhole camera anti aliasing
+- configurable BVH / acceleration options
+- fix triangle ray intersection
+- have plugin for acceleration structure
+- log ui element
+- plugin error check (probably set an enum with its type)
+- resize imgui texture & buffer sizes in realtime and independently
+- freeform camera movement
+- controllable flyout camera in UI
+- sometimes plugins unload themselves when other plugins load
+- optional imgui integration with all plugins
