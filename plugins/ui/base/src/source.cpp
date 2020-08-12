@@ -634,7 +634,10 @@ void UiImageOutput(
 
       // jump to next column and limit max column width
       ImGui::NextColumn();
-      ImGui::SetColumnOffset(-1, glm::min(glm::abs(ImGui::GetColumnWidth()), (float)imageResolution.x));
+      ImGui::SetColumnOffset(
+        -1
+      , glm::min(glm::abs(ImGui::GetColumnOffset()), (float)imageResolution.x)
+      );
 
       // display preview image so that it can be overlaid on top of raw image
       ImGui::Image(
