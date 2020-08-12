@@ -586,8 +586,6 @@ void UiImageOutput(
           , imMousePos = ImGui::GetMousePos()
         ;
 
-        spdlog::info("{} - {}", imItemMin.x, offsetX);
-
         auto const
             itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
           , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
@@ -604,7 +602,6 @@ void UiImageOutput(
         pixel.x = data.imageResolution.x - pixel.x;
         pixel.x -= offsetX;
         pixel.y -= offsetY;
-        spdlog::info("clicked {} {}", pixel.x, pixel.y);
 
         // store results, also have to tell render info which image was clicked
         data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
