@@ -140,7 +140,7 @@ void DispatchBlockRegion(
     return;
   }
 
-  /* #pragma omp parallel for */
+  #pragma omp parallel for collapse(2)
   for (size_t x = minX; x < maxX; x += strideX)
   for (size_t y = minY; y < maxY; y += strideY)
   for (size_t it = 0; it < internalIterator; ++ it) {
@@ -352,7 +352,7 @@ void DispatchRender(
       }
 
       // -- render synced integrators
-      // #pragma omp parallel for
+      #pragma omp parallel for collapse(2)
       for (size_t x = 0; x < resolution.x; ++ x)
       for (size_t y = 0; y < resolution.y; ++ y) {
 

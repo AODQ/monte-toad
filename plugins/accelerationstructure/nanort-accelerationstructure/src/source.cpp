@@ -24,11 +24,6 @@ namespace {
 struct NanoAccelerationStructure {
   mt::core::TriangleMesh triangleMesh;
   std::vector<uint32_t> faces;
-
-  // have to make this a unique ptr bc there is no default or assignment
-  // constructor
-  std::unique_ptr<nanort::TriangleIntersector<float>> triangleIntersector;
-
   nanort::BVHAccel<float> accel;
 };
 
@@ -69,11 +64,6 @@ mt::core::Any Construct(mt::core::TriangleMesh && triangleMeshMv) {
     return mt::core::Any{};
   }
 
-  self.triangleIntersector =
-    std::make_unique<nanort::TriangleIntersector<float>>(
-      &self.triangleMesh.origins[0].x, self.faces.data(), sizeof(glm::vec3)
-    );
-
   mt::core::Any any;
   any.data = new ::NanoAccelerationStructure{std::move(self)};
   return any;
@@ -96,9 +86,14 @@ std::optional<mt::core::BvhIntersection> IntersectClosest(
   traceOptions.skip_prim_id = ignoredTriangleIdx;
   traceOptions.cull_back_face = false;
 
+  auto triangleIntersector =
+    nanort::TriangleIntersector<float>(
+      &self.triangleMesh.origins[0].x, self.faces.data(), sizeof(glm::vec3)
+    );
+
   nanort::TriangleIntersection<float> isect;
   bool hit =
-    self.accel.Traverse(ray, *self.triangleIntersector, &isect, traceOptions);
+    self.accel.Traverse(ray, triangleIntersector, &isect, traceOptions);
 
   if (!hit || isect.prim_id == -1u) { return std::nullopt; }
 
