@@ -569,63 +569,93 @@ void UiImageOutput(
       );
     }
 
-    if (!integrator.RealTime()) {
-      std::string const label =
-        std::string{integrator.PluginLabel()} + std::string{" (image preview)"};
-
-      auto handle = data.previewRenderedTexture.handle;
-
-      ImGui::Begin(label.c_str());
-      ImGui::Image(
-        reinterpret_cast<void*>(handle)
-      , ImVec2(imageResolution.x, imageResolution.y)
-      );
-      ImGui::End();
-    }
-
     std::string label =
       std::string{integrator.PluginLabel()} + std::string{" (image)"};
 
     ImGui::Begin(label.c_str());
 
-    auto handle = data.renderedTexture.handle;
-
-    ImGui::Image(
-      reinterpret_cast<void*>(handle)
-    , ImVec2(imageResolution.x, imageResolution.y)
-    );
-
     // clear out the image pixel clicked from previous frame
     data.imagePixelClicked = false;
 
-    // if image is clicked, approximate the clicked pixel, taking into account
-    // image resolution differences when displaying to imgui
-    if (ImGui::IsItemClicked()) {
-      auto const
-        imItemMin  = ImGui::GetItemRectMin()
-        , imItemMax  = ImGui::GetItemRectMax()
-        , imMousePos = ImGui::GetMousePos()
-      ;
+    auto CheckImageClicked = [&](float offsetX, float offsetY) {
+      // if image is clicked, approximate the clicked pixel, taking into account
+      // image resolution differences when displaying to imgui
+      if (ImGui::IsItemClicked()) {
+        auto const
+            imItemMin  = ImGui::GetItemRectMin()
+          , imItemMax  = ImGui::GetItemRectMax()
+          , imMousePos = ImGui::GetMousePos()
+        ;
 
-      auto const
-          itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
-        , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
-        , mousePos =
-        glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
-      ;
+        spdlog::info("{} - {}", imItemMin.x, offsetX);
 
-      auto const resolutionRatio =
-        glm::vec2(imageResolution) / glm::vec2(data.imageResolution);
+        auto const
+            itemMin  = glm::vec2(imItemMin.x, imItemMin.y)
+          , itemMax  = glm::vec2(imItemMax.x, imItemMax.y)
+          , mousePos =
+          glm::clamp(glm::vec2(imMousePos.x, imMousePos.y), itemMin, itemMax)
+        ;
 
-      auto pixel = (mousePos - itemMin) / resolutionRatio;
+        auto const resolutionRatio =
+          glm::vec2(imageResolution) / glm::vec2(data.imageResolution);
 
-      // flip X axis of pixel
-      pixel.x = data.imageResolution.x - pixel.x;
+        auto pixel = (mousePos - itemMin) / resolutionRatio;
 
-      // store results, also have to tell render info which image was clicked
-      data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
-      data.imagePixelClicked = true;
-      render.lastIntegratorImageClicked = i;
+        // flip X axis of pixel
+        pixel.x = data.imageResolution.x - pixel.x;
+        pixel.x -= offsetX;
+        pixel.y -= offsetY;
+        spdlog::info("clicked {} {}", pixel.x, pixel.y);
+
+        // store results, also have to tell render info which image was clicked
+        data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
+        data.imagePixelClicked = true;
+        render.lastIntegratorImageClicked = i;
+      }
+    };
+
+    // -- display image, with preview window on offline
+
+    if (!integrator.RealTime()) { ImGui::Columns(2); }
+
+    auto const leftPaneWidth =
+      glm::min(
+        imageResolution.x, static_cast<uint16_t>(ImGui::GetColumnWidth())
+      );
+    float const uvOffset = leftPaneWidth/static_cast<float>(imageResolution.x);
+
+    ImGui::Image(
+      reinterpret_cast<void*>(data.renderedTexture.handle)
+    , ImVec2(leftPaneWidth, imageResolution.y)
+    , ImVec2(0.0f, 0.0f)
+    , ImVec2(uvOffset, 1.0f)
+    );
+
+    CheckImageClicked(0.0f, 0.0f);
+
+    if (!integrator.RealTime()) {
+      ImGui::Text("raw output");
+
+      // jump to next column and limit max column width
+      ImGui::NextColumn();
+      ImGui::SetColumnOffset(-1, glm::min(glm::abs(ImGui::GetColumnWidth()), (float)imageResolution.x));
+
+      // display preview image so that it can be overlaid on top of raw image
+      ImGui::Image(
+        reinterpret_cast<void*>(data.previewRenderedTexture.handle)
+      , ImVec2(imageResolution.x-leftPaneWidth, imageResolution.y)
+      , ImVec2(uvOffset, 0.0f)
+      , ImVec2(1.0f, 1.0f)
+      );
+
+      CheckImageClicked(leftPaneWidth, 0.0f);
+
+      ImGui::Text("preview output");
+
+      // exits columns
+      ImGui::NextColumn();
+
+      // display rendering percentage TODO
     }
 
     ImGui::End();
