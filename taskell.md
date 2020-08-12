@@ -62,6 +62,7 @@
 - scene animations (key model matrices quaternions etc)
 - animate out video using FFMPEG & moving camera
 - plugins can allocate memory on host
+- allow multiple directional emitters w/ skybox
 
 ## bugs / code cleanup
 
