@@ -8,7 +8,8 @@
 #include <mt-plugin/plugin.hpp>
 
 #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wshadow -Warray-bounds"
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #pragma GCC diagnostic ignored "-Warray-bounds"
   #include <OpenImageDenoise/oidn.hpp>
 #pragma GCC diagnostic pop
 
