@@ -23,11 +23,13 @@ void mt::core::Clear(mt::core::IntegratorData & self) {
   , glm::vec4(0.0f)
   );
 
-  std::fill(
-    self.previewMappedImageTransitionBuffer.begin()
-  , self.previewMappedImageTransitionBuffer.end()
-  , glm::vec4(0.0f)
-  );
+  if (self.previewMappedImageTransitionBuffer.size() > 0ul) {
+    std::fill(
+      self.previewMappedImageTransitionBuffer.begin()
+    , self.previewMappedImageTransitionBuffer.end()
+    , glm::vec4(0.0f)
+    );
+  }
 
   self.dispatchedCycles = 0;
   self.bufferCleared = true;
@@ -89,8 +91,11 @@ void mt::core::DispatchImageCopy(
   , self.mappedImageTransitionBuffer.data()
   );
 
-  if (!self.realtime && self.blockIterator == 1ul)
-  {
+  if (
+      !self.realtime
+    && self.HasPreview()
+    && self.blockIterator == self.blockPixelsFinished.size()-1ul
+  ) {
     glBindTexture(GL_TEXTURE_2D, self.previewRenderedTexture.handle);
     glTexImage2D(
       GL_TEXTURE_2D
@@ -120,7 +125,7 @@ void mt::core::AllocateResources(
   // -- construct transition buffer
   self.mappedImageTransitionBuffer.resize(imagePixelLength);
 
-  if (!self.realtime) {
+  if (!self.realtime && self.HasPreview()) {
     self.previewMappedImageTransitionBuffer.resize(imagePixelLength);
   }
 
@@ -147,7 +152,7 @@ void mt::core::AllocateResources(
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   }
 
-  if (!self.realtime) {
+  if (!self.realtime && self.HasPreview()) {
     self.previewRenderedTexture.Construct(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, self.previewRenderedTexture.handle);
     glTexImage2D(

@@ -435,6 +435,50 @@ void DispatchRender(
       glm::u16vec2 minRange = glm::uvec2(0);
       glm::u16vec2 maxRange = self.imageResolution;
       const bool realtime = plugin.integrators[integratorIdx].RealTime();
+
+      // apply kernels
+      for (auto const & kernelDispatch : self.kernelDispatchers) {
+        switch (kernelDispatch.timing) {
+          default: break;
+          case mt::KernelDispatchTiming::Start:
+            // TODO this has to be done before doing any dispatches
+          break;
+          case mt::KernelDispatchTiming::Preview:
+            // TODO allow preview to handle different integrators without
+            //      performance hit
+            if (self.blockIterator == self.blockPixelsFinished.size()-1ul) {
+              plugin
+                .kernels[kernelDispatch.dispatchPluginIdx]
+                .ApplyKernel(
+                  render, plugin, self
+                , make_span(self.mappedImageTransitionBuffer)
+                , make_span(self.previewMappedImageTransitionBuffer)
+                );
+            }
+          break;
+          case mt::KernelDispatchTiming::All:
+            /* plugin */
+            /*   .kernels[kernelDispatch.dispatchPluginIdx] */
+            /*   .ApplyKernel( */
+            /*       render, plugin, self */
+            /*     , make_span(self.mappedImageTransitionBuffer) */
+            /*     , make_span(self.previewMappedImageTransitionBuffer) */
+            /*   ); */
+          break;
+          case mt::KernelDispatchTiming::Last:
+            if (self.renderingFinished) {
+              plugin
+                .kernels[kernelDispatch.dispatchPluginIdx]
+                .ApplyKernel(
+                    render, plugin, self
+                  , make_span(self.mappedImageTransitionBuffer)
+                  , make_span(self.mappedImageTransitionBuffer)
+                );
+            }
+          break;
+        }
+      }
+
       if (!realtime) {
         ::BlockIterate(self, minRange, maxRange);
       }
@@ -447,49 +491,6 @@ void DispatchRender(
       );
 
       ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
-
-      // apply kernels
-      for (auto const & kernelDispatch : self.kernelDispatchers) {
-        switch (kernelDispatch.timing) {
-          default: break;
-          case mt::KernelDispatchTiming::Start:
-            // TODO this has to be done before doing any dispatches
-          break;
-          case mt::KernelDispatchTiming::Preview:
-            // TODO allow preview to handle different integrators without
-            //      performance hit
-            if (self.blockIterator == 1ul) {
-              plugin
-                .kernels[kernelDispatch.dispatchPluginIdx]
-                .ApplyKernel(
-                  render, plugin, self
-                , make_span(self.mappedImageTransitionBuffer)
-                , make_span(self.previewMappedImageTransitionBuffer)
-                );
-            }
-          break;
-          case mt::KernelDispatchTiming::All:
-            plugin
-              .kernels[kernelDispatch.dispatchPluginIdx]
-              .ApplyKernel(
-                  render, plugin, self
-                , make_span(self.mappedImageTransitionBuffer)
-                , make_span(self.previewMappedImageTransitionBuffer)
-              );
-          break;
-          case mt::KernelDispatchTiming::Last:
-            if (self.renderingFinished) {
-              plugin
-                .kernels[kernelDispatch.dispatchPluginIdx]
-                .ApplyKernel(
-                    render, plugin, self
-                  , make_span(self.mappedImageTransitionBuffer)
-                  , make_span(self.previewMappedImageTransitionBuffer)
-                );
-            }
-          break;
-        }
-      }
 
       // apply image copy
       mt::core::DispatchImageCopy(

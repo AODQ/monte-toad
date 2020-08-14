@@ -310,6 +310,7 @@ void UiKernelDispatchEditor(
           )
         ) {
           kernelDispatch.timing = static_cast<mt::KernelDispatchTiming>(i);
+          mt::core::AllocateResources(data, data.pluginIdx, plugin);
         }
       }
       ImGui::EndCombo();
@@ -317,6 +318,7 @@ void UiKernelDispatchEditor(
 
     if (ImGui::Button("delete")) {
       data.kernelDispatchers.erase(data.kernelDispatchers.begin() + idx);
+      mt::core::AllocateResources(data, data.pluginIdx, plugin);
       -- idx;
     }
 
@@ -351,6 +353,8 @@ void UiKernelDispatchEditor(
         /* kernel.userdata */
 
         data.kernelDispatchers.emplace_back(std::move(kernel));
+
+        mt::core::AllocateResources(data, data.pluginIdx, plugin);
       }
     }
 
@@ -612,7 +616,9 @@ void UiImageOutput(
 
     // -- display image, with preview window on offline
 
-    if (!integrator.RealTime()) { ImGui::Columns(2); }
+    bool const hasPreview = !integrator.RealTime() && data.HasPreview();
+
+    if (hasPreview) { ImGui::Columns(2); }
 
     auto const leftPaneWidth =
       glm::min(
@@ -629,7 +635,7 @@ void UiImageOutput(
 
     CheckImageClicked(0.0f, 0.0f);
 
-    if (!integrator.RealTime()) {
+    if (hasPreview) {
       ImGui::Text("raw output");
 
       // jump to next column and limit max column width

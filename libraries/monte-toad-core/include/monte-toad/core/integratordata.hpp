@@ -22,6 +22,8 @@ namespace mt::core {
 
     std::vector<mt::core::KernelDispatchInfo> kernelDispatchers;
 
+    auto HasPreview() -> bool;
+
     glm::u16vec2 imageResolution = glm::u16vec2(640, 480);
     mt::AspectRatio imageAspectRatio = mt::AspectRatio::e4_3;
     bool syncAspectRatioToPrimaryIntegrator = false;
