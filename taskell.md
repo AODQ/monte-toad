@@ -63,10 +63,10 @@
 - animate out video using FFMPEG & moving camera
 - plugins can allocate memory on host
 - allow multiple directional emitters w/ skybox
+- every kernel has its own image transition buffer, for debug, otherwise there is (raw -> preview) or (raw -> kernel -> preview) buffers, as preview must always be the last operation that occurs
 
 ## bugs / code cleanup
 
-- plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
 - plugin reload crashes, something to do with openImageDenoiser.
 - fix importance sampling (was disabled temporarily)
 - allow acceleration structure to load the mesh from a more generic structure (ei to allow face support)
@@ -89,9 +89,13 @@
 - remove unused [[maybe_unused]]
 - fix texture pointers crashing on texture resize (the textures array not texture dimensions)
 
-## in progress / upcoming
+## upcoming
 
-- better kernel control (can control when/how and what order kernels are dispatched)
+- plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
+
+## in progress
+
+- kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)
 
 ## done
 
@@ -104,7 +108,7 @@
 - add BRDF plugins
 - fix acceleration structure (it produces degenerate triangles)
 - add russian roulette
-- texture/vec3/float optional / ui sttable
+- texture/vec3/float optional / ui stable
 - verify & fix rendered image being flipped on X axis
 - YU plugin chain, probably useful for kernel too
 - dispatcher plugin runs actual dispatches
@@ -144,3 +148,5 @@
 - controllable flyout camera in UI
 - sometimes plugins unload themselves when other plugins load
 - optional imgui integration with all plugins
+- openmp does not work properly when using nanort acceleration structure
+- better kernel control (can control when/how and what order kernels are dispatched)
