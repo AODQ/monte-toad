@@ -63,6 +63,7 @@
 - animate out video using FFMPEG & moving camera
 - plugins can allocate memory on host
 - allow multiple directional emitters w/ skybox
+- every kernel has its own image transition buffer, for debug, otherwise there is (raw -> preview) or (raw -> kernel -> preview) buffers, as preview must always be the last operation that occurs
 
 ## bugs / code cleanup
 
@@ -91,7 +92,7 @@
 
 ## in progress / upcoming
 
-- better kernel control (can control when/how and what order kernels are dispatched)
+- kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)
 
 ## done
 
@@ -104,7 +105,7 @@
 - add BRDF plugins
 - fix acceleration structure (it produces degenerate triangles)
 - add russian roulette
-- texture/vec3/float optional / ui sttable
+- texture/vec3/float optional / ui stable
 - verify & fix rendered image being flipped on X axis
 - YU plugin chain, probably useful for kernel too
 - dispatcher plugin runs actual dispatches
@@ -144,3 +145,5 @@
 - controllable flyout camera in UI
 - sometimes plugins unload themselves when other plugins load
 - optional imgui integration with all plugins
+- openmp does not work properly when using nanort acceleration structure
+- better kernel control (can control when/how and what order kernels are dispatched)
