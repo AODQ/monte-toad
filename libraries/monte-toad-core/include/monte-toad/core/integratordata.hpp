@@ -63,6 +63,11 @@ namespace mt::core {
     bool previewDispatch = true;
     bool generatePreviewOutput = false;
 
+    // dispatch variables for override; this could easily be accomplised if
+    // this iteration stuff were a plugin tho
+    bool hasDispatchOverride = false;
+    glm::uvec2 dispatchBegin = glm::uvec2(0), dispatchEnd = glm::uvec2(0);
+
     // TODO maybe implement below sometime
     // -- used to 'clean up' the last few pixels; so we can just batch the last
     //    100 or whatever pixels instead of brute forcing them through blocks.

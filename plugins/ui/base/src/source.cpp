@@ -487,6 +487,15 @@ void UiImageOutput(
         );
       }
 
+      if (data.hasDispatchOverride) {
+        data.hasDispatchOverride = !ImGui::Button("remove dispatch override");
+        ImGui::Text(
+          "dispatch (%u, %u) => (%u, %u)"
+        , data.dispatchBegin.x, data.dispatchBegin.y
+        , data.dispatchEnd.x, data.dispatchEnd.y
+        );
+      }
+
       // -- imgui image resolution
       if (
         ImGui::Checkbox(
@@ -603,9 +612,36 @@ void UiImageOutput(
         pixel.y -= offsetY;
 
         // store results, also have to tell render info which image was clicked
-        data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
-        data.imagePixelClicked = true;
-        render.lastIntegratorImageClicked = i;
+
+        // if shift key is clicked then behavior is different
+        auto window = reinterpret_cast<GLFWwindow *>(render.glfwWindow);
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) && !data.realtime) {
+          // dispatch region selection
+          if ((data.dispatchBegin == glm::uvec2(0)) != data.hasDispatchOverride) {
+            data.hasDispatchOverride = false;
+            data.dispatchBegin = glm::uvec2(glm::round(pixel));
+            data.dispatchEnd = glm::uvec2(0u);
+          } else {
+            data.hasDispatchOverride = true;
+            data.dispatchEnd = glm::uvec2(glm::round(pixel));
+
+            // sort begin/end
+            auto dispMin = glm::min(data.dispatchBegin, data.dispatchEnd);
+            auto dispMax = glm::max(data.dispatchBegin, data.dispatchEnd);
+            data.dispatchBegin = dispMin;
+            data.dispatchEnd = dispMax;
+          }
+        } else {
+          // integrator and image click
+          data.imagePixelClickedCoord = glm::uvec2(glm::round(pixel));
+          data.imagePixelClicked = true;
+          render.lastIntegratorImageClicked = i;
+
+          // clear out region selection if shift key not held
+          if (data.dispatchEnd == glm::uvec2(0)) {
+            data.dispatchBegin = glm::uvec2(0);
+          }
+        }
       }
     };
 
