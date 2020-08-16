@@ -96,7 +96,6 @@
 ## in progress
 
 - kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)
-- display rendering time of a frame (total)
 
 ## done
 
@@ -153,3 +152,4 @@
 - better kernel control (can control when/how and what order kernels are dispatched)
 - at resolutions lower than 256 have higher strides
 - give % completion of a rendered image
+- display rendering time of a frame (total)

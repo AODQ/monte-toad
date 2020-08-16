@@ -533,6 +533,29 @@ void UiImageOutput(
       );
     }
 
+    if (
+        data.dispatchedCycles > 0ul
+     && !data.realtime
+     && data.renderingState != mt::RenderingState::Off
+    ) {
+      // TODO optimize this lol
+      // go through and collect all pixels (make sure to account for when SPP
+      //   has been lowered in the middle of rendering)
+      // then display that as total completion percentage
+      size_t finishedPixels = 0ul;
+      for (auto const pixel : data.pixelCountBuffer) {
+        finishedPixels +=
+          glm::min(data.samplesPerPixel, static_cast<size_t>(pixel));
+      }
+      ImGui::Text(
+        "Completion %.2f%%"
+      , finishedPixels
+      / static_cast<double>(
+          data.imageResolution.x*data.imageResolution.y*data.samplesPerPixel
+        ) * 100.0
+      );
+    }
+
     ImGui::Text(
       "image resolution <%u, %u>"
     , data.imageResolution.x, data.imageResolution.y
