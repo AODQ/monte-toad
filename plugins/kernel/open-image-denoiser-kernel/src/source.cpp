@@ -19,42 +19,46 @@ char const * PluginLabel() { return "open image denoiser kernel"; }
 mt::PluginType PluginType() { return mt::PluginType::Kernel; }
 
 void ApplyKernel(
-  mt::core::RenderInfo & render
+  mt::core::RenderInfo & /*render*/
 , mt::PluginInfo const & /*plugin*/
 , mt::core::IntegratorData & integratorData
 , span<glm::vec3> inputImageBuffer // TODO make this const
 , span<glm::vec3> outputImageBuffer
 ) {
+
   oidn::DeviceRef device = oidn::newDevice();
   device.commit();
 
   oidn::FilterRef filter = device.newFilter("RT");
 
-  auto const albedoIdx =
-    render.integratorIndices[Idx(mt::IntegratorTypeHint::Albedo)];
-  auto const normalIdx =
-    render.integratorIndices[Idx(mt::IntegratorTypeHint::Normal)];
+  { // apply albedo/normal optimization
+    auto albedoImg =
+      integratorData.secondaryIntegratorImagePtrs[
+        Idx(mt::IntegratorTypeHint::Albedo)
+      ];
 
-  if (albedoIdx != -1lu) {
-    auto & data = render.integratorData[albedoIdx];
-    filter
-      .setImage(
-        "albedo"
-      , data.mappedImageTransitionBuffer.data()
-      , oidn::Format::Float3
-      , data.imageResolution.x, data.imageResolution.y
-      );
-  }
+    auto normalImg =
+      integratorData.secondaryIntegratorImagePtrs[
+        Idx(mt::IntegratorTypeHint::Normal)
+      ];
 
-  if (normalIdx != -1lu) {
-    auto & data = render.integratorData[normalIdx];
-    filter
-      .setImage(
-        "normal"
-      , data.mappedImageTransitionBuffer.data()
-      , oidn::Format::Float3
-      , data.imageResolution.x, data.imageResolution.y
-      );
+    if (albedoImg.data() != nullptr && normalImg.data() != nullptr) {
+      filter
+        .setImage(
+          "albedo"
+        , albedoImg.data()
+        , oidn::Format::Float3
+        , integratorData.imageResolution.x, integratorData.imageResolution.y
+        );
+
+      filter
+        .setImage(
+          "normal"
+        , normalImg.data()
+        , oidn::Format::Float3
+        , integratorData.imageResolution.x, integratorData.imageResolution.y
+        );
+    }
   }
 
   filter

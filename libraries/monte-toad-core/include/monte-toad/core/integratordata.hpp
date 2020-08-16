@@ -3,6 +3,7 @@
 #include <monte-toad/core/enum.hpp>
 #include <monte-toad/core/glutil.hpp>
 #include <monte-toad/core/kerneldispatchinfo.hpp>
+#include <monte-toad/core/span.hpp>
 
 #include <vector>
 #include <chrono>
@@ -17,6 +18,15 @@ namespace mt::core {
 
     std::vector<glm::vec3> previewMappedImageTransitionBuffer;
     mt::core::GlTexture previewRenderedTexture;
+
+    // used to build integrators that are necessary
+    std::array<std::vector<glm::vec3>, Idx(mt::IntegratorTypeHint::Size)> 
+      secondaryIntegratorImages;
+
+    // pointers to either our own images or other integrators that have been
+    // synced to this integrator
+    std::array<span<glm::vec3>, Idx(mt::IntegratorTypeHint::Size)>
+      secondaryIntegratorImagePtrs;
 
     size_t pluginIdx;
     bool realtime;

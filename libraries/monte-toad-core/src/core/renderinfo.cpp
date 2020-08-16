@@ -31,6 +31,10 @@ void mt::core::Clear(mt::core::IntegratorData & self) {
     );
   }
 
+  for (auto & imagePtrs : self.secondaryIntegratorImagePtrs) {
+    imagePtrs = {};
+  }
+
   self.dispatchedCycles = 0;
   self.bufferCleared = true;
   self.blockIterator = 0ul;

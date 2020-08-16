@@ -369,6 +369,108 @@ void BlockIterate(
   }
 }
 
+void PrepareKernels(
+  mt::core::RenderInfo & render
+, mt::core::IntegratorData & data
+, mt::core::Scene const & scene
+, mt::PluginInfo const & plugin
+) {
+  // check if theere is a preview available to prepare
+  if (!data.HasPreview() || !data.generatePreviewOutput) { return; }
+
+  // collect integrators that need to be calculated
+  std::vector<size_t> secondaryHintIdx;
+  std::vector<size_t> secondaryIntegratorIdx;
+
+  // go through integrators (excluding primary) and fill out secondary images
+  // if they have not been set yet
+  for (auto hintI = 0ul; hintI < Idx(mt::IntegratorTypeHint::Size); ++ hintI) {
+    auto const integratorIdx = render.integratorIndices[hintI];
+
+    // if this integrator is valid
+    if (integratorIdx >= plugin.integrators.size()) { continue; }
+
+    // if the secondary integrator has already been calculated
+    if (data.secondaryIntegratorImagePtrs[integratorIdx].data()) { continue; }
+
+    // TODO at some point it would be nice to link integrators to secondary
+    //       integrators; this could be done automatically but then there would
+    //       be a hidden cost/optimization that is non-obvious. To explicitly
+    //       apply this optimization would be preferrable, not to mention I
+    //       don't think it would be used very often anyways
+    //  So for now calculations are done even redundantly, mostly because it
+    //  would be awkward to pair an integrator index up to a specific
+    //  integrator that shares camera information at this point when no actual
+    //  integrator synchronization exists
+
+    // store information if it needs to be calculated
+    secondaryHintIdx.emplace_back(hintI);
+    secondaryIntegratorIdx.emplace_back(integratorIdx);
+
+    // allocate memory for secondary integrator
+    data
+      .secondaryIntegratorImages[hintI]
+      .resize(data.mappedImageTransitionBuffer.size());
+
+    data.secondaryIntegratorImagePtrs[hintI] =
+      make_span(data.secondaryIntegratorImages[hintI]);
+  }
+
+  // check if any secondary integrator work needs to be computed
+  if (secondaryHintIdx.size() == 0ul) { return; }
+  assert(secondaryHintIdx.size() == secondaryIntegratorIdx.size());
+
+  // basically do the same dispatch as elsewhere TODO this is copy/paste so
+  // probably should be a function
+  #pragma omp parallel for collapse(2)
+  for (size_t x = 0; x < data.imageResolution.x; ++ x)
+  for (size_t y = 0; y < data.imageResolution.y; ++ y) {
+
+    glm::vec2 uv =
+      glm::vec2(x, y)
+    / glm::vec2(data.imageResolution.x, data.imageResolution.y)
+    ;
+
+    auto const resolutionAspectRatio =
+      data.imageResolution.y / static_cast<float>(data.imageResolution.x);
+
+    uv.x = 1.0f - uv.x; // flip X axis for image
+    uv = (uv - glm::vec2(0.5f)) * 2.0f;
+    uv.y *= resolutionAspectRatio;
+
+    // TODO realtime probably should have hardcoded UV offsets to be
+    //      consistent
+    auto const eye =
+      plugin.camera.Dispatch(
+        plugin.random, render.camera
+      , data.imageResolution
+      , uv
+      );
+
+    // apply raycast to surface for secondary integrators, as they should all
+    // share the same surface information
+    auto const surface =
+      mt::core::Raycast(scene, plugin, eye.origin, eye.direction, -1ul);
+
+    for (size_t idx = 0ul; idx < secondaryHintIdx.size(); ++ idx) {
+      auto const integratorIdx = secondaryIntegratorIdx[idx];
+      auto const hintIdx       = secondaryHintIdx[idx];
+
+      auto & pixel =
+        data.secondaryIntegratorImages[hintIdx][y*data.imageResolution.x + x];
+
+      auto pixelResults =
+        plugin
+          .integrators[integratorIdx]
+          .DispatchRealtime(
+            uv, surface, scene, plugin, render.integratorData[integratorIdx]
+          );
+
+      pixel = pixelResults.color;
+    }
+  }
+}
+
 // used to collect synced integrators that can share raycast results
 std::vector<std::vector<size_t>> syncedIntegrators;
 
@@ -550,6 +652,9 @@ void DispatchRender(
       , 1
       );
 
+      // prepare kernels
+      ::PrepareKernels(render, self, scene, plugin);
+
       // apply kernels
       for (auto const & kernelDispatch : self.kernelDispatchers) {
         switch (kernelDispatch.timing) {
@@ -559,6 +664,7 @@ void DispatchRender(
           break;
           case mt::KernelDispatchTiming::Preview:
             if (self.generatePreviewOutput) {
+              spdlog::info("preview output");
               plugin
                 .kernels[kernelDispatch.dispatchPluginIdx]
                 .ApplyKernel(
@@ -584,14 +690,14 @@ void DispatchRender(
         }
       }
 
-      // clear out preview output
-      self.generatePreviewOutput = false;
-
       // apply image copy
       mt::core::DispatchImageCopy(
         self
       , minRange.x, maxRange.x, minRange.y, maxRange.y
       );
+
+      // clear out preview output (must be after image copy)
+      self.generatePreviewOutput = false;
 
       ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
     }
