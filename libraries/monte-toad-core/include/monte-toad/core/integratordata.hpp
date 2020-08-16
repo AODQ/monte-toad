@@ -47,8 +47,21 @@ namespace mt::core {
     bool bufferCleared = false;
     size_t dispatchedCycles = 0u;
     size_t blockIterator = 0ul;
-    size_t blockInternalIteratorMax = 1ul;
     size_t blockIteratorStride = 128ul;
+
+    // TODO this could easily be a plugin too
+    mt::IntegratorDispatchType
+      previewDispatchType = mt::IntegratorDispatchType::StrideBlock
+    , dispatchType        = mt::IntegratorDispatchType::FillBlockCw
+    ;
+
+    // dispatch variables for FillBlowCw, though I could maybe implement the
+    // filling process without storing state in the future
+    size_t fillBlockLayer = 1ul;
+    size_t fillBlockLeg = 0ul;
+
+    bool previewDispatch = true;
+    bool generatePreviewOutput = false;
 
     // TODO maybe implement below sometime
     // -- used to 'clean up' the last few pixels; so we can just batch the last

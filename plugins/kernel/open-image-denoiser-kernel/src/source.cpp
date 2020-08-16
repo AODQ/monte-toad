@@ -22,10 +22,9 @@ void ApplyKernel(
   mt::core::RenderInfo & render
 , mt::PluginInfo const & /*plugin*/
 , mt::core::IntegratorData & integratorData
-, span<glm::vec3> inputImageBuffer
+, span<glm::vec3> inputImageBuffer // TODO make this const
 , span<glm::vec3> outputImageBuffer
 ) {
-
   oidn::DeviceRef device = oidn::newDevice();
   device.commit();
 
@@ -80,6 +79,13 @@ void ApplyKernel(
   char const * errorMsg;
   if (device.getError(errorMsg) != oidn::Error::None)
     { spdlog::error("{}", errorMsg); }
+}
+
+void UiUpdate(
+  mt::core::Scene &
+, mt::core::RenderInfo &
+, mt::PluginInfo const &
+) {
 }
 
 }

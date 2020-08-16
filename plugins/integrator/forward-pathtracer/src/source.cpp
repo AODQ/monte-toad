@@ -338,7 +338,7 @@ mt::PixelInfo Dispatch(
     // apply russian roulette
     float p =
       glm::max(0.05f, glm::max(radiance.r, glm::max(radiance.g, radiance.b)));
-    if (plugin.random.SampleUniform1() > p) { break; }
+    if (it >= 4 && plugin.random.SampleUniform1() > p) { break; }
     radiance /= p; // add energy lost from terminated paths
   }
 

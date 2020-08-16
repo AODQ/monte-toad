@@ -42,6 +42,11 @@ namespace mt {
   , Size
   };
 
+  enum struct IntegratorDispatchType : uint8_t {
+    StrideBlock
+  , FillBlockCw
+  };
+
   enum struct BsdfTypeHint : uint8_t {
     Diffuse
   , Specular

@@ -419,11 +419,6 @@ void UiImageOutput(
         mt::core::Clear(data);
       }
 
-      if (ImGui::InputInt("iters per hunk", &data.blockInternalIteratorMax)){
-        data.blockInternalIteratorMax =
-          glm::clamp(data.blockInternalIteratorMax, 1ul, 64ul);
-      }
-
       { // -- iterator block size
         size_t iteratorIdx = 0ul;
         // get current idx

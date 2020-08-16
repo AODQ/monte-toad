@@ -1,6 +1,7 @@
 // primary dispatcher
 
 #include <monte-toad/core/camerainfo.hpp>
+#include <monte-toad/core/enum.hpp>
 #include <monte-toad/core/integratordata.hpp>
 #include <monte-toad/core/log.hpp>
 #include <monte-toad/core/renderinfo.hpp>
@@ -254,24 +255,115 @@ void BlockIterate(
 
   ::BlockCalculateRange(self, minRange, maxRange);
 
-  { // perform iteration
-    self.blockIterator =
-      (self.blockIterator + 1) % self.blockPixelsFinished.size();
+  // amount of blocks that take up an image
+  auto const blockResolution =
+    glm::u16vec2(
+      glm::ceil(
+        glm::vec2(self.imageResolution)
+      / glm::vec2(self.blockIteratorStride)
+      )
+  );
 
-    // -- skip blocks that are full
-    size_t blockFull = 0ul;
-    while (
-      self.blockPixelsFinished[self.blockIterator] >= blockPixelCount
-    ) {
-      // if we have come full circle, then rendering has finished
-      if (++ blockFull == self.blockPixelsFinished.size()) {
-        self.renderingFinished = true;
-        return;
-      }
+  auto center = blockResolution/glm::u16vec2(2ul);
+  if (!(blockResolution.x % 2ul)) center.x -= 1;
+  if (!(blockResolution.y % 2ul)) center.y -= 1;
 
+  // -- perform iteration
+  switch (self.previewDispatch ? self.previewDispatchType : self.dispatchType) {
+    case mt::IntegratorDispatchType::StrideBlock: {
       self.blockIterator =
-        (self.blockIterator+1) % self.blockPixelsFinished.size();
-    }
+        (self.blockIterator + 1) % self.blockPixelsFinished.size();
+
+      // -- skip blocks that are full
+      size_t blockFull = 0ul;
+      while (
+        self.blockPixelsFinished[self.blockIterator] >= blockPixelCount
+      ) {
+        // if we have come full circle, then rendering has finished
+        if (++ blockFull == self.blockPixelsFinished.size()) {
+          self.renderingFinished = true;
+          return;
+        }
+
+        self.blockIterator =
+          (self.blockIterator+1) % self.blockPixelsFinished.size();
+      }
+    } break;
+    case mt::IntegratorDispatchType::FillBlockCw: {
+      // -- get x/y coords to make iterating in spiral easier
+
+      int32_t
+        x = static_cast<int32_t>(self.blockIterator % blockResolution.x)
+      , y = static_cast<int32_t>(self.blockIterator / blockResolution.x)
+      ;
+
+      // -- iterate to next block, keeping in mind that there are cases where
+      //    spiral iterator has to wrap around OOB region in order to capture
+      //    remaining blocks
+      size_t blockFull = 0ul;
+      while (
+          (
+            x < 0 || x >= blockResolution.x
+         || y < 0 || y >= blockResolution.y
+          )
+        || self.blockPixelsFinished[self.blockIterator] >= blockPixelCount
+      ) {
+
+        // if we have come full circle, then rendering has finished, but only
+        // increment blockFull if we're in the correct region
+        if (x >= 0 && x < blockResolution.x && y >= 0 && y < blockResolution.y){
+          if (++ blockFull == self.blockPixelsFinished.size()) {
+            x = center.x; y = center.y;
+            self.blockIterator = y*blockResolution.x + x;
+            self.renderingFinished = true;
+            self.generatePreviewOutput = true;
+            return;
+          }
+        }
+
+        switch (self.fillBlockLeg) {
+          case 0:
+            if (++ x == static_cast<int32_t>(self.fillBlockLayer + center.x))
+              ++ self.fillBlockLeg;
+            break;
+          case 1:
+            if (++ y == static_cast<int32_t>(self.fillBlockLayer + center.y))
+              ++ self.fillBlockLeg;
+            break;
+          case 2:
+            if (-- x == static_cast<int32_t>(center.x - self.fillBlockLayer))
+              ++ self.fillBlockLeg;
+            break;
+          case 3:
+            if (-- y == static_cast<int32_t>(center.y - self.fillBlockLayer)) {
+              ++ self.fillBlockLayer;
+              self.fillBlockLeg = 0ul;
+            }
+          break;
+        }
+
+        // in this case the spiral has completed, & position needs to be reset
+        // and loop broken out of
+        if (x >= blockResolution.x-1 && y >= blockResolution.y) {
+          x = center.x; y = center.y;
+          self.blockIterator = y*blockResolution.x + x;
+          self.fillBlockLeg = 0ul;
+          self.fillBlockLayer = 1ul;
+          break;
+        }
+
+        // convert x/y back to block iterator
+        self.blockIterator = y*blockResolution.x + x;
+      }
+    } break;
+  }
+
+  // disable preview dispatch if preview has iterated through entire image
+  if (self.blockIterator == 0ul && self.previewDispatch) {
+    self.previewDispatch = false;
+    auto x = center.x, y = center.y;
+    self.blockIterator = y*blockResolution.x + x;
+    self.generatePreviewOutput = true;
   }
 }
 
@@ -436,6 +528,17 @@ void DispatchRender(
       glm::u16vec2 maxRange = self.imageResolution;
       const bool realtime = plugin.integrators[integratorIdx].RealTime();
 
+      // -- update block information
+      if (!realtime)
+        { ::BlockIterate(self, minRange, maxRange); }
+
+      ::DispatchBlockRegion(
+        scene, render, plugin, integratorIdx
+      , minRange.x, minRange.y, maxRange.x, maxRange.y
+      , 1, 1
+      , 1
+      );
+
       // apply kernels
       for (auto const & kernelDispatch : self.kernelDispatchers) {
         switch (kernelDispatch.timing) {
@@ -444,9 +547,7 @@ void DispatchRender(
             // TODO this has to be done before doing any dispatches
           break;
           case mt::KernelDispatchTiming::Preview:
-            // TODO allow preview to handle different integrators without
-            //      performance hit
-            if (self.blockIterator == self.blockPixelsFinished.size()-1ul) {
+            if (self.generatePreviewOutput) {
               plugin
                 .kernels[kernelDispatch.dispatchPluginIdx]
                 .ApplyKernel(
@@ -457,13 +558,6 @@ void DispatchRender(
             }
           break;
           case mt::KernelDispatchTiming::All:
-            /* plugin */
-            /*   .kernels[kernelDispatch.dispatchPluginIdx] */
-            /*   .ApplyKernel( */
-            /*       render, plugin, self */
-            /*     , make_span(self.mappedImageTransitionBuffer) */
-            /*     , make_span(self.previewMappedImageTransitionBuffer) */
-            /*   ); */
           break;
           case mt::KernelDispatchTiming::Last:
             if (self.renderingFinished) {
@@ -479,24 +573,16 @@ void DispatchRender(
         }
       }
 
-      if (!realtime) {
-        ::BlockIterate(self, minRange, maxRange);
-      }
-
-      ::DispatchBlockRegion(
-        scene, render, plugin, integratorIdx
-      , minRange.x, minRange.y, maxRange.x, maxRange.y
-      , 1, 1
-      , realtime ? 1 : self.blockInternalIteratorMax
-      );
-
-      ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
+      // clear out preview output
+      self.generatePreviewOutput = false;
 
       // apply image copy
       mt::core::DispatchImageCopy(
         self
       , minRange.x, maxRange.x, minRange.y, maxRange.y
       );
+
+      ::BlockCollectFinishedPixels(self, plugin.integrators[integratorIdx]);
     }
   }
 }

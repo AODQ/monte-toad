@@ -36,6 +36,9 @@ void mt::core::Clear(mt::core::IntegratorData & self) {
   self.blockIterator = 0ul;
   self.renderingFinished = false;
 
+  self.fillBlockLayer = 1ul; self.fillBlockLeg = 0ul;
+  self.previewDispatch = true;
+
   // clear block samples
   self.blockPixelsFinished.resize(mt::core::BlockIteratorMax(self));
   std::fill(
@@ -93,8 +96,8 @@ void mt::core::DispatchImageCopy(
 
   if (
       !self.realtime
+    && self.generatePreviewOutput
     && self.HasPreview()
-    && self.blockIterator == self.blockPixelsFinished.size()-1ul
   ) {
     glBindTexture(GL_TEXTURE_2D, self.previewRenderedTexture.handle);
     glTexImage2D(
