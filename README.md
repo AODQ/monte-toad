@@ -10,21 +10,24 @@ current goal is to have most external dependencies be part of the build process
 
 - ASSIMP
 - OpenMP
-- spdlog
-- fmt
 
 # Internal Dependencies
   (part of third-party, don't need to download)
 
 - bvh
-- stb\_image.hpp
 - cxxopts
 - GLM
+- imgui
+- json (nlohmann)
+- nanort
+- open-image-denoise
+- stb
+- stb\_image.hpp
 
 # Support
 
 To run the editor, OpenGL3.2 is required. Image processing can still be done
-without a GPU.
+without a GPU, but the stand alone application is not yet ready.
 
 Minimum of CMake 3.0 is necessary. I've only tested with GCC 10.1 and Clang
   10.0 on Linux. There is no windows support as of now.
@@ -37,13 +40,15 @@ Minimum of CMake 3.0 is necessary. I've only tested with GCC 10.1 and Clang
 * multi-threaded
 * cameras, integrators, ray dispatchers, emitters, denoisers/post-processing,
     random generators, and UI are all configurable plugins
+* OpenImageDenoiser support
+* material editor (BSDFs composable into BSDFs)
 
 # Future Feature List
 
 * Windows support
 * OpenImageDenoiser support
 * RTX support (probably through Vulkan)
-* material & layered material editor
+* layered material editor (materials composable into layers)
 * bidirectional path tracing
 * animation support
 

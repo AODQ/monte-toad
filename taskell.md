@@ -36,7 +36,7 @@
 - don't halt thread while waiting for tasks to finish (probably have to replace openmp)
 - fix pathtraced debug lines
 - move spdlog out from monte toad core
-- use glTExSubImage2D with pixen unpack buffers for faster image upload
+- use glTexSubImage2D with pixen unpack buffers for faster image upload
 - use mouse wheel to control camera speed
 - texture viewer for editor/ui
 - have json not crash on error
@@ -64,6 +64,9 @@
 - plugins can allocate memory on host
 - allow multiple directional emitters w/ skybox
 - every kernel has its own image transition buffer, for debug, otherwise there is (raw -> preview) or (raw -> kernel -> preview) buffers, as preview must always be the last operation that occurs
+- plugins for iterating dispatchers
+- allow ~20 frames after activity to update properly, otherwise the 1000 ms latency is misleading for a lot of UI options
+- swap to std vector of pixels for a specific region  - this happens already but only on the entire framebuffer, this behavior should be stripped out though since it only makes sense to apply this non a non-preview render
 
 ## bugs / code cleanup
 
