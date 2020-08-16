@@ -11,14 +11,12 @@
 - add ggx btdf
 - subsurface scattering bssrdf
 - implement bumpmapping
-- display rendering time of a frame (total)
 - when plugin fails to load, give specific information such as which function was not present etc
 - investigate adding embree as an acceleration structure plugin
 - investigate adding radeon rays as an acceleration structure plugin
 - have plugin for intersectors (for triangles, spheres, instances, etc etc)
 - saved material/bsdf preview
 - give option to not update images for longer AFK renders
-- give % completion of a rendered image
 - add flashing text when rendering & trying to move, also add some flashing indication when rendering
 - RTX support without relying on radeon rays or other libraries (would probably be implemented well after other libraries are implemented tho)
 - move most third party dependencies to be compiled from source in third-party/
@@ -42,7 +40,6 @@
 - have json not crash on error
 - framebuffer fragment inspection
 - environmental map lighting loads / stores enviornment image separately
-- selective box integration
 - desynced camera movement between integrators
 - allow multiple integrators of the same type
 - figure a way to allow mesh emitters to be a plugin (emitter plugin)
@@ -77,7 +74,6 @@
 - don't reload scene when loading up environment texture
 - move mt::Valid for plugin valid to mt::PluginValid
 - move span to mt::core::span
-- at resolutions lower than 256 have higher strides
 - have surface store refractedNormal, which is the normal but pointed in the direction necessary for refraction
 - have albedo / normal integrators work with reflection/refraction
     > reflection/refraction should be a fresnel blend, but if diffuse is present then I assume none of these should be used. Probably have to experiment. This should improve open image denoiser and other filtering kernels potentially
@@ -95,10 +91,12 @@
 ## upcoming
 
 - plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
+- selective box integration
 
 ## in progress
 
 - kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)
+- display rendering time of a frame (total)
 
 ## done
 
@@ -153,3 +151,5 @@
 - optional imgui integration with all plugins
 - openmp does not work properly when using nanort acceleration structure
 - better kernel control (can control when/how and what order kernels are dispatched)
+- at resolutions lower than 256 have higher strides
+- give % completion of a rendered image

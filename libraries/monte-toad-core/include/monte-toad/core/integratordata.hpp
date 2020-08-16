@@ -5,6 +5,7 @@
 #include <monte-toad/core/kerneldispatchinfo.hpp>
 
 #include <vector>
+#include <chrono>
 
 namespace mt::core { struct KernelDispatchInfo; }
 
@@ -83,5 +84,8 @@ namespace mt::core {
       manualBlockMin = glm::uvec2(0, 0)
     , manualBlockMax = glm::uvec2(0, 0)
     ;
+
+    std::chrono::time_point<std::chrono::system_clock>
+      startTime, endTime;
   };
 }

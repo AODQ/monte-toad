@@ -282,6 +282,7 @@ void BlockIterate(
         // if we have come full circle, then rendering has finished
         if (++ blockFull == self.blockPixelsFinished.size()) {
           self.renderingFinished = true;
+          self.endTime = std::chrono::system_clock::now();
           return;
         }
 
@@ -316,6 +317,7 @@ void BlockIterate(
             x = center.x; y = center.y;
             self.blockIterator = y*blockResolution.x + x;
             self.renderingFinished = true;
+            self.endTime = std::chrono::system_clock::now();
             self.generatePreviewOutput = true;
             return;
           }
@@ -433,11 +435,14 @@ void DispatchRender(
         auto & self = render.integratorData[integratorIdx];
 
         switch (self.renderingState) {
-          default: break;
+          default:
+            self.startTime = std::chrono::system_clock::now();
+          break;
           case mt::RenderingState::Off: break;
           case mt::RenderingState::AfterChange:
             if (self.bufferCleared) {
               self.bufferCleared = false;
+              self.startTime = std::chrono::system_clock::now();
             }
           break;
         }
@@ -484,6 +489,7 @@ void DispatchRender(
       for (auto const integratorIdx : syncIt) {
         auto & self = render.integratorData[integratorIdx];
         mt::core::DispatchImageCopy(self, 0ul, 0ul, resolution.x, resolution.y);
+        self.endTime = std::chrono::system_clock::now();
         self.renderingFinished = true;
       }
 
@@ -509,6 +515,11 @@ void DispatchRender(
         case mt::RenderingState::OnAlways:
           mt::core::Clear(self);
         break;
+      }
+
+      // start the timer if(f) first iteration
+      if (self.dispatchedCycles == 1ul) {
+        self.startTime = std::chrono::system_clock::now();
       }
 
       if (

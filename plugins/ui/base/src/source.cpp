@@ -517,6 +517,20 @@ void UiImageOutput(
 
     if (data.renderingFinished) {
       ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "rendering completed");
+      ImGui::Text(
+        "total time: %lu ms"
+      , std::chrono::duration_cast<std::chrono::milliseconds>(
+          data.endTime - data.startTime
+        ).count()
+      );
+    } else if (data.dispatchedCycles > 0ul) {
+      auto tTime = std::chrono::system_clock::now();
+      ImGui::Text(
+        "current time: %lu ms"
+      , std::chrono::duration_cast<std::chrono::milliseconds>(
+          tTime - data.startTime
+        ).count()
+      );
     }
 
     ImGui::Text(
