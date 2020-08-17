@@ -3,6 +3,8 @@
 Ongoing WIP project animation renderer. The majority of the feature-set is
 plugin-based with native support for hot-reloading.
 
+Developmental screenshots can be found at https://aodq.net/portfolio/monte-toad/
+
 # External Dependencies
 
 current goal is to have most external dependencies be part of the build process
