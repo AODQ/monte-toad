@@ -77,7 +77,7 @@ namespace mt::core {
     // dispatch variables for override; this could easily be accomplised if
     // this iteration stuff were a plugin tho
     bool hasDispatchOverride = false;
-    glm::uvec2 dispatchBegin = glm::uvec2(0), dispatchEnd = glm::uvec2(0);
+    glm::u16vec2 dispatchBegin = glm::u16vec2(0), dispatchEnd = glm::u16vec2(0);
 
     // TODO maybe implement below sometime
     // -- used to 'clean up' the last few pixels; so we can just batch the last

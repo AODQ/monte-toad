@@ -87,15 +87,17 @@
 - up axis should also change the environment map sampling
 - remove unused [[maybe_unused]]
 - fix texture pointers crashing on texture resize (the textures array not texture dimensions)
+- materials duplicate on scene load
+    > q
 
 ## upcoming
 
 - plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
-- selective box integration
+- need a proper line rendering engine (for raycasts, to show regions of image currently being rendered on, etc)
 
 ## in progress
 
-- kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)
+- selective box integration
 
 ## done
 
@@ -153,3 +155,4 @@
 - at resolutions lower than 256 have higher strides
 - give % completion of a rendered image
 - display rendering time of a frame (total)
+- kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)

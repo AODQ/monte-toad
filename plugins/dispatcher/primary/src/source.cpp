@@ -118,6 +118,7 @@ void DispatchBlockRegion(
 , size_t const maxX, size_t const maxY
 , size_t strideX, size_t strideY
 , size_t internalIterator
+, bool checkSamplesPerPixel = true
 ) {
   auto & integratorData = render.integratorData[integratorIdx];
 
@@ -149,7 +150,8 @@ void DispatchBlockRegion(
     auto & pixel =
       integratorData.mappedImageTransitionBuffer[y*resolution.x + x];
 
-    if (pixelCount >= integratorData.samplesPerPixel) { continue; }
+    if (checkSamplesPerPixel && pixelCount >= integratorData.samplesPerPixel)
+      { continue; }
 
     glm::vec2 uv = glm::vec2(x, y) / glm::vec2(resolution.x, resolution.y);
     uv.x = 1.0f - uv.x; // flip X axis for image
@@ -642,14 +644,21 @@ void DispatchRender(
       const bool realtime = plugin.integrators[integratorIdx].RealTime();
 
       // -- update block information
-      if (!realtime)
-        { ::BlockIterate(self, minRange, maxRange); }
+
+      // dispatch min/max range if it has been overriden
+      if (self.hasDispatchOverride) {
+        minRange = self.dispatchBegin;
+        maxRange = self.dispatchEnd;
+      } else if (!realtime) {
+        ::BlockIterate(self, minRange, maxRange);
+      }
 
       ::DispatchBlockRegion(
         scene, render, plugin, integratorIdx
       , minRange.x, minRange.y, maxRange.x, maxRange.y
       , 1, 1
       , 1
+      , !self.hasDispatchOverride
       );
 
       // prepare kernels
