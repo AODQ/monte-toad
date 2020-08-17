@@ -160,6 +160,10 @@ void UiMaterialComponent(
   }
 }
 
+void Deallocate(void * data) {
+  delete reinterpret_cast<::Material*>(data);
+}
+
 } // -- anon namespace
 
 extern "C" {
@@ -168,9 +172,9 @@ char const * PluginLabel() { return "base material"; }
 mt::PluginType PluginType() { return mt::PluginType::Material; }
 
 void Allocate(mt::core::Any & userdata) {
-  if (userdata.data == nullptr)
-    { delete reinterpret_cast<::Material*>(userdata.data); }
+  userdata.Clear();
   userdata.data = new ::Material{};
+  userdata.dealloc = ::Deallocate;
 }
 
 bool IsEmitter(

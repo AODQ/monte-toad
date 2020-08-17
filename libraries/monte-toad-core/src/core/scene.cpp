@@ -253,6 +253,7 @@ void mt::core::Scene::Construct(
   self.bboxMax = glm::vec3(std::numeric_limits<float>::min());
 
   // load models & parse into BVH tree
+  self.meshes.clear();
   self.accelStructure =
     plugin
       .accelerationStructure

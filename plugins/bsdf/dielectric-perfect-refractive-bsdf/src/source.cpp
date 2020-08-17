@@ -23,6 +23,10 @@ struct MaterialInfo {
   float distanceScale = 1.0f;
 };
 
+void Deallocate(void * data) {
+  delete reinterpret_cast<::MaterialInfo*>(data);
+}
+
 } // -- namespace
 
 extern "C" {
@@ -31,9 +35,9 @@ char const * PluginLabel() { return "dielectric perfect refractive bsdf"; }
 mt::PluginType PluginType() { return mt::PluginType::Bsdf; }
 
 void Allocate(mt::core::Any & userdata) {
-  if (userdata.data == nullptr)
-    { delete reinterpret_cast<::MaterialInfo*>(userdata.data); }
+  userdata.Clear();
   userdata.data = new ::MaterialInfo{};
+  userdata.dealloc = ::Deallocate;
 }
 
 glm::vec3 BsdfFs(

@@ -10,6 +10,9 @@ namespace mt::core {
     mt::core::Any & operator=(mt::core::Any &&);
     Any(mt::core::Any const &) = delete;
 
+    void Clear();
+
     void * data = nullptr;
+    void (*dealloc)(void * data) = nullptr;
   };
 }

@@ -92,12 +92,11 @@
 
 ## upcoming
 
-- plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
 - need a proper line rendering engine (for raycasts, to show regions of image currently being rendered on, etc)
 
 ## in progress
 
-- selective box integration
+- plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
 
 ## done
 
@@ -156,3 +155,4 @@
 - give % completion of a rendered image
 - display rendering time of a frame (total)
 - kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)
+- selective box integration

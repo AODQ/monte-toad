@@ -76,6 +76,10 @@ struct BvhAccelerationStructure {
   bvh::Bvh<float> boundingVolume;
 };
 
+void Deallocate(void * data) {
+  delete reinterpret_cast<BvhAccelerationStructure*>(data);
+}
+
 } // -- anon namespace
 
 
@@ -208,6 +212,7 @@ mt::core::Any Construct(mt::core::TriangleMesh && triangleMesh) {
 
   mt::core::Any any;
   any.data = new ::BvhAccelerationStructure{std::move(self)};
+  any.dealloc = ::Deallocate;
   return any;
 }
 

@@ -27,6 +27,10 @@ struct NanoAccelerationStructure {
   nanort::BVHAccel<float> accel;
 };
 
+void Deallocate(void * data) {
+  delete reinterpret_cast<NanoAccelerationStructure*>(data);
+}
+
 } // -- anon namespace
 
 
@@ -66,6 +70,7 @@ mt::core::Any Construct(mt::core::TriangleMesh && triangleMeshMv) {
 
   mt::core::Any any;
   any.data = new ::NanoAccelerationStructure{std::move(self)};
+  any.dealloc = ::Deallocate;
   return any;
 }
 
