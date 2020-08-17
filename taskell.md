@@ -54,7 +54,6 @@
 - windows support
 - animation skinning / bone support
 - spatiotemporal variance guided filter (SVGF) kernel
-- tonemapping/hdr kernels
 - bidirectional path tracing integrator
 - scene animations (key model matrices quaternions etc)
 - animate out video using FFMPEG & moving camera
@@ -67,8 +66,6 @@
 
 ## bugs / code cleanup
 
-- plugin reload crashes, something to do with openImageDenoiser.
-- fix importance sampling (was disabled temporarily)
 - allow acceleration structure to load the mesh from a more generic structure (ei to allow face support)
 - lag spike when material is null/no bsdfs, should be resolved
 - don't reload scene when loading up environment texture
@@ -93,10 +90,12 @@
 ## upcoming
 
 - need a proper line rendering engine (for raycasts, to show regions of image currently being rendered on, etc)
+- plugin reload crashes, something to do with openImageDenoiser.
+- fix importance sampling (was disabled temporarily)
 
 ## in progress
 
-- plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)
+- tonemapping/hdr kernels
 
 ## done
 
@@ -156,3 +155,4 @@
 - display rendering time of a frame (total)
 - kernels will automatically generate and cache necessary generator info (albedo/normal as same resolution as this etc)
 - selective box integration
+- plugins can deallocate memory from std::core::Any by passing a dealloc fn pointer (right now memory is just leaked)

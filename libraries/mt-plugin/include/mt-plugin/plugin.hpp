@@ -107,6 +107,7 @@ namespace mt {
     void (*UiUpdate)(
       mt::core::Scene & scene
     , mt::core::RenderInfo & render
+    , mt::core::IntegratorData & data
     , mt::PluginInfo const & plugin
     ) = nullptr;
 

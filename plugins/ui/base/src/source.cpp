@@ -262,7 +262,8 @@ void UiTextureEditor(mt::core::Scene & scene) {
 }
 
 void UiKernelDispatchEditor(
-  mt::core::RenderInfo & render
+  mt::core::Scene & scene
+, mt::core::RenderInfo & render
 , mt::PluginInfo const & plugin
 ) {
   static size_t integratorIdx = -1ul;
@@ -290,6 +291,7 @@ void UiKernelDispatchEditor(
 
   for (size_t idx = 0ul; idx < data.kernelDispatchers.size(); ++ idx) {
     auto & kernelDispatch = data.kernelDispatchers[idx];
+    auto & kernelPlugin = plugin.kernels[kernelDispatch.dispatchPluginIdx];
     ImGui::PushID(idx);
 
     ImGui::NewLine();
@@ -297,9 +299,10 @@ void UiKernelDispatchEditor(
     ImGui::Separator();
     ImGui::NewLine();
 
-    ImGui::Text(
-      "%s", plugin.kernels[kernelDispatch.dispatchPluginIdx].PluginLabel()
-    );
+    ImGui::Text("%s", kernelPlugin.PluginLabel());
+
+    if (kernelPlugin.UiUpdate)
+      { kernelPlugin.UiUpdate(scene, render, data, plugin); }
 
     if (ImGui::BeginCombo("Timing", mt::ToString(kernelDispatch.timing))) {
       for (size_t i = 0ul; i < Idx(mt::KernelDispatchTiming::Size); ++ i) {
@@ -858,7 +861,7 @@ void Dispatch(
   ::UiEmitters(scene, render, plugin);
   ::UiDispatchers(render, plugin);
   ::UiTextureEditor(scene);
-  ::UiKernelDispatchEditor(render, plugin);
+  ::UiKernelDispatchEditor(scene, render, plugin);
 }
 
 } // -- extern C

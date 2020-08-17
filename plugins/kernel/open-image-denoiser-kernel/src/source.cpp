@@ -88,6 +88,7 @@ void ApplyKernel(
 void UiUpdate(
   mt::core::Scene &
 , mt::core::RenderInfo &
+, mt::core::IntegratorData &
 , mt::PluginInfo const &
 ) {
 }

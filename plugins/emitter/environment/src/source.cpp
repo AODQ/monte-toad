@@ -67,7 +67,10 @@ mt::PixelInfo SampleWo(
   pdf = 1.0f;
 
   return {
-    ::SampleEmission(scene, scene.emissionSource.environmentMap, wo)
+    glm::pow(
+      ::SampleEmission(scene, scene.emissionSource.environmentMap, wo),
+      glm::vec3(1.0f/2.2f)
+    )
   * ::emissionPower
   , true
   };

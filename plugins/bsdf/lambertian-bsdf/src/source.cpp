@@ -53,6 +53,8 @@ glm::vec3 BsdfFs(
       glm::vec3(material.albedoTextureLinearSpace ? 1.0f : 2.2f)
     );
 
+  albedo = -glm::log2(1.0f - albedo);
+
   float emission = material.emission.Get(surface.uvcoord);
   if (emission > 0.0f) { return emission * albedo; }
 
