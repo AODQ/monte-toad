@@ -2,7 +2,15 @@
   "plugins": [
     {
       "type": "accelerationstructure",
-      "file": "plugins/madmann-bvh-accelerationstructure.mt-plugin"
+      "file": "plugins/nanort-accelerationstructure.mt-plugin"
+    }
+  , {
+      "type": "kernel",
+      "file": "plugins/tonemapping-kernel.mt-plugin"
+    }
+  , {
+      "type": "kernel",
+      "file": "plugins/open-image-denoiser-kernel.mt-plugin"
     }
   , {
       "type": "integrator",
@@ -30,9 +38,17 @@
     }
   , {
       "type": "integrator",
-      "file": "plugins/integrator-forward-pt.mt-plugin",
+      "file": "plugins/integrator-albedo.mt-plugin",
       "state": "on-change",
-      "samples-per-pixel": 256,
+      "aspect-ratio": "4x3",
+      "resolution": 256,
+      "imgui-resolution": 256
+    }
+  , {
+      "type": "integrator",
+      "file": "plugins/integrator-forward-pt.mt-plugin",
+      "state": "after-change",
+      "samples-per-pixel": 8,
       "paths-per-sample": 8,
       "iterations-per-block": 1,
       "block-stride": 128,
@@ -89,5 +105,5 @@
       "file": "plugins/emitter-furnace.mt-plugin"
     }
   ]
-, "scene": [ "/home/toad/Downloads/model_dump/uploads_files_898927_rock.obj" ]
+, "scene": []
 }
