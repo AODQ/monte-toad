@@ -433,7 +433,6 @@ bool ui::Initialize(
 
   { // -- initialize imgui
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
     ImGuiIO & io = ImGui::GetIO();
     io.ConfigFlags =
       0

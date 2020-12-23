@@ -17,20 +17,20 @@
 namespace {
 
 struct Plugin {
-// -- constructors
+  // -- constructors
   Plugin(char const * filename, mt::PluginType type, size_t idx);
   ~Plugin();
 
-// -- members
+  // -- members
   std::string filename;
   void * data = nullptr;
   mt::PluginType type;
   size_t idx;
 
-// -- static
+  // -- static
   enum class Optional { Yes, No };
 
-// -- functions
+  // -- functions
   template <typename T> void LoadFunction(
     T & fn,
     char const * label,
